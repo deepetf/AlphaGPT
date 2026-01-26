@@ -1,0 +1,165 @@
+
+{
+    "db_config": [
+        {
+            "name": "NAS_DB",
+            "host": "192.168.8.78",
+            "port": "3306",
+            "user": "root",
+            "password": "Happy$4ever",
+            "database": "CB_HISTORY",
+            "sleep_time_threshold": 600
+        },
+        {
+            "name": "NUC_DB",
+            "host": "192.168.8.79",
+            "user": "admin",
+            "password": "SecurePass123",
+            "database": "ANOTHER_DB",
+            "sleep_time_threshold": 300
+        }
+    ],
+
+    "strategy_config": [
+
+        {
+            "name": "NUC_F4",
+
+            "exclude_force_redeemed": "yes",
+
+            "exclude_ratings": [],
+
+            "exclude_listed_days": 3,
+
+            "exclude_ST": "no",
+
+            "exclude_settings": {
+                "close": [
+                    {
+                        "operator": "<",
+                        "value": 100
+                    },
+                    {
+                        "operator": ">",
+                        "value": 145
+                    }
+                ],
+                "left_years": [
+                    {
+                        "operator": "<",
+                        "value": 1
+                    }
+
+                ]
+            },
+
+            "factors": {
+                "conv_bias15": 1,
+                "option_value": 1,
+                "bond_prem": 1,
+                "remain_cap": 1
+            },
+        
+            "factor_direction": {
+                "conv_bias15": false,
+                "option_value": true,
+                "bond_prem": false,
+                "remain_cap": false               
+            },
+
+            "hold_num": 10,
+
+            "stop_profit": 0.06,
+
+            "risk_free_rate" : 0.022,
+
+            "c_rate": 0.002
+        },
+        {
+            "name": "TEST2_F4",
+
+            "exclude_force_redeemed": "yes",
+
+            "exclude_ratings": [],
+
+            "exclude_listed_days": 3,
+
+            "exclude_ST": "no",
+
+            "exclude_settings": {
+                "close": [
+                    {
+                        "operator": "<",
+                        "value": 100
+                    },
+                    {
+                        "operator": ">",
+                        "value": 145
+                    }
+                ],
+                "left_years": [
+                    {
+                        "operator": "<",
+                        "value": 1
+                    }
+
+                ]
+            },
+
+            "factors": {
+                "dblow": 1,
+                "cap_mv_rate": 2,
+                "amount_5": 3,
+                "turnover_5": 4
+            },
+        
+            "factor_direction": {
+                "dblow": false,
+                "cap_mv_rate": false,
+                "amount_5": true,
+                "turnover_5": true               
+            },
+
+            "hold_num": 10,
+
+            "stop_profit": 0.06,
+
+            "risk_free_rate" : 0.022,
+
+            "c_rate": 0.002
+        }                        
+
+    ],
+
+    "Strategy_evaluation_config": {
+
+        "evaluation_phases": {
+            "P1": {
+                "start_date" : "2022-07-29",
+                "end_date": 0
+            },
+            "P2": {
+                "start_date" : "1Year",
+                "end_date": 0
+            },
+            "P3": {
+                "start_date" : "6Month",
+                "end_date": 0
+            },
+            "P4": {
+                "start_date" : "3Month",
+                "end_date": 0
+            },
+            "P5": {
+                "start_date" : "1Month",
+                "end_date": 0
+            },
+            "P6": {
+                "start_date" : "1Week",
+                "end_date": 0
+            }        
+        }
+
+    }
+
+}

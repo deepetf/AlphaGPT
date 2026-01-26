@@ -1,38 +1,26 @@
-import torch
+"""
+算子模块 (Operators)
 
-@torch.jit.script
-def _ts_delay(x: torch.Tensor, d: int) -> torch.Tensor:
-    if d == 0: return x
-    pad = torch.zeros((x.shape[0], d), device=x.device)
-    return torch.cat([pad, x[:, :-d]], dim=1)
+为了向后兼容，保留 OPS_CONFIG 变量。
+新代码应使用 ops_registry.py 的注册机制。
 
-@torch.jit.script
-def _op_gate(condition: torch.Tensor, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    mask = (condition > 0).float()
-    return mask * x + (1.0 - mask) * y
+使用示例:
+    from model_core.ops import get_ops_config
+    config = get_ops_config()
+"""
+from .ops_registry import OpsRegistry
 
-@torch.jit.script
-def _op_jump(x: torch.Tensor) -> torch.Tensor:
-    mean = x.mean(dim=1, keepdim=True)
-    std = x.std(dim=1, keepdim=True) + 1e-6
-    z = (x - mean) / std
-    return torch.relu(z - 3.0)
 
-@torch.jit.script
-def _op_decay(x: torch.Tensor) -> torch.Tensor:
-    return x + 0.8 * _ts_delay(x, 1) + 0.6 * _ts_delay(x, 2)
+def get_ops_config():
+    """
+    获取所有已注册算子的配置列表
+    
+    Returns:
+        List of (name, func, arity) tuples
+    """
+    return OpsRegistry.get_ops_config()
 
-OPS_CONFIG = [
-    ('ADD', lambda x, y: x + y, 2),
-    ('SUB', lambda x, y: x - y, 2),
-    ('MUL', lambda x, y: x * y, 2),
-    ('DIV', lambda x, y: x / (y + 1e-6), 2),
-    ('NEG', lambda x: -x, 1),
-    ('ABS', torch.abs, 1),
-    ('SIGN', torch.sign, 1),
-    ('GATE', _op_gate, 3),
-    ('JUMP', _op_jump, 1),
-    ('DECAY', _op_decay, 1),
-    ('DELAY1', lambda x: _ts_delay(x, 1), 1),
-    ('MAX3', lambda x: torch.max(x, torch.max(_ts_delay(x,1), _ts_delay(x,2))), 1)
-]
+
+# 向后兼容: 旧代码可能直接 import OPS_CONFIG
+# 注意: 这是一个动态属性，在 ops_registry 加载后才有值
+OPS_CONFIG = get_ops_config()

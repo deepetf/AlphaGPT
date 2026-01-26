@@ -1,0 +1,212 @@
+{
+  "best": {
+    "formula": [
+      "PURE_VALUE",
+      "VOL",
+      "SQRT",
+      "NEG",
+      "CUT_NEG",
+      "DBLOW",
+      "MUL",
+      "TS_DELAY",
+      "PCT_CHG",
+      "MIN",
+      "DIV",
+      "TS_STD5"
+    ],
+    "readable": "PURE_VALUE VOL SQRT NEG CUT_NEG DBLOW MUL TS_DELAY PCT_CHG MIN DIV TS_STD5",
+    "score": 10.402305603027344
+  },
+  "history": [
+    {
+      "step": 0,
+      "score": -24.9970703125,
+      "sharpe": -1.227506160736084,
+      "return": -0.6548513770103455,
+      "formula": [
+        "ALPHA_PCT_CHG_5",
+        "TS_RET",
+        "REMAIN_SIZE",
+        "CUT_NEG",
+        "DIV",
+        "PURE_VALUE",
+        "MIN",
+        "CUT_HIGH",
+        "ABS",
+        "PCT_CHG_5",
+        "MIN",
+        "LOG"
+      ],
+      "readable": "ALPHA_PCT_CHG_5 TS_RET REMAIN_SIZE CUT_NEG DIV PURE_VALUE MIN CUT_HIGH ABS PCT_CHG_5 MIN LOG"
+    },
+    {
+      "step": 0,
+      "score": -17.852703094482422,
+      "sharpe": -0.5373756289482117,
+      "return": -0.31840431690216064,
+      "formula": [
+        "VOLATILITY_STK",
+        "TS_DELAY",
+        "CS_RANK",
+        "SQRT",
+        "ALPHA_PCT_CHG_5",
+        "MAX",
+        "TURNOVER",
+        "SIGN",
+        "TS_STD5",
+        "SQRT",
+        "CS_RANK",
+        "ADD"
+      ],
+      "readable": "VOLATILITY_STK TS_DELAY CS_RANK SQRT ALPHA_PCT_CHG_5 MAX TURNOVER SIGN TS_STD5 SQRT CS_RANK ADD"
+    },
+    {
+      "step": 0,
+      "score": -17.846214294433594,
+      "sharpe": -0.48270750045776367,
+      "return": -0.27220475673675537,
+      "formula": [
+        "PCT_CHG_5_STK",
+        "PCT_CHG",
+        "LOG",
+        "LOG",
+        "PREM",
+        "IF_POS",
+        "DBLOW",
+        "TS_RET",
+        "SUB",
+        "MIN",
+        "SQRT",
+        "TS_DELAY"
+      ],
+      "readable": "PCT_CHG_5_STK PCT_CHG LOG LOG PREM IF_POS DBLOW TS_RET SUB MIN SQRT TS_DELAY"
+    },
+    {
+      "step": 1,
+      "score": -5.200629234313965,
+      "sharpe": 0.7557743787765503,
+      "return": 0.34703099727630615,
+      "formula": [
+        "REMAIN_SIZE",
+        "VOL",
+        "PCT_CHG",
+        "PCT_CHG",
+        "MIN",
+        "SQRT",
+        "CUT_NEG",
+        "ABS",
+        "CUT_NEG",
+        "IF_POS",
+        "ABS",
+        "DIV"
+      ],
+      "readable": "REMAIN_SIZE VOL PCT_CHG PCT_CHG MIN SQRT CUT_NEG ABS CUT_NEG IF_POS ABS DIV"
+    },
+    {
+      "step": 3,
+      "score": -1.7233295440673828,
+      "sharpe": 0.9704421758651733,
+      "return": 0.5512106418609619,
+      "formula": [
+        "TURNOVER",
+        "TS_DELTA",
+        "VOLATILITY_STK",
+        "MAX",
+        "SIGN",
+        "REMAIN_SIZE",
+        "SIGN",
+        "TS_RET",
+        "SUB",
+        "PCT_CHG_STK",
+        "DIV",
+        "TS_MEAN5"
+      ],
+      "readable": "TURNOVER TS_DELTA VOLATILITY_STK MAX SIGN REMAIN_SIZE SIGN TS_RET SUB PCT_CHG_STK DIV TS_MEAN5"
+    },
+    {
+      "step": 4,
+      "score": 2.0569963455200195,
+      "sharpe": 1.3498623371124268,
+      "return": 1.0803406238555908,
+      "formula": [
+        "PREM",
+        "REMAIN_SIZE",
+        "IF_POS",
+        "TS_STD5",
+        "TS_RET",
+        "TS_STD5",
+        "CAP_MV_RATE",
+        "TS_MEAN5",
+        "TS_DELTA",
+        "CUT_HIGH",
+        "ADD",
+        "CS_DEMEAN"
+      ],
+      "readable": "PREM REMAIN_SIZE IF_POS TS_STD5 TS_RET TS_STD5 CAP_MV_RATE TS_MEAN5 TS_DELTA CUT_HIGH ADD CS_DEMEAN"
+    },
+    {
+      "step": 6,
+      "score": 2.633861541748047,
+      "sharpe": 1.3633861541748047,
+      "return": 0.839119553565979,
+      "formula": [
+        "VOLATILITY_STK",
+        "TS_MEAN5",
+        "DBLOW",
+        "VOL",
+        "MAX",
+        "CAP_MV_RATE",
+        "SQRT",
+        "CAP_MV_RATE",
+        "LOG",
+        "SUB",
+        "MAX",
+        "MAX"
+      ],
+      "readable": "VOLATILITY_STK TS_MEAN5 DBLOW VOL MAX CAP_MV_RATE SQRT CAP_MV_RATE LOG SUB MAX MAX"
+    },
+    {
+      "step": 24,
+      "score": 4.424295425415039,
+      "sharpe": 1.6003241539001465,
+      "return": 1.790175199508667,
+      "formula": [
+        "VOLATILITY_STK",
+        "ABS",
+        "PCT_CHG_5_STK",
+        "TS_MEAN5",
+        "CS_RANK",
+        "CS_RANK",
+        "TS_MEAN5",
+        "SIGN",
+        "CS_RANK",
+        "PREM",
+        "MAX",
+        "IF_POS"
+      ],
+      "readable": "VOLATILITY_STK ABS PCT_CHG_5_STK TS_MEAN5 CS_RANK CS_RANK TS_MEAN5 SIGN CS_RANK PREM MAX IF_POS"
+    },
+    {
+      "step": 36,
+      "score": 10.402305603027344,
+      "sharpe": 2.1805176734924316,
+      "return": 2.594998836517334,
+      "formula": [
+        "PURE_VALUE",
+        "VOL",
+        "SQRT",
+        "NEG",
+        "CUT_NEG",
+        "DBLOW",
+        "MUL",
+        "TS_DELAY",
+        "PCT_CHG",
+        "MIN",
+        "DIV",
+        "TS_STD5"
+      ],
+      "readable": "PURE_VALUE VOL SQRT NEG CUT_NEG DBLOW MUL TS_DELAY PCT_CHG MIN DIV TS_STD5"
+    }
+  ],
+  "total_kings": 9
+}

@@ -1,14 +1,16 @@
 import torch
 import torch.nn as nn
 from .config import ModelConfig
-from .ops import OPS_CONFIG
+from .ops_registry import OpsRegistry
 
 class AlphaGPT(nn.Module):
     def __init__(self):
         super().__init__()
         self.d_model = 64
-        self.features_list = ['RET', 'VOL', 'V_CHG', 'PV', 'TREND']
-        self.ops_list = [cfg[0] for cfg in OPS_CONFIG]
+        
+        # 动态构建词表: 特征 + 算子
+        self.features_list = ModelConfig.INPUT_FEATURES
+        self.ops_list = OpsRegistry.list_ops()
         
         self.vocab = self.features_list + self.ops_list
         self.vocab_size = len(self.vocab)

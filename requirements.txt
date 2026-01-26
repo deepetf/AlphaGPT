@@ -1,0 +1,23 @@
+# Core & Utilities
+python-dotenv
+loguru
+requests
+aiohttp
+chinese_calendar
+
+# Data Science & Database
+pandas
+numpy
+sqlalchemy
+pymysql
+asyncpg
+
+# Machine Learning
+torch
+
+# Web Scraping
+beautifulsoup4
+
+# Blockchain / Solana
+solana
+solders
