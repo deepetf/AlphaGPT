@@ -1,23 +1,14 @@
-# Core & Utilities
-python-dotenv
-loguru
-requests
-aiohttp
-chinese_calendar
+# AlphaGPT V2.1 Dependencies
 
-# Data Science & Database
-pandas
-numpy
-sqlalchemy
-pymysql
-asyncpg
+# Deep Learning
+torch>=2.0.0
 
-# Machine Learning
-torch
+# Data Processing
+pandas>=2.0.0
+numpy>=1.20.0
+pyarrow>=12.0.0  # Required for reading Parquet files
 
-# Web Scraping
-beautifulsoup4
-
-# Blockchain / Solana
-solana
-solders
+# Utils
+tqdm
+python-dotenv  # If used for ENV loading
+loguru         # Optional, kept for compatibility

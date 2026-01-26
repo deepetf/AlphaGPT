@@ -2,20 +2,23 @@
 AlphaGPT 训练引擎 (可转债版)
 
 使用 Policy Gradient 训练 Transformer 模型生成 Alpha 因子公式。
+V2: 集成稳健性评估 (分段验证、滚动稳定性、最大回撤、可交易性约束)
 """
 import torch
 from torch.distributions import Categorical
 from tqdm import tqdm
 import json
 import os
+import time
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
-from .config import ModelConfig
+from .config import ModelConfig, RobustConfig
 from .data_loader import CBDataLoader
 from .alphagpt import AlphaGPT
 from .vm import StackVM
 from .backtest import CBBacktest
+from .ops_registry import OpsRegistry
 
 
 # 全局变量，用于子进程共享只读数据 (避免 Pickling 开销)
@@ -24,47 +27,84 @@ _global_bt = None
 _global_feat = None
 _global_ret = None
 _global_mask = None
+_global_split_idx = None  # 训练/验证切分索引
 
-def _init_worker(feat_tensor, target_ret, valid_mask):
+def _init_worker(feat_tensor, target_ret, valid_mask, split_idx):
     """子进程初始化函数"""
-    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask
+    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
     _global_vm = StackVM()
     _global_bt = CBBacktest(top_k=10, fee_rate=0.0001)
     
     # 将 Tensor 移动到 CPU 以避免多进程 CUDA/XPU 冲突
-    # 对于这种小规模计算，CPU 往往比 GPU 更快（因为没有 Kernel Launch 开销）
     _global_feat = feat_tensor.to('cpu')
     _global_ret = target_ret.to('cpu')
     _global_mask = valid_mask.to('cpu')
+    _global_split_idx = split_idx
 
 def _worker_eval(formula):
-    """子进程执行函数"""
-    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask
+    """
+    子进程执行函数 (V2: 稳健性评估)
+    
+    使用 evaluate_robust 获取多维指标，并计算综合奖励。
+    """
+    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
     
     try:
-        # 执行公式
+        # 1. 执行公式
         res = _global_vm.execute(formula, _global_feat)
         
-        # 检查执行结果
         if res is None:
             return -5.0, None
         
-        # 检查因子方差
+        # 2. 检查因子方差
         if res.std() < 1e-4:
             return -2.0, None
 
-        # 回测评估 (返回 reward, cum_ret, sharpe)
-        score, ret_val, sharpe_val = _global_bt.evaluate(
+        # 3. 稳健性评估
+        metrics = _global_bt.evaluate_robust(
             factors=res,
             target_ret=_global_ret,
-            valid_mask=_global_mask
+            valid_mask=_global_mask,
+            split_idx=_global_split_idx
         )
         
-        # 复杂度惩罚: 每个 token 扣 0.5 分，鼓励简洁公式
-        complexity_penalty = len(formula) * 0.5
-        adjusted_score = score.item() - complexity_penalty
+        # 4. 硬淘汰条件 (Hard Filters)
+        # 4.1 验证集 Sharpe 太低
+        if metrics['sharpe_val'] < RobustConfig.MIN_SHARPE_VAL:
+            return -5.0, None
         
-        return adjusted_score, (adjusted_score, ret_val, sharpe_val, formula)
+        # 4.2 活跃率太低 (选不到足够标的)
+        if metrics['active_ratio'] < RobustConfig.MIN_ACTIVE_RATIO:
+            return -4.0, None
+        
+        # 4.3 训练/验证方向翻转 (过拟合信号)
+        if metrics['sharpe_train'] * metrics['sharpe_val'] < 0:
+            return -3.0, None
+        
+        # 4.4 有效交易日太少 (统计不可靠)
+        if metrics['valid_days_train'] < RobustConfig.MIN_VALID_DAYS or metrics['valid_days_val'] < RobustConfig.MIN_VALID_DAYS:
+            return -2.5, None
+        
+        # 5. 综合评分 (Soft Scoring)
+        # 5.1 基础分: 加权 Sharpe
+        base_score = (RobustConfig.TRAIN_WEIGHT * metrics['sharpe_train'] + 
+                      RobustConfig.VAL_WEIGHT * metrics['sharpe_val'])
+        
+        # 5.2 稳定性加成 (Mean - K*Std 越高越好)
+        stability_bonus = metrics['stability_metric'] * RobustConfig.STABILITY_W
+        
+        # 5.3 回撤惩罚
+        mdd_penalty = metrics['max_drawdown'] * RobustConfig.MDD_W
+        
+        # 5.4 长度惩罚
+        len_penalty = len(formula) * RobustConfig.LEN_W
+        
+        # 5.5 最终分数
+        final_score = (base_score + stability_bonus) * RobustConfig.SCALE - mdd_penalty - len_penalty
+        
+        # 返回分数和详细信息
+        return final_score, (final_score, metrics['cum_ret'], metrics['sharpe_all'], formula, metrics)
+    
     except Exception:
         return -5.0, None
 
@@ -108,6 +148,20 @@ class AlphaEngine:
 
     def train(self):
         print("🚀 Starting CB Alpha Mining (Multi-Process CPU)...")
+        print("=" * 60)
+        print("🔧 TRAINING CONFIGURATION")
+        print(f"   • Steps:       {ModelConfig.TRAIN_STEPS}")
+        print(f"   • Batch Size:  {ModelConfig.BATCH_SIZE}")
+        print(f"   • Device:      {ModelConfig.DEVICE}")
+        print(f"   • Workers:     {os.cpu_count() or 4}")
+        print(f"   • Split Date:  {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
+        print("-" * 60)
+        print("🧬 GENOME (Vocabulary)")
+        print(f"   • Factors ({len(ModelConfig.INPUT_FEATURES)}): {ModelConfig.INPUT_FEATURES}")
+        print(f"   • Operators ({len(OpsRegistry.list_ops())}): {OpsRegistry.list_ops()}")
+        print("=" * 60)
+        
+        start_time = time.time()
         
         # workers 数量设置为 CPU 核心数 (逻辑核心)
         num_workers = os.cpu_count() or 4
@@ -117,6 +171,7 @@ class AlphaEngine:
         cpu_feat = self.loader.feat_tensor.to('cpu')
         cpu_ret = self.loader.target_ret.to('cpu')
         cpu_mask = self.loader.valid_mask.to('cpu')
+        split_idx = self.loader.split_idx
         
         # 启动进程池
         # 注意: Windows 下每次都需要在这里从头启动 executor 比较安全，或者长期持有
@@ -124,7 +179,7 @@ class AlphaEngine:
         with ProcessPoolExecutor(
             max_workers=num_workers, 
             initializer=_init_worker,
-            initargs=(cpu_feat, cpu_ret, cpu_mask)
+            initargs=(cpu_feat, cpu_ret, cpu_mask, split_idx)
         ) as executor:
             
             pbar = tqdm(range(ModelConfig.TRAIN_STEPS))
@@ -160,27 +215,32 @@ class AlphaEngine:
                     rewards_list.append(rew)
                     
                     if best_info:
-                        score_val, ret_val, sharpe_val, formula_str = best_info
+                        # V2: best_info 现包含 (score, cum_ret, sharpe_all, formula, metrics)
+                        score_val, ret_val, sharpe_val, formula_str, metrics = best_info
                         if score_val > self.best_score:
                             self.best_score = score_val
                             self.best_formula = formula_str  # 现在是字符串列表
                             self.best_formula_readable = self.decode_formula(formula_str)
                             
-                            # 记录到历史 (使用字符串公式，不再存 token ID)
+                            # 记录到历史 (V2: 包含稳健性指标)
                             king_num = len(self.king_history) + 1
                             self.king_history.append({
                                 'step': step,
                                 'score': score_val,
                                 'sharpe': sharpe_val,
+                                'sharpe_train': metrics.get('sharpe_train', 0),
+                                'sharpe_val': metrics.get('sharpe_val', 0),
+                                'max_drawdown': metrics.get('max_drawdown', 0),
+                                'stability': metrics.get('stability_metric', 0),
                                 'return': ret_val,
-                                'formula': formula_str,  # 字符串列表
+                                'formula': formula_str,
                                 'readable': self.best_formula_readable
                             })
                             
                             # 保存交易细节到独立文件
                             self._save_king_trades(king_num, formula_str, score_val, sharpe_val, ret_val)
                             
-                            tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe {sharpe_val:.2f} | Ret {ret_val:.2%} | {self.best_formula_readable}")
+                            tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | MDD {metrics.get('max_drawdown', 0):.1%} | {self.best_formula_readable}")
 
                 rewards = torch.tensor(rewards_list, device=ModelConfig.DEVICE)
                 
@@ -203,6 +263,10 @@ class AlphaEngine:
                     'Best': f'{self.best_score:.2f}'
                 })
 
+            end_time = time.time()
+            duration = end_time - start_time
+            print(f"\n✅ Training Completed in {duration:.2f} seconds ({duration/60:.2f} minutes).")
+            
             self._save_results()
     
     def _save_king_trades(self, king_num: int, formula: list, score: float, sharpe: float, ret: float):

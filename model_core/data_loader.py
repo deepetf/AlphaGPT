@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 import numpy as np
-from .config import ModelConfig
+from .config import ModelConfig, RobustConfig
 from .factors import FeatureEngineer
 
 class CBDataLoader:
@@ -9,7 +9,8 @@ class CBDataLoader:
         self.raw_data_cache = None
         self.feat_tensor = None
         self.target_ret = None
-        self.valid_mask = None # [Time, Assets] 标记是否可交易，用于过滤退市/停牌
+        self.valid_mask = None  # [Time, Assets] 标记是否可交易
+        self.split_idx = None   # 训练/验证切分索引 (基于 RobustConfig)
         
     def load_data(self):
         print(f"Loading Parquet from: {ModelConfig.CB_PARQUET_PATH}")
@@ -108,4 +109,21 @@ class CBDataLoader:
         
         self.target_ret = ret_1d
         
+        # 6. 计算 Train/Val 分割索引
+        split_date = RobustConfig.TRAIN_TEST_SPLIT_DATE
+        split_idx = 0
+        used_default_split = False
+        for i, d in enumerate(self.dates_list):
+            if d >= split_date:
+                split_idx = i
+                break
+        # 如果没找到 (所有日期都在切分点之前)，则用 80% 处
+        if split_idx == 0:
+            split_idx = int(len(self.dates_list) * 0.8)
+            used_default_split = True
+        self.split_idx = split_idx
+        
         print(f"Data Ready. Tensor Shape: {self.feat_tensor.shape}")
+        if used_default_split:
+            print(f"⚠️ Warning: Split date '{split_date}' not found, using default 80% split")
+        print(f"Train/Val Split: idx={self.split_idx}, date={self.dates_list[self.split_idx] if self.split_idx < len(self.dates_list) else 'N/A'}")

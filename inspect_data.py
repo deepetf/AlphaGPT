@@ -1,54 +1,73 @@
 
-import torch
-import numpy as np
-from model_core.data_loader import CBDataLoader
-from model_core.ops_registry import OpsRegistry
+import pandas as pd
+import os
 
-def inspect_pure_value():
-    print("🚀 Inspecting PURE_VALUE Data...")
-    
-    loader = CBDataLoader()
-    loader.load_data()
-    
-    # 获取数据
-    if 'PURE_VALUE' not in loader.raw_data_cache:
-        print("❌ PURE_VALUE not found in loaded data!")
+PARQUET_PATH = r"C:\Trading\Projects\AlphaGPT\data\cb_data.pq"
+
+def inspect():
+    if not os.path.exists(PARQUET_PATH):
+        print(f"File not found: {PARQUET_PATH}")
         return
+
+    print(f"Reading {PARQUET_PATH}...")
+    try:
+        df = pd.read_parquet(PARQUET_PATH)
+    except Exception as e:
+        print(f"Error reading parquet: {e}")
+        return
+
+    print("\n" + "="*50)
+    print("📊 DATA INSPECTION REPORT")
+    print("="*50)
+    
+    print(f"\n1. Shape: {df.shape}")
+    
+    print(f"\n2. Index Names: {df.index.names}")
+    
+    print("\n3. Index Sample:")
+    print(df.index[:5])
+    
+    print("\n4. Columns:")
+    print(df.columns.tolist())
+    
+    print("\n5. Dtypes:")
+    print(df.dtypes)
+    
+    print("\n6. Head (First 3 rows):")
+    print(df.head(3))
+    
+    # 检查关键列
+    required_cols = ['trade_date', 'code', 'close', 'vol']
+    missing = []
+    
+    # Check if index has required levels
+    if 'trade_date' not in df.columns and 'trade_date' not in df.index.names:
+        missing.append('trade_date')
+    if 'code' not in df.columns and 'code' not in df.index.names:
+        missing.append('code')
         
-    pv = loader.raw_data_cache['PURE_VALUE']
-    
-    # 1. 基础统计
-    print(f"\n--- Basic Stats ---")
-    print(f"Shape: {pv.shape}")
-    print(f"Mean: {pv.mean():.4f}")
-    print(f"Std (Global): {pv.std():.4f}")
-    print(f"Max: {pv.max():.4f}, Min: {pv.min():.4f}")
-    
-    # 2. 检查 TS_STD5
-    op_std = OpsRegistry.get_op('TS_STD5')['func']
-    pv_std = op_std(pv)
-    
-    print(f"\n--- TS_STD5(PURE_VALUE) Stats ---")
-    print(f"Mean: {pv_std.mean():.6f}")
-    print(f"Max:  {pv_std.max():.6f}")
-    print(f"Zeros: {(pv_std == 0).sum().item()} / {pv_std.numel()}")
-    
-    # 3. 抽样打印
-    # 找几个非零的样本看看
-    mask = pv_std > 0.1
-    if mask.sum() > 0:
-        print("\n--- Sample High Volatility Instances ---")
-        indices = torch.nonzero(mask)
-        # 打印前 5 个
-        for i in range(min(5, len(indices))):
-            t, idx = indices[i]
-            code = loader.assets_list[idx]
-            date = loader.dates_list[t]
-            val = pv[t, idx].item()
-            std_val = pv_std[t, idx].item()
-            print(f"Date: {date}, Code: {code}, PV: {val:.2f}, PV_STD5: {std_val:.4f}")
+    for col in ['close', 'vol']:
+        if col not in df.columns:
+            missing.append(col)
+            
+    if missing:
+        print(f"\n❌ MISSING CRITICAL COLUMNS/INDEX: {missing}")
     else:
-        print("\n❌ Amazing! PURE_VALUE is extremely stable (Std < 0.1 everywhere).")
+        print("\n✅ Critical columns/index present.")
+        
+    # 检查新请求的列
+    print("\n7. Checking requested new factors:")
+    targets = ['IV', 'stock_vol60d', 'convprem_zscore']
+    cols_set = set(df.columns)
+    for t in targets:
+        if t in cols_set:
+             print(f"   ✅ '{t}' found.")
+        else:
+             print(f"   ❌ '{t}' NOT found.")
+             # Fuzzy match
+             similar = [c for c in df.columns if t.lower() in c.lower() or c.lower() in t.lower()]
+             if similar:
+                 print(f"      Did you mean: {similar}?")
 
 if __name__ == "__main__":
-    inspect_pure_value()
+    inspect()

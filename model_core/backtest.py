@@ -2,9 +2,10 @@
 可转债回测引擎 (Convertible Bond Backtest Engine)
 
 支持 Top-K 轮动策略的向量化回测，用于 AlphaGPT 的 RL 训练。
+V2: 增加分段验证、滚动稳定性、最大回撤、可交易性约束。
 """
 import torch
-from .config import ModelConfig
+from .config import ModelConfig, RobustConfig
 
 
 class CBBacktest:
@@ -215,6 +216,161 @@ class CBBacktest:
             'daily_holdings': daily_holdings,
             'daily_returns': net_ret.tolist()
         }
+    
+    def evaluate_robust(self, factors: torch.Tensor, target_ret: torch.Tensor,
+                        valid_mask: torch.Tensor, split_idx: int) -> dict:
+        """
+        稳健性评估方法 (Robust Evaluation)
+        
+        返回分段 Sharpe、滚动稳定性、最大回撤、活跃率等多维指标。
+        
+        Args:
+            factors: [Time, Assets] 因子值张量
+            target_ret: [Time, Assets] 资产收益率张量 (T+1 收益)
+            valid_mask: [Time, Assets] 有效标的掩码
+            split_idx: 训练/验证切分索引
+        
+        Returns:
+            dict: 包含多维评估指标
+        """
+        device = factors.device
+        T, N = factors.shape
+        
+        # 1. 基础计算 (与 evaluate 相同)
+        masked_factors = factors.clone()
+        masked_factors[~valid_mask] = -1e9
+        
+        daily_valid_count = valid_mask.sum(dim=1)
+        valid_trading_day = daily_valid_count >= self.min_valid_count
+        actual_k = torch.clamp(daily_valid_count, max=self.top_k)
+        
+        weights = torch.zeros(T, N, device=device)
+        
+        for t in range(T):
+            if not valid_trading_day[t]:
+                continue
+            k = int(actual_k[t].item())
+            if k == 0:
+                continue
+            _, top_indices = torch.topk(masked_factors[t], k=k, largest=True)
+            weights[t, top_indices] = 1.0 / k
+        
+        # 换手和交易成本
+        prev_weights = torch.roll(weights, 1, dims=0)
+        prev_weights[0] = 0
+        turnover = torch.abs(weights - prev_weights).sum(dim=1)
+        tx_cost = turnover * self.fee_rate * 2
+        
+        gross_ret = (weights * target_ret).sum(dim=1)
+        net_ret = gross_ret - tx_cost
+        
+        # 2. 分段计算 Sharpe
+        # Train: [0, split_idx), Val: [split_idx, T)
+        train_mask = valid_trading_day.clone()
+        train_mask[split_idx:] = False
+        val_mask = valid_trading_day.clone()
+        val_mask[:split_idx] = False
+        
+        train_ret = net_ret[train_mask]
+        val_ret = net_ret[val_mask]
+        
+        sharpe_train = self._calc_sharpe(train_ret)
+        sharpe_val = self._calc_sharpe(val_ret)
+        
+        # 3. 滚动稳定性
+        valid_net_ret = net_ret[valid_trading_day]
+        stability_metric, sharpe_std = self._calc_rolling_stability(valid_net_ret)
+        
+        # 4. 最大回撤
+        max_drawdown = self._calc_max_drawdown(valid_net_ret)
+        
+        # 5. 活跃率 (实际持仓数 / top_k 的比例)
+        # 修正: 应该统计持仓只数 (weights > 0 的数量)，而不是权重和 (总是1)
+        holding_counts = (weights > 0).sum(dim=1).float()  # 每天持仓只数
+        valid_holding_counts = holding_counts[valid_trading_day]
+        if len(valid_holding_counts) > 0:
+            active_ratio = (valid_holding_counts / self.top_k).mean().item()
+        else:
+            active_ratio = 0.0
+        
+        # 6. 累计收益
+        if len(valid_net_ret) > 0:
+            cum_ret = (1 + valid_net_ret).prod() - 1
+        else:
+            cum_ret = torch.tensor(0.0, device=device)
+        
+        # 7. 全局 Sharpe
+        sharpe_all = self._calc_sharpe(valid_net_ret)
+        
+        return {
+            'sharpe_train': sharpe_train,
+            'sharpe_val': sharpe_val,
+            'sharpe_all': sharpe_all,
+            'stability_metric': stability_metric,
+            'sharpe_std': sharpe_std,
+            'max_drawdown': max_drawdown,
+            'active_ratio': active_ratio,
+            'cum_ret': cum_ret.item() if hasattr(cum_ret, 'item') else cum_ret,
+            'valid_days_train': int(train_mask.sum().item()),
+            'valid_days_val': int(val_mask.sum().item()),
+        }
+    
+    def _calc_sharpe(self, returns: torch.Tensor) -> float:
+        """计算年化夏普比率"""
+        if len(returns) < 5:
+            return 0.0
+        mean_ret = returns.mean()
+        std_ret = returns.std() + 1e-9
+        sharpe = mean_ret / std_ret * (252 ** 0.5)
+        return sharpe.item() if hasattr(sharpe, 'item') else sharpe
+    
+    def _calc_rolling_stability(self, returns: torch.Tensor) -> tuple:
+        """
+        计算滚动 Sharpe 的稳定性指标
+        
+        Returns:
+            stability_metric: Mean(rolling_sharpe) - K * Std(rolling_sharpe)
+            sharpe_std: 滚动 Sharpe 的标准差
+        """
+        window = RobustConfig.ROLLING_WINDOW
+        k = RobustConfig.STABILITY_K
+        
+        if len(returns) < window + 10:
+            return 0.0, 0.0
+        
+        # 滚动 Sharpe (简单实现)
+        rolling_sharpes = []
+        for i in range(window, len(returns)):
+            window_ret = returns[i-window:i]
+            rs = self._calc_sharpe(window_ret)
+            rolling_sharpes.append(rs)
+        
+        if len(rolling_sharpes) == 0:
+            return 0.0, 0.0
+        
+        rs_tensor = torch.tensor(rolling_sharpes, dtype=torch.float32)
+        rs_mean = rs_tensor.mean().item()
+        rs_std = rs_tensor.std().item()
+        
+        stability = rs_mean - k * rs_std
+        return stability, rs_std
+    
+    def _calc_max_drawdown(self, returns: torch.Tensor) -> float:
+        """计算最大回撤"""
+        if len(returns) == 0:
+            return 0.0
+        
+        # 累计净值
+        cum_returns = (1 + returns).cumprod(dim=0)
+        
+        # 滚动最大值
+        running_max = torch.cummax(cum_returns, dim=0)[0]
+        
+        # 回撤
+        drawdown = (running_max - cum_returns) / (running_max + 1e-9)
+        max_dd = drawdown.max().item()
+        
+        return max_dd
 
 
 # 保留旧类名以兼容现有代码

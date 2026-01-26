@@ -56,12 +56,48 @@ class ModelConfig:
         ('PCT_CHG_STK', 'pct_chg_stk', 'ffill'),        # 涨跌幅
         ('PCT_CHG_5_STK', 'pct_chg_5_stk', 'ffill'),    # 五日涨跌幅
         
+        # 新增因子 (Added via Request)
+        ('IV', 'IV', 'ffill'),                        # 隐含波动率
+        ('VOL_STK_60', 'stock_vol60d', 'ffill'),      # 正股60日波动率
+        ('PREM_Z', 'convprem_zscore', 'ffill'),       # 溢价率 Z-Score
     ]
     
     # AlphaGPT 输入特征 (这些会成为公式的"原子")
     # 从 BASIC_FACTORS 中选取用于模型输入的特征
 
-    INPUT_FEATURES = ['CLOSE', 'VOL', 'PREM', 'DBLOW','REMAIN_SIZE','PCT_CHG','PCT_CHG_5','VOLATILITY_STK','PCT_CHG_STK','PCT_CHG_5_STK','PURE_VALUE','ALPHA_PCT_CHG_5','CAP_MV_RATE','TURNOVER']
+    INPUT_FEATURES = ['CLOSE', 'VOL', 'PREM', 'DBLOW','REMAIN_SIZE','PCT_CHG','PCT_CHG_5','VOLATILITY_STK','PCT_CHG_STK','PCT_CHG_5_STK','PURE_VALUE','ALPHA_PCT_CHG_5','CAP_MV_RATE','TURNOVER', 'IV', 'VOL_STK_60', 'PREM_Z']
     
     # 动态计算 INPUT_DIM
     INPUT_DIM = len(INPUT_FEATURES)
+
+
+class RobustConfig:
+    """
+    稳健性增强配置 (Robustness Enhancement Config)
+    
+    控制分段验证、稳定性惩罚、回撤惩罚、可交易性约束等参数。
+    """
+    # ========== 分段验证 (Split Validation) ==========
+    TRAIN_TEST_SPLIT_DATE = '2024-06-01'  # 训练/验证切分日期
+    
+    # ========== 滚动稳定性 (Rolling Stability) ==========
+    ROLLING_WINDOW = 60       # 滚动窗口天数
+    STABILITY_K = 1.5         # 稳定性系数: Stability = Mean - K * Std
+    
+    # ========== 硬淘汰阈值 (Hard Thresholds) ==========
+    MIN_SHARPE_VAL = 0.2      # 验证集最低 Sharpe，低于此直接淘汰
+    MIN_ACTIVE_RATIO = 0.5    # 最低持仓满足率 (实际持仓数 / top_k)
+    MIN_VALID_DAYS = 20       # 最少有效交易天数
+    
+    # ========== 软评分权重 (Soft Scoring Weights) ==========
+    # 基础分权重
+    TRAIN_WEIGHT = 0.4        # 训练集 Sharpe 占比
+    VAL_WEIGHT = 0.6          # 验证集 Sharpe 占比
+    
+    # 惩罚/奖励项权重
+    STABILITY_W = 0.5         # 稳定性得分权重 (正向加分)
+    MDD_W = 20.0              # 回撤惩罚权重 (例: 0.3 MDD -> 6 分扣除)
+    LEN_W = 0.2               # 长度惩罚权重 (略微降低，让位给稳健性)
+    
+    # 总分缩放
+    SCALE = 5.0               # 最终分数缩放系数

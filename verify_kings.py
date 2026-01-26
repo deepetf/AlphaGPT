@@ -84,15 +84,43 @@ def verify_formula(readable_formula: str, label: str = "", save_trades: bool = T
     
     # 回测 (使用统一配置参数)
     bt = CBBacktest(top_k=VERIFY_TOP_K, fee_rate=VERIFY_FEE_RATE)
+    
+    # 传统回测 (用于保存交易记录)
     details = bt.evaluate_with_details(
         factors=factor,
         target_ret=loader.target_ret,
         valid_mask=loader.valid_mask
     )
     
+    # 稳健性评估 (用于显示分段指标)
+    robust_metrics = bt.evaluate_robust(
+        factors=factor,
+        target_ret=loader.target_ret,
+        valid_mask=loader.valid_mask,
+        split_idx=loader.split_idx
+    )
+    
+    # 手动计算 Composite Score (复用 engine.py 逻辑)
+    # 若被 Hard Filter 淘汰，分数可能不准确，这里主要展示 Soft Score
+    from model_core.config import RobustConfig
+    base_score = (RobustConfig.TRAIN_WEIGHT * robust_metrics['sharpe_train'] + 
+                  RobustConfig.VAL_WEIGHT * robust_metrics['sharpe_val'])
+    stability_bonus = robust_metrics['stability_metric'] * RobustConfig.STABILITY_W
+    mdd_penalty = robust_metrics['max_drawdown'] * RobustConfig.MDD_W
+    # 假设公式长度为 readable_formula 分词后的长度
+    formula_len = len(readable_formula.split())
+    len_penalty = formula_len * RobustConfig.LEN_W
+    
+    composite_score = (base_score + stability_bonus) * RobustConfig.SCALE - mdd_penalty - len_penalty
+
     print(f"\n✅ Backtest Result:")
-    print(f"   Score:  {details['reward']:.2f}")
-    print(f"   Sharpe: {details['sharpe']:.2f}")
+    print(f"   Composite Score: {composite_score:.2f} (New Reward)")
+    print(f"   Score (Legacy):  {details['reward']:.2f}")
+    print(f"   Sharpe (All): {details['sharpe']:.2f}")
+    print(f"   Sharpe (Train/Val): {robust_metrics['sharpe_train']:.2f} / {robust_metrics['sharpe_val']:.2f}")
+    print(f"   Max Drawdown: {robust_metrics['max_drawdown']:.1%}")
+    print(f"   Stability: {robust_metrics['stability_metric']:.2f} (Sharpe Std: {robust_metrics['sharpe_std']:.2f})")
+    print(f"   Active Ratio: {robust_metrics['active_ratio']:.1%}")
     print(f"   Return: {details['cum_ret']:.2%}")
     
     # 保存交易记录
