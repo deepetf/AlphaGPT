@@ -54,6 +54,14 @@ def _worker_eval(formula):
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
     
     try:
+        # 0. 公式结构验证 (在昂贵的回测之前进行)
+        from .formula_validator import validate_formula
+        is_valid, structural_penalty, reason = validate_formula(formula)
+        
+        if not is_valid:
+            # 硬过滤: 直接拒绝
+            return -5.0, None
+        
         # 1. 执行公式
         res = _global_vm.execute(formula, _global_feat)
         
@@ -103,11 +111,14 @@ def _worker_eval(formula):
         # 5.4 长度惩罚
         len_penalty = len(formula) * RobustConfig.LEN_W
         
-        # 5.5 最终分数
-        final_score = (base_score + stability_bonus) * RobustConfig.SCALE - mdd_penalty - len_penalty
+        # 5.5 公式结构惩罚 (来自 validate_formula)
+        # structural_penalty 是负数或 0，直接加到分数上
+        
+        # 5.6 最终分数
+        final_score = (base_score + stability_bonus) * RobustConfig.SCALE - mdd_penalty - len_penalty + structural_penalty
         
         # 返回分数和详细信息
-        return final_score, (final_score, metrics['cum_ret'], metrics['sharpe_all'], formula, metrics)
+        return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics)
     
     except Exception:
         return -5.0, None
@@ -221,7 +232,7 @@ class AlphaEngine:
                     rewards_list.append(rew)
                     
                     if best_info:
-                        # V2: best_info 现包含 (score, cum_ret, sharpe_all, formula, metrics)
+                        # V2.2: best_info 现包含 (score, annualized_ret, sharpe_all, formula, metrics)
                         score_val, ret_val, sharpe_val, formula_str, metrics = best_info
                         
                         # 优化: 只有提升超过阈值才视为 New King，减少 I/O 阻塞
@@ -232,7 +243,7 @@ class AlphaEngine:
                             self.best_sharpe = sharpe_val
                             self.best_return = ret_val
                             
-                            # 记录到历史 (V2: 包含稳健性指标)
+                            # 记录到历史 (V2.2: 包含稳健性指标 + 年化收益)
                             king_num = len(self.king_history) + 1
                             self.king_history.append({
                                 'step': step,
@@ -242,7 +253,7 @@ class AlphaEngine:
                                 'sharpe_val': metrics.get('sharpe_val', 0),
                                 'max_drawdown': metrics.get('max_drawdown', 0),
                                 'stability': metrics.get('stability_metric', 0),
-                                'return': ret_val,
+                                'annualized_ret': ret_val,  # 年化收益率
                                 'formula': formula_str,
                                 'readable': self.best_formula_readable
                             })
@@ -345,7 +356,7 @@ class AlphaEngine:
                 'readable': self.best_formula_readable,
                 'score': self.best_score,
                 'sharpe': self.best_sharpe,
-                'return': self.best_return
+                'annualized_ret': self.best_return  # 年化收益率
             },
             'history': self.king_history,
             'total_kings': len(self.king_history)
@@ -359,7 +370,7 @@ class AlphaEngine:
         print(f"   Total New Kings discovered: {len(self.king_history)}")
         print(f"   Best Score: {self.best_score:.2f}")
         print(f"   Best Sharpe: {self.best_sharpe:.2f}")
-        print(f"   Best Return: {self.best_return:.2%}")
+        print(f"   Best Annualized Return: {self.best_return:.2%}")
         print(f"   Best Formula: {self.best_formula_readable}")
         
         torch.save(self.model.state_dict(), os.path.join(output_dir, 'alphagpt_cb.pt'))

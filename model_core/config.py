@@ -19,7 +19,7 @@ class ModelConfig:
     # DB_URL = f"postgresql://{os.getenv('DB_USER','postgres')}:{os.getenv('DB_PASSWORD','password')}@{os.getenv('DB_HOST','localhost')}:5432/{os.getenv('DB_NAME','crypto_quant')}"
     CB_PARQUET_PATH = r"C:\Trading\Projects\AlphaGPT\data\cb_data.pq"
     BATCH_SIZE = 512
-    TRAIN_STEPS = 500
+    TRAIN_STEPS = 100
     MAX_FORMULA_LEN = 12
     TRADE_SIZE_USD = 1000.0
     MIN_LIQUIDITY = 5000.0 # 低于此流动性视为归零/无法交易
@@ -87,7 +87,7 @@ class RobustConfig:
     
     # ========== 硬淘汰阈值 (Hard Thresholds) ==========
     MIN_SHARPE_VAL = 0.2      # 验证集最低 Sharpe，低于此直接淘汰
-    MIN_ACTIVE_RATIO = 0.5    # 最低持仓满足率 (实际持仓数 / top_k)
+    MIN_ACTIVE_RATIO = 0.3    # 最低持仓满足率 (实际持仓数 / top_k)
     MIN_VALID_DAYS = 20       # 最少有效交易天数
     MIN_VALID_DAYS = 20       # 最少有效交易天数
     MIN_VALID_COUNT = 30      # 实盘最少有效标的数量 (熔断阈值)

@@ -293,11 +293,14 @@ class CBBacktest:
         else:
             active_ratio = 0.0
         
-        # 6. 累计收益
+        # 6. 年化收益率 (Annualized Return)
         if len(valid_net_ret) > 0:
             cum_ret = (1 + valid_net_ret).prod() - 1
+            n_days = len(valid_net_ret)
+            # 年化: (1 + 累计收益)^(252/交易天数) - 1
+            annualized_ret = ((1 + cum_ret) ** (252.0 / n_days) - 1).item() if hasattr(cum_ret, 'item') else ((1 + cum_ret) ** (252.0 / n_days) - 1)
         else:
-            cum_ret = torch.tensor(0.0, device=device)
+            annualized_ret = 0.0
         
         # 7. 全局 Sharpe
         sharpe_all = self._calc_sharpe(valid_net_ret)
@@ -310,7 +313,7 @@ class CBBacktest:
             'sharpe_std': sharpe_std,
             'max_drawdown': max_drawdown,
             'active_ratio': active_ratio,
-            'cum_ret': cum_ret.item() if hasattr(cum_ret, 'item') else cum_ret,
+            'annualized_ret': annualized_ret,  # 年化收益率
             'valid_days_train': int(train_mask.sum().item()),
             'valid_days_val': int(val_mask.sum().item()),
         }
