@@ -175,6 +175,30 @@ def op_ts_std5(x):
         return result
     return torch.zeros_like(x)
 
+    return torch.zeros_like(x)
+
+@register_op('TS_BIAS5', 1, '5日乖离率')
+def op_ts_bias5(x):
+    """(Price - MA5) / MA5"""
+    if x.dim() == 2:
+        T, N = x.shape
+        if T < 5:
+            return torch.zeros_like(x)
+        # 1. 计算均线 (Logic same as TS_MEAN5)
+        padding = x[0].unsqueeze(0).repeat(4, 1)
+        padded = torch.cat([padding, x], dim=0)
+        unfolded = padded.unfold(0, 5, 1)
+        ma5 = unfolded.mean(dim=-1)
+        
+        # 2. 计算乖离率
+        # 避免除以 0
+        bias = (x - ma5) / (ma5 + 1e-9)
+        
+        # 前4天数据不可靠
+        bias[:4] = 0
+        return bias
+    return torch.zeros_like(x)
+
 
 # --- 截面算子 (Cross-Sectional Operators) ---
 @register_op('CS_RANK', 1, '截面排名 (0~1)')

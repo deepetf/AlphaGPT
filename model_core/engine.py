@@ -32,6 +32,10 @@ _global_split_idx = None  # 训练/验证切分索引
 def _init_worker(feat_tensor, target_ret, valid_mask, split_idx):
     """子进程初始化函数"""
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
+    
+    # 关键优化: 强制单线程运行，防止多进程 CPU 竞争 (Oversubscription)
+    torch.set_num_threads(1)
+    
     _global_vm = StackVM()
     _global_bt = CBBacktest(top_k=10, fee_rate=0.0001)
     
@@ -127,6 +131,8 @@ class AlphaEngine:
         self.best_score = -float('inf')
         self.best_formula = None
         self.best_formula_readable = None
+        self.best_sharpe = 0.0
+        self.best_return = 0.0
         
         # 4. 记录所有 New King 历史
         self.king_history = []
@@ -217,10 +223,14 @@ class AlphaEngine:
                     if best_info:
                         # V2: best_info 现包含 (score, cum_ret, sharpe_all, formula, metrics)
                         score_val, ret_val, sharpe_val, formula_str, metrics = best_info
-                        if score_val > self.best_score:
+                        
+                        # 优化: 只有提升超过阈值才视为 New King，减少 I/O 阻塞
+                        if score_val > self.best_score + ModelConfig.MIN_SCORE_IMPROVEMENT:
                             self.best_score = score_val
                             self.best_formula = formula_str  # 现在是字符串列表
                             self.best_formula_readable = self.decode_formula(formula_str)
+                            self.best_sharpe = sharpe_val
+                            self.best_return = ret_val
                             
                             # 记录到历史 (V2: 包含稳健性指标)
                             king_num = len(self.king_history) + 1
@@ -333,7 +343,9 @@ class AlphaEngine:
             'best': {
                 'formula': self.best_formula,  # 现在是字符串列表
                 'readable': self.best_formula_readable,
-                'score': self.best_score
+                'score': self.best_score,
+                'sharpe': self.best_sharpe,
+                'return': self.best_return
             },
             'history': self.king_history,
             'total_kings': len(self.king_history)
@@ -346,6 +358,8 @@ class AlphaEngine:
         print(f"\n✅ Saved to: {result_path}")
         print(f"   Total New Kings discovered: {len(self.king_history)}")
         print(f"   Best Score: {self.best_score:.2f}")
+        print(f"   Best Sharpe: {self.best_sharpe:.2f}")
+        print(f"   Best Return: {self.best_return:.2%}")
         print(f"   Best Formula: {self.best_formula_readable}")
         
         torch.save(self.model.state_dict(), os.path.join(output_dir, 'alphagpt_cb.pt'))
