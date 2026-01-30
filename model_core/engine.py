@@ -105,17 +105,20 @@ def _worker_eval(formula):
         # 5.2 稳定性加成 (Mean - K*Std 越高越好)
         stability_bonus = metrics['stability_metric'] * RobustConfig.STABILITY_W
         
-        # 5.3 回撤惩罚
+        # 5.3 年化收益率奖励 (鼓励高回报策略)
+        ret_bonus = metrics['annualized_ret'] * RobustConfig.RET_W
+        
+        # 5.4 回撤惩罚
         mdd_penalty = metrics['max_drawdown'] * RobustConfig.MDD_W
         
-        # 5.4 长度惩罚
+        # 5.5 长度惩罚
         len_penalty = len(formula) * RobustConfig.LEN_W
         
-        # 5.5 公式结构惩罚 (来自 validate_formula)
+        # 5.6 公式结构惩罚 (来自 validate_formula)
         # structural_penalty 是负数或 0，直接加到分数上
         
-        # 5.6 最终分数
-        final_score = (base_score + stability_bonus) * RobustConfig.SCALE - mdd_penalty - len_penalty + structural_penalty
+        # 5.7 最终分数
+        final_score = (base_score + stability_bonus) * RobustConfig.SCALE + ret_bonus - mdd_penalty - len_penalty + structural_penalty
         
         # 返回分数和详细信息
         return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics)

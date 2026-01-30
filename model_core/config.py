@@ -19,7 +19,7 @@ class ModelConfig:
     # DB_URL = f"postgresql://{os.getenv('DB_USER','postgres')}:{os.getenv('DB_PASSWORD','password')}@{os.getenv('DB_HOST','localhost')}:5432/{os.getenv('DB_NAME','crypto_quant')}"
     CB_PARQUET_PATH = r"C:\Trading\Projects\AlphaGPT\data\cb_data.pq"
     BATCH_SIZE = 512
-    TRAIN_STEPS = 500
+    TRAIN_STEPS = 100
     MAX_FORMULA_LEN = 12
     TRADE_SIZE_USD = 1000.0
     MIN_LIQUIDITY = 5000.0 # 低于此流动性视为归零/无法交易
@@ -102,6 +102,7 @@ class RobustConfig:
     
     # 惩罚/奖励项权重
     STABILITY_W = 0.5         # 稳定性得分权重 (正向加分)
+    RET_W = 5.0               # 年化收益率奖励权重 (例: 50% 年化 -> +2.5 分)
     MDD_W = 20.0              # 回撤惩罚权重 (例: 0.3 MDD -> 6 分扣除)
     LEN_W = 0.2               # 长度惩罚权重 (略微降低，让位给稳健性)
     
