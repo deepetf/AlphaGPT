@@ -3,6 +3,7 @@ import torch
 import json
 import os
 import pandas as pd
+from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.vm import StackVM
@@ -66,7 +67,7 @@ def reproduce_king9():
     
     # 3. 回测
     print("\nRunning Backtest (Top-K=10)...")
-    bt = CBBacktest(top_k=10, fee_rate=0.0001)
+    bt = CBBacktest(top_k=RobustConfig.TOP_K)
     
     # 获取详细记录
     details = bt.evaluate_with_details(

@@ -19,7 +19,7 @@ class ModelConfig:
     # DB_URL = f"postgresql://{os.getenv('DB_USER','postgres')}:{os.getenv('DB_PASSWORD','password')}@{os.getenv('DB_HOST','localhost')}:5432/{os.getenv('DB_NAME','crypto_quant')}"
     CB_PARQUET_PATH = r"C:\Trading\Projects\AlphaGPT\data\cb_data.pq"
     BATCH_SIZE = 512
-    TRAIN_STEPS = 100
+    TRAIN_STEPS = 500
     MAX_FORMULA_LEN = 12
     TRADE_SIZE_USD = 1000.0
     MIN_LIQUIDITY = 5000.0 # 低于此流动性视为归零/无法交易
@@ -79,7 +79,7 @@ class RobustConfig:
     控制分段验证、稳定性惩罚、回撤惩罚、可交易性约束等参数。
     """
     # ========== 分段验证 (Split Validation) ==========
-    TRAIN_TEST_SPLIT_DATE = '2024-06-01'  # 训练/验证切分日期
+    TRAIN_TEST_SPLIT_DATE = '2024-05-01'  # 训练/验证切分日期
     
     # ========== 滚动稳定性 (Rolling Stability) ==========
     ROLLING_WINDOW = 60       # 滚动窗口天数
@@ -89,9 +89,11 @@ class RobustConfig:
     MIN_SHARPE_VAL = 0.2      # 验证集最低 Sharpe，低于此直接淘汰
     MIN_ACTIVE_RATIO = 0.3    # 最低持仓满足率 (实际持仓数 / top_k)
     MIN_VALID_DAYS = 20       # 最少有效交易天数
-    MIN_VALID_DAYS = 20       # 最少有效交易天数
     MIN_VALID_COUNT = 30      # 实盘最少有效标的数量 (熔断阈值)
     TOP_K = 10                # 策略选股数量
+    
+    # ========== 交易费率 (Transaction Fee) ==========
+    FEE_RATE = 0.001          # 单边交易费率 (千分之一)
     
     # ========== 软评分权重 (Soft Scoring Weights) ==========
     # 基础分权重

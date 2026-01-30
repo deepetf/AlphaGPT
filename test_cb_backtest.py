@@ -36,7 +36,7 @@ def test_backtest_with_dblow():
     print(f"Factor sample (last day): min={factor[-1].min():.2f}, max={factor[-1].max():.2f}")
     
     # 3. 运行回测
-    bt = CBBacktest(top_k=20, fee_rate=0.0001)
+    bt = CBBacktest(top_k=20)
     
     reward, cum_ret = bt.evaluate(
         factors=factor,
@@ -68,7 +68,7 @@ def test_backtest_with_random():
     factor = torch.randn(T, N, device=loader.target_ret.device)
     
     # 3. 运行回测
-    bt = CBBacktest(top_k=20, fee_rate=0.0001)
+    bt = CBBacktest(top_k=20)
     
     reward, cum_ret = bt.evaluate(
         factors=factor,
@@ -120,7 +120,7 @@ def test_backtest_with_vm():
     print(f"VM result shape: {result.shape}")
     
     # 5. 回测
-    bt = CBBacktest(top_k=20, fee_rate=0.0001)
+    bt = CBBacktest(top_k=20)
     
     reward, cum_ret = bt.evaluate(
         factors=result,

@@ -37,7 +37,7 @@ def _init_worker(feat_tensor, target_ret, valid_mask, split_idx):
     torch.set_num_threads(1)
     
     _global_vm = StackVM()
-    _global_bt = CBBacktest(top_k=10, fee_rate=0.0001)
+    _global_bt = CBBacktest(top_k=RobustConfig.TOP_K)
     
     # 将 Tensor 移动到 CPU 以避免多进程 CUDA/XPU 冲突
     _global_feat = feat_tensor.to('cpu')
@@ -172,6 +172,8 @@ class AlphaEngine:
         print(f"   • Device:      {ModelConfig.DEVICE}")
         print(f"   • Workers:     {os.cpu_count() or 4}")
         print(f"   • Split Date:  {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
+        print(f"   • Top-K:       {RobustConfig.TOP_K}")
+        print(f"   • Fee Rate:    {RobustConfig.FEE_RATE:.4f} ({RobustConfig.FEE_RATE*100:.2f}% 单边)")
         print("-" * 60)
         print("🧬 GENOME (Vocabulary)")
         print(f"   • Factors ({len(ModelConfig.INPUT_FEATURES)}): {ModelConfig.INPUT_FEATURES}")
@@ -306,7 +308,7 @@ class AlphaEngine:
             return
         
         # 使用详细回测获取交易记录
-        bt = CBBacktest(top_k=10, fee_rate=0.0001)
+        bt = CBBacktest(top_k=RobustConfig.TOP_K)
         details = bt.evaluate_with_details(
             factors=factors,
             target_ret=self.loader.target_ret,

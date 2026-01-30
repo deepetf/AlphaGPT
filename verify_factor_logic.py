@@ -1,6 +1,7 @@
 
 import torch
 import numpy as np
+from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.ops_registry import OpsRegistry
@@ -40,7 +41,7 @@ def verify_remain_size_delta():
     
     # 5. 回测这个因子 (单纯的 Delta)
     print("\nRunning Backtest on pure TS_DELTA(REMAIN_SIZE)...")
-    bt = CBBacktest(top_k=10, fee_rate=0.0001)
+    bt = CBBacktest(top_k=RobustConfig.TOP_K)
     
     # 因子1: Delta本身 (看是否规模增加/减少有信号)
     # 对 NaN 填充 0

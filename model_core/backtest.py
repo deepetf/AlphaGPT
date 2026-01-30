@@ -19,14 +19,14 @@ class CBBacktest:
     4. 计算组合收益和夏普比率作为 Reward
     """
     
-    def __init__(self, top_k: int = 20, fee_rate: float = 0.0001):
+    def __init__(self, top_k: int = 20, fee_rate: float = None):
         """
         Args:
             top_k: 每天持有的转债数量
-            fee_rate: 单边交易费率 (万分之一 = 0.0001)
+            fee_rate: 单边交易费率，默认使用 RobustConfig.FEE_RATE
         """
         self.top_k = top_k
-        self.fee_rate = fee_rate
+        self.fee_rate = fee_rate if fee_rate is not None else RobustConfig.FEE_RATE
         # 要求有效标的至少是 top_k 的 2 倍 (最少 30 个)，保证选择性
         self.min_valid_count = max(30, top_k * 2)
     

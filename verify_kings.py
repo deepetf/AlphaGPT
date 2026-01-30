@@ -10,13 +10,10 @@ import torch
 import json
 import os
 import argparse
+from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.ops_registry import OpsRegistry
-
-# 回测参数 (与 engine.py 中 _worker_eval 保持一致)
-VERIFY_TOP_K = 10
-VERIFY_FEE_RATE = 0.0001
 
 from model_core.vm import StackVM
 
@@ -82,8 +79,8 @@ def verify_formula(readable_formula: str, label: str = "", save_trades: bool = T
     print(f"   Factor Stats: Mean={mean_val:.4f}, Std={std_val:.4f}")
     print(f"   NaN Ratio: {torch.isnan(factor).sum().item() / factor.numel():.2%}")
     
-    # 回测 (使用统一配置参数)
-    bt = CBBacktest(top_k=VERIFY_TOP_K, fee_rate=VERIFY_FEE_RATE)
+    # 回测 (使用 RobustConfig 统一配置参数)
+    bt = CBBacktest(top_k=RobustConfig.TOP_K)
     
     # 传统回测 (用于保存交易记录)
     details = bt.evaluate_with_details(
@@ -102,7 +99,7 @@ def verify_formula(readable_formula: str, label: str = "", save_trades: bool = T
     
     # 手动计算 Composite Score (复用 engine.py 逻辑)
     # 若被 Hard Filter 淘汰，分数可能不准确，这里主要展示 Soft Score
-    from model_core.config import RobustConfig
+
     base_score = (RobustConfig.TRAIN_WEIGHT * robust_metrics['sharpe_train'] + 
                   RobustConfig.VAL_WEIGHT * robust_metrics['sharpe_val'])
     stability_bonus = robust_metrics['stability_metric'] * RobustConfig.STABILITY_W

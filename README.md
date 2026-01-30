@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V2.1 (Robustness Enhanced)**
+Current Version: **V2.3 (Formula Structure Validator)**
 
 ---
 
