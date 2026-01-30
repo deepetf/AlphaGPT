@@ -89,9 +89,14 @@ class CBStrategyRunner:
             logger.exception(f"Failed to load strategy: {e}")
             return False
 
-    def run(self):
-        """执行每日选股"""
-        logger.info("🚀 Starting CB Strategy Runner...")
+    def run(self, simulate=False):
+        """
+        执行每日选股
+        
+        Args:
+            simulate (bool): 是否执行模拟成交闭环 (默认 False)
+        """
+        logger.info(f"🚀 Starting CB Strategy Runner (Simulate={simulate})...")
         
         # 1. 加载数据
         loader = CBDataLoader()
@@ -239,8 +244,11 @@ class CBStrategyRunner:
             
         self.save_plan(latest_date, selected_assets, orders)
         
-        # 可选: 模拟成交更新状态
-        # self.simulate_execution(orders) # 默认关闭，需手动开启或配置
+        self.save_plan(latest_date, selected_assets, orders)
+        
+        # 模拟成交更新状态
+        if simulate:
+            self.simulate_execution(orders, latest_date)
 
         
     def save_plan(self, date_str, assets, orders=None):
