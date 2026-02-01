@@ -58,3 +58,7 @@ Thumbs.db
 Desktop.ini
 nul
 ./nul
+
+# Runtime Artifacts
+execution/orders/
+tests/artifacts/
