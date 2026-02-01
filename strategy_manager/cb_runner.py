@@ -48,7 +48,15 @@ class CBStrategyRunner:
     5. 执行稳健性风控 (Active Ratio Check)
     """
     
-    def __init__(self, strategy_path=None):
+    def __init__(self, strategy_path=None, loader=None, portfolio=None, trader=None):
+        """初始化策略执行器
+        
+        Args:
+            strategy_path: 策略公式文件路径
+            loader: CBDataLoader 实例（用于依赖注入，避免重复加载）
+            portfolio: CBPortfolioManager 实例（用于测试时隔离状态）
+            trader: Trader 实例（用于 Mock）
+        """
         if strategy_path is None:
             # 默认寻找 model_core 下的 best_cb_formula.json
             strategy_path = os.path.join(project_root, "model_core", "best_cb_formula.json")
@@ -60,10 +68,11 @@ class CBStrategyRunner:
         self.output_dir = os.path.join(project_root, "execution", "plans")
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # Initialize Components
-        self.portfolio = CBPortfolioManager()
+        # Initialize Components (支持依赖注入)
+        self.loader = loader  # 允许外部传入已加载的 loader
+        self.portfolio = portfolio or CBPortfolioManager()
         self.rebalancer = CBRebalancer() # Default 100k capital, can appear from config later
-        self.trader = FileTrader()
+        self.trader = trader or FileTrader()
         
     def load_strategy(self):
         """加载策略公式"""
@@ -89,24 +98,40 @@ class CBStrategyRunner:
             logger.exception(f"Failed to load strategy: {e}")
             return False
 
-    def run(self, simulate=False):
+    def run(self, date=None, simulate=False):
         """
         执行每日选股
         
         Args:
+            date (str): 目标日期 (YYYY-MM-DD)。如果为 None，使用最新日期。
             simulate (bool): 是否执行模拟成交闭环 (默认 False)
         """
-        logger.info(f"🚀 Starting CB Strategy Runner (Simulate={simulate})...")
+        logger.info(f"🚀 Starting CB Strategy Runner (Date={date}, Simulate={simulate})...")
         
-        # 1. 加载数据
-        loader = CBDataLoader()
-        logger.info("Loading Data...")
-        loader.load_data()
+        # 1. 加载数据（如果未注入）
+        if self.loader is None:
+            loader = CBDataLoader()
+            logger.info("Loading Data...")
+            loader.load_data()
+        else:
+            loader = self.loader
+            logger.info("Using injected data loader (skip reload)")
         
-        # 2. 获取最新日期
-        latest_date_idx = -1
-        latest_date = loader.dates_list[latest_date_idx]
-        logger.info(f"Latest Data Date: {latest_date}")
+        # 2. 确定目标日期
+        if date is not None:
+            # 历史回放模式
+            try:
+                latest_date_idx = loader.dates_list.index(date)
+                latest_date = date
+                logger.info(f"Historical Replay Mode: {latest_date} (idx={latest_date_idx})")
+            except ValueError:
+                logger.error(f"Date '{date}' not found in data. Available range: {loader.dates_list[0]} to {loader.dates_list[-1]}")
+                return
+        else:
+            # 实盘模式（使用最新日期）
+            latest_date_idx = -1
+            latest_date = loader.dates_list[latest_date_idx]
+            logger.info(f"Live Mode: Latest Data Date = {latest_date}")
         
         # 3. 风控检查: Active Ratio + Min Valid Count
         # 检查当日有效标的数量
@@ -128,18 +153,23 @@ class CBStrategyRunner:
             logger.critical(f"⛔ CIRCUIT BREAKER: Too few valid assets ({valid_count} < {min_required}). Trading HALTED.")
             return
         
-        # 4. 执行因子计算
+        # 4. 执行因子计算（严格时间切片，防止 Look-Ahead Bias）
         logger.info("Executing Alpha Formula...")
         vm = StackVM()
         
-        # 转为 CPU 执行推理
+        # ⚠️ 关键：时间切片，只使用 t 及之前的数据
         feat_tensor = loader.feat_tensor.to('cpu')
+        if date is not None:
+            # 历史回放：切片到目标日期（包含当日）
+            feat_tensor_slice = feat_tensor[:, :, :latest_date_idx+1]
+            logger.info(f"Temporal slicing: Using data up to idx={latest_date_idx} (shape: {feat_tensor_slice.shape})")
+        else:
+            # 实盘：使用全部数据（此时 latest_date_idx=-1，表示最新）
+            feat_tensor_slice = feat_tensor
         
         try:
-            # [1, Time] -> [Assets, Time] ? No, execute returns [Time, Assets] usually?
-            # features is [Assets, Features, Time]
             # StackVM execute returns [Time, Assets]
-            factors = vm.execute(self.formula, feat_tensor) # -> [Time, Assets]
+            factors = vm.execute(self.formula, feat_tensor_slice) # -> [Time, Assets]
             
             if factors is None:
                 logger.error("Formula execution failed (returned None).")
@@ -149,20 +179,26 @@ class CBStrategyRunner:
             logger.exception(f"Formula execution error: {e}")
             return
             
-        # 5. 提取最新因子值 并 选股
+        # 5. 提取目标日期的因子值 并 选股
         # factors: [Time, Assets]
-        latest_factors = factors[latest_date_idx, :] # [Assets]
+        # ⚠️ 注意：在历史回放模式下，latest_date_idx 可能是中间某天；在实盘模式下是 -1
+        if date is not None:
+            # 历史回放：直接用索引
+            target_factors = factors[latest_date_idx, :] # [Assets]
+        else:
+            # 实盘：用 -1（最后一天）
+            target_factors = factors[-1, :] # [Assets]
         
         # 应用有效性掩码
         # loader.valid_mask is [Time, Assets]
         today_mask = loader.valid_mask[latest_date_idx, :].to('cpu') # [Assets]
         
         # Mask invalids
-        latest_factors[~today_mask] = -1e9
+        target_factors[~today_mask] = -1e9
         
         # Top-K Slicing
         # values, indices
-        top_k_vals, top_k_indices = torch.topk(latest_factors, k=self.top_k)
+        top_k_vals, top_k_indices = torch.topk(target_factors, k=self.top_k)
         
         selected_assets = []
         for rank, idx in enumerate(top_k_indices):
@@ -230,6 +266,11 @@ class CBStrategyRunner:
             current_holdings=current_holdings,
             sell_prices=sell_prices
         )
+        
+        # 补全可读名称 (尤其是 Sell 订单，Rebalancer 默认使用 Code)
+        for order in orders:
+            if order.name == order.code:
+                order.name = loader.names_dict.get(order.code, order.code)
         
         # 7. 提交订单 (生成 CSV)
         if orders:
