@@ -1,0 +1,193 @@
+# ============================================================================
+# AlphaGPT 默认配置文件
+# ============================================================================
+# 本文件包含 AlphaGPT 引擎的可调参数配置。
+# 使用方式:
+#   python -m model_core.engine                          # 使用默认配置
+#   python -m model_core.engine --config my_config.yaml  # 使用自定义配置
+#
+# 注意: 只需在自定义配置中覆盖需要修改的参数，其余参数将使用本文件中的默认值。
+# ============================================================================
+
+# ============================================================================
+# 模型输入特征 (INPUT_FEATURES)
+# ============================================================================
+# 定义: AlphaGPT 模型可见的因子列表，这些因子将成为公式的"原子"
+# 用法: 模型生成公式时，只能使用这些特征作为基础变量
+# 引用位置: 
+#   - model_core/config.py -> ModelConfig.INPUT_FEATURES
+#   - model_core/alphagpt.py -> 构建词汇表时使用
+#   - model_core/engine.py -> 打印训练配置时显示
+# 可选值: 必须是 BASIC_FACTORS 中定义的因子名称
+input_features:
+  - CLOSE          # 收盘价
+  - VOL            # 成交量
+  - PREM           # 转股溢价率
+  - DBLOW          # 双低值
+  - REMAIN_SIZE    # 剩余规模
+  - PCT_CHG        # 涨跌幅
+  - PCT_CHG_5      # 五日涨跌幅
+  - VOLATILITY_STK # 正股波动率
+  - PCT_CHG_STK    # 正股涨跌幅
+  - PCT_CHG_5_STK  # 正股五日涨跌幅
+  - PURE_VALUE     # 纯债价值
+  - ALPHA_PCT_CHG_5 # 五日涨跌幅差 (转债 - 正股)
+  - CAP_MV_RATE    # 转债市值占比
+  - TURNOVER       # 换手率
+  - IV             # 隐含波动率
+  - VOL_STK_60     # 正股60日波动率
+  - PREM_Z         # 溢价率 Z-Score
+
+# ============================================================================
+# 稳健性配置 (RobustConfig)
+# ============================================================================
+# 这些参数控制公式评估的稳健性检验和奖励机制
+robust_config:
+
+  # --------------------------------------------------------------------------
+  # 分段验证 (Split Validation)
+  # --------------------------------------------------------------------------
+  # 定义: 训练集/验证集的切分日期
+  # 用法: 切分日期之前的数据用于训练，之后的数据用于验证
+  # 引用位置:
+  #   - model_core/data_loader.py -> 计算 split_idx
+  #   - model_core/engine.py -> 打印训练配置
+  train_test_split_date: "2024-05-01"
+
+  # --------------------------------------------------------------------------
+  # 滚动稳定性 (Rolling Stability)
+  # --------------------------------------------------------------------------
+  # rolling_window:
+  #   定义: 计算滚动 Sharpe 的窗口天数
+  #   用法: stability_metric = rolling_sharpe.mean() - stability_k × rolling_sharpe.std()
+  #   引用位置: model_core/backtest.py -> evaluate_robust()
+  rolling_window: 60
+  
+  # stability_k:
+  #   定义: 稳定性系数，越大对波动惩罚越重
+  #   用法: 见 rolling_window
+  #   引用位置: model_core/backtest.py -> evaluate_robust()
+  stability_k: 1.5
+
+  # --------------------------------------------------------------------------
+  # 硬淘汰阈值 (Hard Thresholds)
+  # --------------------------------------------------------------------------
+  # 不满足以下条件的公式将被直接淘汰（返回负分）
+  
+  # min_sharpe_val:
+  #   定义: 验证集最低 Sharpe Ratio
+  #   用法: sharpe_val < min_sharpe_val -> 惩罚 -5.0
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  min_sharpe_val: 0.2
+  
+  # min_active_ratio:
+  #   定义: 最低持仓满足率 (实际持仓数 / top_k)
+  #   用法: active_ratio < min_active_ratio -> 惩罚 -4.0
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  min_active_ratio: 0.3
+  
+  # min_valid_days:
+  #   定义: 训练/验证期间最少有效交易天数
+  #   用法: valid_days < min_valid_days -> 惩罚 -2.5
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  min_valid_days: 20
+  
+  # min_valid_count:
+  #   定义: 实盘模式下最少有效标的数量 (熔断阈值)
+  #   用法: 当可交易标的数 < min_valid_count 时触发熔断
+  #   引用位置: model_core/config.py (预留，暂未使用)
+  min_valid_count: 30
+  
+  # top_k:
+  #   定义: 策略每日选股数量
+  #   用法: 每日选取因子值 Top-K 的标的持仓
+  #   引用位置:
+  #     - model_core/engine.py -> CBBacktest(top_k=RobustConfig.TOP_K)
+  #     - model_core/backtest.py -> __init__()
+  top_k: 10
+
+  # --------------------------------------------------------------------------
+  # 交易费率 (Transaction Fee)
+  # --------------------------------------------------------------------------
+  # fee_rate:
+  #   定义: 单边交易费率
+  #   用法: 每次换仓按 fee_rate 扣除成本
+  #   引用位置:
+  #     - model_core/backtest.py -> __init__()
+  #     - model_core/engine.py -> 打印训练配置
+  fee_rate: 0.0005  # 千分之 0.5
+
+  # --------------------------------------------------------------------------
+  # 评分权重 (Scoring Weights)
+  # --------------------------------------------------------------------------
+  # 评分公式:
+  # final_score = (base_score + stability_bonus) × scale + ret_bonus - mdd_penalty - len_penalty
+  #
+  # 其中:
+  #   base_score = train_weight × sharpe_train + val_weight × sharpe_val
+  #   stability_bonus = stability_metric × stability_w
+  #   ret_bonus = annualized_ret × ret_w
+  #   mdd_penalty = max_drawdown × mdd_w
+  #   len_penalty = len(formula) × len_w
+  
+  # train_weight / val_weight:
+  #   定义: 训练集/验证集 Sharpe 的权重
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  train_weight: 0.4
+  val_weight: 0.6
+  
+  # stability_w:
+  #   定义: 稳定性得分权重 (正向加分)
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  stability_w: 0.5
+  
+  # ret_w:
+  #   定义: 年化收益率奖励权重
+  #   示例: 50% 年化收益 -> +3.0 分 (0.5 × 6.0)
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  ret_w: 6.0
+  
+  # mdd_w:
+  #   定义: 最大回撤惩罚权重
+  #   示例: 30% 回撤 -> -3.6 分 (0.3 × 12.0)
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  mdd_w: 12.0
+  
+  # len_w:
+  #   定义: 公式长度惩罚权重 (鼓励简洁公式)
+  #   示例: 10 token 公式 -> -1.0 分 (10 × 0.1)
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  len_w: 0.1
+  
+  # scale:
+  #   定义: 最终分数缩放系数
+  #   用法: (base_score + stability_bonus) × scale
+  #   引用位置: model_core/engine.py -> _worker_eval()
+  scale: 5.0
+
+  # --------------------------------------------------------------------------
+  # 熵正则化 (Entropy Regularization)
+  # --------------------------------------------------------------------------
+  # 用于平衡探索与利用，训练过程中线性衰减
+  # current_beta = entropy_beta_start - (start - end) × (step / total_steps)
+  
+  # entropy_beta_start:
+  #   定义: 初始熵正则系数 (鼓励探索)
+  #   引用位置: model_core/engine.py -> train() 循环内
+  entropy_beta_start: 0.04
+  
+  # entropy_beta_end:
+  #   定义: 结束熵正则系数 (保证收敛)
+  #   引用位置: model_core/engine.py -> train() 循环内
+  entropy_beta_end: 0.005
+
+  # --------------------------------------------------------------------------
+  # 多样性池 (Diversity Pool)
+  # --------------------------------------------------------------------------
+  # diversity_pool_size:
+  #   定义: 多样性池最大容量
+  #   用法: 保存 Top-N 个高分且多样化的公式，用于结果输出
+  #   引用位置:
+  #     - model_core/engine.py -> 入池逻辑
+  #     - model_core/engine.py -> _save_results()
+  diversity_pool_size: 50

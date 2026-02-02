@@ -10,6 +10,7 @@ from tqdm import tqdm
 import json
 import os
 import time
+import argparse
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
@@ -453,6 +454,33 @@ class AlphaEngine:
         torch.save(self.model.state_dict(), os.path.join(output_dir, 'alphagpt_cb.pt'))
 
 if __name__ == "__main__":
+    # 命令行参数解析
+    parser = argparse.ArgumentParser(
+        description='AlphaGPT 训练引擎 - 可转债因子挖掘',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  python -m model_core.engine                          # 使用默认配置
+  python -m model_core.engine --config my_config.yaml  # 使用自定义配置
+        """
+    )
+    parser.add_argument(
+        '--config', '-c',
+        type=str,
+        default=None,
+        help='配置文件路径 (YAML 格式)，不指定则使用 default_config.yaml'
+    )
+    args = parser.parse_args()
+    
+    # 加载配置 (必须在创建 AlphaEngine 之前)
+    from .config_loader import load_config
+    config = load_config(args.config)
+    
+    if args.config:
+        print(f"📁 已加载自定义配置: {args.config}")
+    else:
+        print("📁 使用默认配置: default_config.yaml")
+    
     # Windows 为了支持 ProcessPool，必须要有这个 protect
     eng = AlphaEngine()
     eng.train()

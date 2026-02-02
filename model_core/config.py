@@ -1,3 +1,9 @@
+"""
+AlphaGPT 配置模块
+
+静态配置 (设备、数据路径、基础因子) 保留在此文件中。
+动态配置 (INPUT_FEATURES, RobustConfig) 从 YAML 文件加载。
+"""
 import torch
 import os
 
@@ -8,23 +14,136 @@ try:
 except ImportError:
     HAS_IPEX = False
 
-class ModelConfig:
-    # 设备检测: Intel XPU > NVIDIA CUDA > CPU
+
+class ConfigMeta(type):
+    """
+    配置元类
+    
+    用于支持类属性的动态访问 (Class Property)。
+    解决了 @property 只能用于实例而无法用于类本身的问题。
+    """
+    
+    # ========== ModelConfig 动态属性 ==========
+    @property
+    def INPUT_FEATURES(cls) -> list:
+        from .config_loader import get_input_features
+        return get_input_features()
+    
+    @property
+    def INPUT_DIM(cls) -> int:
+        return len(cls.INPUT_FEATURES)
+
+    # ========== RobustConfig 动态属性 ==========
+    @property
+    def _rc(cls):
+        from .config_loader import get_robust_config
+        return get_robust_config()
+
+    @property
+    def TRAIN_TEST_SPLIT_DATE(cls) -> str:
+        return cls._rc.get('train_test_split_date', '2024-05-01')
+    
+    @property
+    def ROLLING_WINDOW(cls) -> int:
+        return cls._rc.get('rolling_window', 60)
+    
+    @property
+    def STABILITY_K(cls) -> float:
+        return cls._rc.get('stability_k', 1.5)
+    
+    @property
+    def MIN_SHARPE_VAL(cls) -> float:
+        return cls._rc.get('min_sharpe_val', 0.2)
+    
+    @property
+    def MIN_ACTIVE_RATIO(cls) -> float:
+        return cls._rc.get('min_active_ratio', 0.3)
+    
+    @property
+    def MIN_VALID_DAYS(cls) -> int:
+        return cls._rc.get('min_valid_days', 20)
+    
+    @property
+    def MIN_VALID_COUNT(cls) -> int:
+        return cls._rc.get('min_valid_count', 30)
+    
+    @property
+    def TOP_K(cls) -> int:
+        return cls._rc.get('top_k', 10)
+    
+    @property
+    def FEE_RATE(cls) -> float:
+        return cls._rc.get('fee_rate', 0.0005)
+    
+    @property
+    def TRAIN_WEIGHT(cls) -> float:
+        return cls._rc.get('train_weight', 0.4)
+    
+    @property
+    def VAL_WEIGHT(cls) -> float:
+        return cls._rc.get('val_weight', 0.6)
+    
+    @property
+    def STABILITY_W(cls) -> float:
+        return cls._rc.get('stability_w', 0.5)
+    
+    @property
+    def RET_W(cls) -> float:
+        return cls._rc.get('ret_w', 6.0)
+    
+    @property
+    def MDD_W(cls) -> float:
+        return cls._rc.get('mdd_w', 12.0)
+    
+    @property
+    def LEN_W(cls) -> float:
+        return cls._rc.get('len_w', 0.1)
+    
+    @property
+    def SCALE(cls) -> float:
+        return cls._rc.get('scale', 5.0)
+    
+    @property
+    def ENTROPY_BETA_START(cls) -> float:
+        return cls._rc.get('entropy_beta_start', 0.04)
+    
+    @property
+    def ENTROPY_BETA_END(cls) -> float:
+        return cls._rc.get('entropy_beta_end', 0.005)
+    
+    @property
+    def DIVERSITY_POOL_SIZE(cls) -> int:
+        return cls._rc.get('diversity_pool_size', 50)
+
+
+class ModelConfig(metaclass=ConfigMeta):
+    """
+    模型静态配置
+    
+    包含与硬件、数据源相关的不可变配置。
+    INPUT_FEATURES 等可调参数已移至 default_config.yaml。
+    """
+    # ========== 设备检测 ==========
+    # Intel XPU > NVIDIA CUDA > CPU
     if HAS_IPEX and torch.xpu.is_available():
         DEVICE = torch.device("xpu")
     elif torch.cuda.is_available():
         DEVICE = torch.device("cuda")
     else:
         DEVICE = torch.device("cpu")
-    # DB_URL = f"postgresql://{os.getenv('DB_USER','postgres')}:{os.getenv('DB_PASSWORD','password')}@{os.getenv('DB_HOST','localhost')}:5432/{os.getenv('DB_NAME','crypto_quant')}"
+    
+    # ========== 数据路径 ==========
     CB_PARQUET_PATH = r"C:\Trading\Projects\AlphaGPT\data\cb_data.pq"
+    
+    # ========== 训练参数 ==========
     BATCH_SIZE = 512
     TRAIN_STEPS = 100
     MAX_FORMULA_LEN = 12
     TRADE_SIZE_USD = 1000.0
-    MIN_LIQUIDITY = 5000.0 # 低于此流动性视为归零/无法交易
-    BASE_FEE = 0.005 # 基础费率 0.5% (Swap + Gas + Jito Tip)
-    MIN_SCORE_IMPROVEMENT = 1e-4 # New King 最小提升阈值
+    MIN_LIQUIDITY = 5000.0  # 低于此流动性视为归零/无法交易
+    BASE_FEE = 0.005  # 基础费率 0.5% (Swap + Gas + Jito Tip)
+    MIN_SCORE_IMPROVEMENT = 1e-4  # New King 最小提升阈值
+    
     # ========== 灵活因子配置 ==========
     # 基础因子: (内部名称, Parquet列名, 填充方法)
     # 填充方法: 'ffill' = 前值填充(适合价格), 'zero' = 零填充(适合成交量)
@@ -47,8 +166,7 @@ class ModelConfig:
         ('PURE_VALUE', 'pure_value', 'ffill'),    # 纯债价值
         ('ALPHA_PCT_CHG_5', 'alpha_pct_chg_5', 'ffill'),    # 五日涨跌幅差
         ('CAP_MV_RATE', 'cap_mv_rate', 'ffill'),    # 转债市占比
-        ('TURNOVER', 'turnover', 'ffill'),    # 转债市占比
-        
+        ('TURNOVER', 'turnover', 'ffill'),    # 换手率
         
         # 正股行情
         ('STK_CLOSE', 'close_stk', 'ffill'),
@@ -63,55 +181,25 @@ class ModelConfig:
         ('PREM_Z', 'convprem_zscore', 'ffill'),       # 溢价率 Z-Score
     ]
     
-    # AlphaGPT 输入特征 (这些会成为公式的"原子")
-    # 从 BASIC_FACTORS 中选取用于模型输入的特征
-
-    INPUT_FEATURES = ['CLOSE', 'VOL', 'PREM', 'DBLOW','REMAIN_SIZE','PCT_CHG','PCT_CHG_5','VOLATILITY_STK','PCT_CHG_STK','PCT_CHG_5_STK','PURE_VALUE','ALPHA_PCT_CHG_5','CAP_MV_RATE','TURNOVER', 'IV', 'VOL_STK_60', 'PREM_Z']
+    # ========== 动态配置属性 ==========
+    # INPUT_FEATURES 和 INPUT_DIM 现由 ConfigMeta 动态提供
     
-    # 动态计算 INPUT_DIM
-    INPUT_DIM = len(INPUT_FEATURES)
+    @classmethod
+    def get_input_features(cls) -> list:
+        """获取输入特征列表 (保留方法访问方式)"""
+        return cls.INPUT_FEATURES
+    
+    @classmethod
+    def get_input_dim(cls) -> int:
+        """获取输入维度 (保留方法访问方式)"""
+        return cls.INPUT_DIM
 
 
-class RobustConfig:
+class RobustConfig(metaclass=ConfigMeta):
     """
     稳健性增强配置 (Robustness Enhancement Config)
     
-    控制分段验证、稳定性惩罚、回撤惩罚、可交易性约束等参数。
+    所有参数现在从 YAML 配置文件动态加载。
+    通过 metaclss 实现参数作为类属性直接访问，如 RobustConfig.TOP_K。
     """
-    # ========== 分段验证 (Split Validation) ==========
-    TRAIN_TEST_SPLIT_DATE = '2024-05-01'  # 训练/验证切分日期
-    
-    # ========== 滚动稳定性 (Rolling Stability) ==========
-    ROLLING_WINDOW = 60       # 滚动窗口天数
-    STABILITY_K = 1.5         # 稳定性系数: Stability = Mean - K * Std
-    
-    # ========== 硬淘汰阈值 (Hard Thresholds) ==========
-    MIN_SHARPE_VAL = 0.2      # 验证集最低 Sharpe，低于此直接淘汰
-    MIN_ACTIVE_RATIO = 0.3    # 最低持仓满足率 (实际持仓数 / top_k)
-    MIN_VALID_DAYS = 20       # 最少有效交易天数
-    MIN_VALID_COUNT = 30      # 实盘最少有效标的数量 (熔断阈值)
-    TOP_K = 10                # 策略选股数量
-    
-    # ========== 交易费率 (Transaction Fee) ==========
-    FEE_RATE = 0.0005          # 单边交易费率 (千分之0.5)
-    
-    # ========== 软评分权重 (Soft Scoring Weights) ==========
-    # 基础分权重
-    TRAIN_WEIGHT = 0.4        # 训练集 Sharpe 占比
-    VAL_WEIGHT = 0.6          # 验证集 Sharpe 占比
-    
-    # 惩罚/奖励项权重
-    STABILITY_W = 0.5         # 稳定性得分权重 (正向加分)
-    RET_W = 6.0               # 年化收益率奖励权重 (例: 50% 年化 -> +2.5 分)
-    MDD_W = 12.0              # 回撤惩罚权重 (例: 0.3 MDD -> 6 分扣除)
-    LEN_W = 0.1               # 长度惩罚权重 (略微降低，让位给稳健性)
-    
-    # 总分缩放
-    SCALE = 5.0               # 最终分数缩放系数
-    
-    # ========== 熵正则化 (Entropy Regularization) ==========
-    ENTROPY_BETA_START = 0.04 # 初始熵正则系数 (鼓励探索) V2.3: 提升以增强探索
-    ENTROPY_BETA_END = 0.005  # 结束熵正则系数 (保证收敛)
-    
-    # ========== 多样性池 (Diversity Pool) ==========
-    DIVERSITY_POOL_SIZE = 50  # 多样性池最大容量
+    pass
