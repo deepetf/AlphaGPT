@@ -1,0 +1,87 @@
+{
+  "date": "2023-06-09",
+  "created_at": "2026-02-01T17:09:43.209753",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123087.SZ",
+      "name": "明电转债",
+      "score": 7.0623
+    },
+    {
+      "rank": 2,
+      "code": "123018.SZ",
+      "name": "溢利转债",
+      "score": 6.949
+    },
+    {
+      "rank": 3,
+      "code": "123085.SZ",
+      "name": "万顺转2",
+      "score": 6.8623
+    },
+    {
+      "rank": 4,
+      "code": "123061.SZ",
+      "name": "航新转债",
+      "score": 6.6798
+    },
+    {
+      "rank": 5,
+      "code": "113594.SH",
+      "name": "淳中转债",
+      "score": 6.6675
+    },
+    {
+      "rank": 6,
+      "code": "113593.SH",
+      "name": "沪工转债",
+      "score": 6.6548
+    },
+    {
+      "rank": 7,
+      "code": "128044.SZ",
+      "name": "岭南转债",
+      "score": 6.5818
+    },
+    {
+      "rank": 8,
+      "code": "123115.SZ",
+      "name": "捷捷转债",
+      "score": 6.5454
+    },
+    {
+      "rank": 9,
+      "code": "128049.SZ",
+      "name": "华源转债",
+      "score": 6.5382
+    },
+    {
+      "rank": 10,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 6.5181
+    }
+  ],
+  "orders": [
+    {
+      "code": "128042.SZ",
+      "name": "凯中转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 118.99800109863281,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123061.SZ",
+      "name": "航新转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 127.0,
+      "reason": "Top-K入选",
+      "rank": 4
+    }
+  ]
+}

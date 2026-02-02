@@ -1,0 +1,105 @@
+{
+  "date": "2023-03-20",
+  "created_at": "2026-02-01T17:09:41.158299",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113666.SH",
+      "name": "爱玛转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "123175.SZ",
+      "name": "百畅转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 3,
+      "code": "118031.SH",
+      "name": "天23转债",
+      "score": 16.4486
+    },
+    {
+      "rank": 4,
+      "code": "128049.SZ",
+      "name": "华源转债",
+      "score": 6.6245
+    },
+    {
+      "rank": 5,
+      "code": "127049.SZ",
+      "name": "希望转2",
+      "score": 6.4017
+    },
+    {
+      "rank": 6,
+      "code": "123011.SZ",
+      "name": "德尔转债",
+      "score": 6.3498
+    },
+    {
+      "rank": 7,
+      "code": "113016.SH",
+      "name": "小康转债",
+      "score": 6.3408
+    },
+    {
+      "rank": 8,
+      "code": "128122.SZ",
+      "name": "兴森转债",
+      "score": 6.2039
+    },
+    {
+      "rank": 9,
+      "code": "128070.SZ",
+      "name": "智能转债",
+      "score": 6.1889
+    },
+    {
+      "rank": 10,
+      "code": "127021.SZ",
+      "name": "特发转2",
+      "score": 6.1524
+    }
+  ],
+  "orders": [
+    {
+      "code": "127031.SZ",
+      "name": "洋丰转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 110.2979965209961,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127022.SZ",
+      "name": "恒逸转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 109.4000015258789,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113666.SH",
+      "name": "爱玛转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 128.02099609375,
+      "reason": "Top-K入选",
+      "rank": 1
+    },
+    {
+      "code": "123011.SZ",
+      "name": "德尔转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 119.51000213623047,
+      "reason": "Top-K入选",
+      "rank": 6
+    }
+  ]
+}

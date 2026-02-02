@@ -1,0 +1,87 @@
+{
+  "date": "2025-07-16",
+  "created_at": "2026-02-01T17:01:51.415527",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "118057.SH",
+      "name": "甬矽转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "111022.SH",
+      "name": "锡振转债",
+      "score": 18.9106
+    },
+    {
+      "rank": 3,
+      "code": "113695.SH",
+      "name": "华辰转债",
+      "score": 13.0586
+    },
+    {
+      "rank": 4,
+      "code": "118056.SH",
+      "name": "路维转债",
+      "score": 13.0585
+    },
+    {
+      "rank": 5,
+      "code": "128127.SZ",
+      "name": "文科转债",
+      "score": 6.2648
+    },
+    {
+      "rank": 6,
+      "code": "113610.SH",
+      "name": "灵康转债",
+      "score": 6.1848
+    },
+    {
+      "rank": 7,
+      "code": "128124.SZ",
+      "name": "科华转债",
+      "score": 6.1217
+    },
+    {
+      "rank": 8,
+      "code": "128120.SZ",
+      "name": "联诚转债",
+      "score": 6.1054
+    },
+    {
+      "rank": 9,
+      "code": "113593.SH",
+      "name": "沪工转债",
+      "score": 6.0843
+    },
+    {
+      "rank": 10,
+      "code": "123063.SZ",
+      "name": "大禹转债",
+      "score": 5.8022
+    }
+  ],
+  "orders": [
+    {
+      "code": "123072.SZ",
+      "name": "乐歌转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 130.5,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118057.SH",
+      "name": "甬矽转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 127.04199981689453,
+      "reason": "Top-K入选",
+      "rank": 1
+    }
+  ]
+}

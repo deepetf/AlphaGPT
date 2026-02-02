@@ -1,0 +1,87 @@
+{
+  "date": "2025-01-08",
+  "created_at": "2026-02-01T17:01:41.185203",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113643.SH",
+      "name": "风语转债",
+      "score": 6.2414
+    },
+    {
+      "rank": 2,
+      "code": "128072.SZ",
+      "name": "翔鹭转债",
+      "score": 5.9213
+    },
+    {
+      "rank": 3,
+      "code": "123166.SZ",
+      "name": "蒙泰转债",
+      "score": 5.9102
+    },
+    {
+      "rank": 4,
+      "code": "110075.SH",
+      "name": "南航转债",
+      "score": 5.8868
+    },
+    {
+      "rank": 5,
+      "code": "111008.SH",
+      "name": "沿浦转债",
+      "score": 5.8597
+    },
+    {
+      "rank": 6,
+      "code": "113640.SH",
+      "name": "苏利转债",
+      "score": 5.7935
+    },
+    {
+      "rank": 7,
+      "code": "118021.SH",
+      "name": "新致转债",
+      "score": 5.6956
+    },
+    {
+      "rank": 8,
+      "code": "123160.SZ",
+      "name": "泰福转债",
+      "score": 5.617
+    },
+    {
+      "rank": 9,
+      "code": "127055.SZ",
+      "name": "精装转债",
+      "score": 5.6137
+    },
+    {
+      "rank": 10,
+      "code": "127047.SZ",
+      "name": "帝欧转债",
+      "score": 5.5488
+    }
+  ],
+  "orders": [
+    {
+      "code": "127046.SZ",
+      "name": "百润转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 113.5,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127047.SZ",
+      "name": "帝欧转债",
+      "side": "BUY",
+      "quantity": 110,
+      "price": 83.6969985961914,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

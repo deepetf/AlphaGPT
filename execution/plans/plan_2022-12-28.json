@@ -1,0 +1,114 @@
+{
+  "date": "2022-12-28",
+  "created_at": "2026-02-01T17:15:54.927058",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113662.SH",
+      "name": "豪能转债",
+      "score": 16.448
+    },
+    {
+      "rank": 2,
+      "code": "118027.SH",
+      "name": "宏图转债",
+      "score": 13.0597
+    },
+    {
+      "rank": 3,
+      "code": "113661.SH",
+      "name": "福22转债",
+      "score": 13.0586
+    },
+    {
+      "rank": 4,
+      "code": "123015.SZ",
+      "name": "蓝盾转退",
+      "score": 4.9409
+    },
+    {
+      "rank": 5,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 4.4409
+    },
+    {
+      "rank": 6,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 4.395
+    },
+    {
+      "rank": 7,
+      "code": "123014.SZ",
+      "name": "凯发转债",
+      "score": 4.3007
+    },
+    {
+      "rank": 8,
+      "code": "113065.SH",
+      "name": "齐鲁转债",
+      "score": 4.0418
+    },
+    {
+      "rank": 9,
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "score": 3.7925
+    },
+    {
+      "rank": 10,
+      "code": "118021.SH",
+      "name": "新致转债",
+      "score": 3.4716
+    }
+  ],
+  "orders": [
+    {
+      "code": "113663.SH",
+      "name": "新化转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 120.77400207519531,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123171.SZ",
+      "name": "共同转债",
+      "side": "SELL",
+      "quantity": 60,
+      "price": 130.08099365234375,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 130.10000610351562,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "118021.SH",
+      "name": "新致转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 118.13700103759766,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "123014.SZ",
+      "name": "凯发转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 131.3000030517578,
+      "reason": "Top-K入选",
+      "rank": 7
+    }
+  ]
+}

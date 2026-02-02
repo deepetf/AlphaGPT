@@ -1,0 +1,87 @@
+{
+  "date": "2023-01-17",
+  "created_at": "2026-02-01T17:09:39.381989",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "127079.SZ",
+      "name": "华亚转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 2,
+      "code": "113665.SH",
+      "name": "汇通转债",
+      "score": 13.059
+    },
+    {
+      "rank": 3,
+      "code": "127077.SZ",
+      "name": "华宏转债",
+      "score": 9.2759
+    },
+    {
+      "rank": 4,
+      "code": "127078.SZ",
+      "name": "优彩转债",
+      "score": 6.2013
+    },
+    {
+      "rank": 5,
+      "code": "118029.SH",
+      "name": "富淼转债",
+      "score": 6.2013
+    },
+    {
+      "rank": 6,
+      "code": "123015.SZ",
+      "name": "蓝盾转退",
+      "score": 4.8861
+    },
+    {
+      "rank": 7,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 4.4945
+    },
+    {
+      "rank": 8,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 4.2873
+    },
+    {
+      "rank": 9,
+      "code": "123014.SZ",
+      "name": "凯发转债",
+      "score": 4.1711
+    },
+    {
+      "rank": 10,
+      "code": "110091.SH",
+      "name": "合力转债",
+      "score": 4.0352
+    }
+  ],
+  "orders": [
+    {
+      "code": "123172.SZ",
+      "name": "漱玉转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 119.197998046875,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123014.SZ",
+      "name": "凯发转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 133.58999633789062,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
+}

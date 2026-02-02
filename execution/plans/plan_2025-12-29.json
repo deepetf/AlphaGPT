@@ -1,0 +1,87 @@
+{
+  "date": "2025-12-29",
+  "created_at": "2026-02-01T17:02:00.725718",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123261.SZ",
+      "name": "普联转债",
+      "score": 9.2779
+    },
+    {
+      "rank": 2,
+      "code": "118045.SH",
+      "name": "盟升转债",
+      "score": 7.2029
+    },
+    {
+      "rank": 3,
+      "code": "113601.SH",
+      "name": "塞力转债",
+      "score": 7.0958
+    },
+    {
+      "rank": 4,
+      "code": "118044.SH",
+      "name": "赛特转债",
+      "score": 7.0559
+    },
+    {
+      "rank": 5,
+      "code": "110095.SH",
+      "name": "双良转债",
+      "score": 6.4249
+    },
+    {
+      "rank": 6,
+      "code": "128127.SZ",
+      "name": "文科转债",
+      "score": 6.3865
+    },
+    {
+      "rank": 7,
+      "code": "118048.SH",
+      "name": "利扬转债",
+      "score": 6.2659
+    },
+    {
+      "rank": 8,
+      "code": "123207.SZ",
+      "name": "冠中转债",
+      "score": 6.248
+    },
+    {
+      "rank": 9,
+      "code": "123196.SZ",
+      "name": "正元转02",
+      "score": 6.2132
+    },
+    {
+      "rank": 10,
+      "code": "118016.SH",
+      "name": "京源转债",
+      "score": 6.2101
+    }
+  ],
+  "orders": [
+    {
+      "code": "113677.SH",
+      "name": "华懋转债",
+      "side": "SELL",
+      "quantity": 40,
+      "price": 208.62399291992188,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123196.SZ",
+      "name": "正元转02",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 130.3419952392578,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
+}

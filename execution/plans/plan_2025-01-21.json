@@ -1,0 +1,105 @@
+{
+  "date": "2025-01-21",
+  "created_at": "2026-02-01T17:01:41.826884",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "110098.SH",
+      "name": "南药转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 2,
+      "code": "128072.SZ",
+      "name": "翔鹭转债",
+      "score": 5.2532
+    },
+    {
+      "rank": 3,
+      "code": "127033.SZ",
+      "name": "中装转2",
+      "score": 5.1194
+    },
+    {
+      "rank": 4,
+      "code": "113601.SH",
+      "name": "塞力转债",
+      "score": 4.9049
+    },
+    {
+      "rank": 5,
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "score": 4.8799
+    },
+    {
+      "rank": 6,
+      "code": "123031.SZ",
+      "name": "晶瑞转债",
+      "score": 4.8351
+    },
+    {
+      "rank": 7,
+      "code": "113569.SH",
+      "name": "科达转债",
+      "score": 4.7317
+    },
+    {
+      "rank": 8,
+      "code": "113589.SH",
+      "name": "天创转债",
+      "score": 4.7269
+    },
+    {
+      "rank": 9,
+      "code": "123076.SZ",
+      "name": "强力转债",
+      "score": 4.7216
+    },
+    {
+      "rank": 10,
+      "code": "113606.SH",
+      "name": "荣泰转债",
+      "score": 4.6462
+    }
+  ],
+  "orders": [
+    {
+      "code": "128127.SZ",
+      "name": "文科转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 110.13200378417969,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123061.SZ",
+      "name": "航新转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 133.8679962158203,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123076.SZ",
+      "name": "强力转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 121.49700164794922,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "113606.SH",
+      "name": "荣泰转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 115.0,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

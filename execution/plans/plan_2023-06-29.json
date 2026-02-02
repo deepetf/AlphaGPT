@@ -1,0 +1,87 @@
+{
+  "date": "2023-06-29",
+  "created_at": "2026-02-01T17:09:43.872150",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "128085.SZ",
+      "name": "鸿达转债",
+      "score": 6.1325
+    },
+    {
+      "rank": 2,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 5.97
+    },
+    {
+      "rank": 3,
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "score": 5.6209
+    },
+    {
+      "rank": 4,
+      "code": "113546.SH",
+      "name": "迪贝转债",
+      "score": 5.3623
+    },
+    {
+      "rank": 5,
+      "code": "128079.SZ",
+      "name": "英联转债",
+      "score": 5.3608
+    },
+    {
+      "rank": 6,
+      "code": "123118.SZ",
+      "name": "惠城转债",
+      "score": 5.3337
+    },
+    {
+      "rank": 7,
+      "code": "128070.SZ",
+      "name": "智能转债",
+      "score": 5.2968
+    },
+    {
+      "rank": 8,
+      "code": "113628.SH",
+      "name": "晨丰转债",
+      "score": 5.271
+    },
+    {
+      "rank": 9,
+      "code": "123124.SZ",
+      "name": "晶瑞转2",
+      "score": 5.1589
+    },
+    {
+      "rank": 10,
+      "code": "128082.SZ",
+      "name": "华锋转债",
+      "score": 5.1129
+    }
+  ],
+  "orders": [
+    {
+      "code": "128035.SZ",
+      "name": "大族转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 103.83000183105469,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123124.SZ",
+      "name": "晶瑞转2",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 118.01000213623047,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
+}

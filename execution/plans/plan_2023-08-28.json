@@ -1,0 +1,87 @@
+{
+  "date": "2023-08-28",
+  "created_at": "2026-02-01T17:09:45.702440",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113068.SH",
+      "name": "金铜转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "123217.SZ",
+      "name": "富仕转债",
+      "score": 18.9094
+    },
+    {
+      "rank": 3,
+      "code": "123216.SZ",
+      "name": "科顺转债",
+      "score": 16.448
+    },
+    {
+      "rank": 4,
+      "code": "123215.SZ",
+      "name": "铭利转债",
+      "score": 16.4479
+    },
+    {
+      "rank": 5,
+      "code": "118041.SH",
+      "name": "星球转债",
+      "score": 13.0587
+    },
+    {
+      "rank": 6,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 7.4802
+    },
+    {
+      "rank": 7,
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "score": 6.4984
+    },
+    {
+      "rank": 8,
+      "code": "113578.SH",
+      "name": "全筑转债",
+      "score": 6.4053
+    },
+    {
+      "rank": 9,
+      "code": "123214.SZ",
+      "name": "东宝转债",
+      "score": 6.2074
+    },
+    {
+      "rank": 10,
+      "code": "123210.SZ",
+      "name": "信服转债",
+      "score": 6.2059
+    }
+  ],
+  "orders": [
+    {
+      "code": "113067.SH",
+      "name": "燃23转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 122.88099670410156,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113068.SH",
+      "name": "金铜转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 118.04499816894531,
+      "reason": "Top-K入选",
+      "rank": 1
+    }
+  ]
+}

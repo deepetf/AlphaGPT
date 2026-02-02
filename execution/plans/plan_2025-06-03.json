@@ -1,0 +1,123 @@
+{
+  "date": "2025-06-03",
+  "created_at": "2026-02-01T17:01:48.490873",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123131.SZ",
+      "name": "奥飞转债",
+      "score": 6.2443
+    },
+    {
+      "rank": 2,
+      "code": "123118.SZ",
+      "name": "惠城转债",
+      "score": 6.0447
+    },
+    {
+      "rank": 3,
+      "code": "123124.SZ",
+      "name": "晶瑞转2",
+      "score": 6.0369
+    },
+    {
+      "rank": 4,
+      "code": "127106.SZ",
+      "name": "伟隆转债",
+      "score": 5.8285
+    },
+    {
+      "rank": 5,
+      "code": "123241.SZ",
+      "name": "欧通转债",
+      "score": 5.8136
+    },
+    {
+      "rank": 6,
+      "code": "113685.SH",
+      "name": "升24转债",
+      "score": 5.7238
+    },
+    {
+      "rank": 7,
+      "code": "127046.SZ",
+      "name": "百润转债",
+      "score": 5.6998
+    },
+    {
+      "rank": 8,
+      "code": "113640.SH",
+      "name": "苏利转债",
+      "score": 5.6968
+    },
+    {
+      "rank": 9,
+      "code": "113686.SH",
+      "name": "泰瑞转债",
+      "score": 5.6591
+    },
+    {
+      "rank": 10,
+      "code": "127043.SZ",
+      "name": "川恒转债",
+      "score": 5.6512
+    }
+  ],
+  "orders": [
+    {
+      "code": "123250.SZ",
+      "name": "嘉益转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 120.19200134277344,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123245.SZ",
+      "name": "集智转债",
+      "side": "SELL",
+      "quantity": 40,
+      "price": 213.0,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127026.SZ",
+      "name": "超声转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 116.29100036621094,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127043.SZ",
+      "name": "川恒转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 132.8000030517578,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "113640.SH",
+      "name": "苏利转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 119.36299896240234,
+      "reason": "Top-K入选",
+      "rank": 8
+    },
+    {
+      "code": "127046.SZ",
+      "name": "百润转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 119.6989974975586,
+      "reason": "Top-K入选",
+      "rank": 7
+    }
+  ]
+}

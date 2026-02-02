@@ -1,0 +1,105 @@
+{
+  "date": "2026-01-19",
+  "created_at": "2026-02-01T17:28:28.222829",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "118063.SH",
+      "name": "金05转债",
+      "score": 20.7233
+    },
+    {
+      "rank": 2,
+      "code": "123264.SZ",
+      "name": "双乐转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 3,
+      "code": "111024.SH",
+      "name": "澳弘转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 4,
+      "code": "123241.SZ",
+      "name": "欧通转债",
+      "score": 5.6856
+    },
+    {
+      "rank": 5,
+      "code": "118049.SH",
+      "name": "汇成转债",
+      "score": 5.6781
+    },
+    {
+      "rank": 6,
+      "code": "113686.SH",
+      "name": "泰瑞转债",
+      "score": 5.6755
+    },
+    {
+      "rank": 7,
+      "code": "111021.SH",
+      "name": "奥锐转债",
+      "score": 5.4692
+    },
+    {
+      "rank": 8,
+      "code": "118050.SH",
+      "name": "航宇转债",
+      "score": 5.4362
+    },
+    {
+      "rank": 9,
+      "code": "123155.SZ",
+      "name": "中陆转债",
+      "score": 5.4074
+    },
+    {
+      "rank": 10,
+      "code": "118057.SH",
+      "name": "甬矽转债",
+      "score": 5.3689
+    }
+  ],
+  "orders": [
+    {
+      "code": "123187.SZ",
+      "name": "超达转债",
+      "side": "SELL",
+      "quantity": 60,
+      "price": 181.47500610351562,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 138.8000030517578,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118050.SH",
+      "name": "航宇转债",
+      "side": "BUY",
+      "quantity": 20,
+      "price": 334.6300048828125,
+      "reason": "Top-K入选",
+      "rank": 8
+    },
+    {
+      "code": "118057.SH",
+      "name": "甬矽转债",
+      "side": "BUY",
+      "quantity": 40,
+      "price": 233.45899963378906,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

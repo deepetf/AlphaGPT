@@ -1,0 +1,68 @@
+{
+  "date": "2025-08-25",
+  "created_at": "2026-02-01T17:01:53.813294",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "score": 6.7739
+    },
+    {
+      "rank": 2,
+      "code": "127033.SZ",
+      "name": "中装转2",
+      "score": 6.5858
+    },
+    {
+      "rank": 3,
+      "code": "113575.SH",
+      "name": "东时转债",
+      "score": 6.0348
+    },
+    {
+      "rank": 4,
+      "code": "113565.SH",
+      "name": "宏辉转债",
+      "score": 5.7545
+    },
+    {
+      "rank": 5,
+      "code": "128105.SZ",
+      "name": "长集转债",
+      "score": 5.7533
+    },
+    {
+      "rank": 6,
+      "code": "113610.SH",
+      "name": "灵康转债",
+      "score": 5.6105
+    },
+    {
+      "rank": 7,
+      "code": "128101.SZ",
+      "name": "联创转债",
+      "score": 5.355
+    },
+    {
+      "rank": 8,
+      "code": "113577.SH",
+      "name": "春秋转债",
+      "score": 5.2255
+    },
+    {
+      "rank": 9,
+      "code": "127016.SZ",
+      "name": "鲁泰转债",
+      "score": 5.1084
+    },
+    {
+      "rank": 10,
+      "code": "123144.SZ",
+      "name": "裕兴转债",
+      "score": 5.0903
+    }
+  ],
+  "orders": []
+}

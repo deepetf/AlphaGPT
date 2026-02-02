@@ -1,0 +1,87 @@
+{
+  "date": "2025-10-23",
+  "created_at": "2026-02-01T17:01:56.514170",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113697.SH",
+      "name": "应流转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 2,
+      "code": "113589.SH",
+      "name": "天创转债",
+      "score": 4.4586
+    },
+    {
+      "rank": 3,
+      "code": "123138.SZ",
+      "name": "丝路转债",
+      "score": 4.33
+    },
+    {
+      "rank": 4,
+      "code": "123054.SZ",
+      "name": "思特转债",
+      "score": 4.317
+    },
+    {
+      "rank": 5,
+      "code": "113610.SH",
+      "name": "灵康转债",
+      "score": 4.2988
+    },
+    {
+      "rank": 6,
+      "code": "118057.SH",
+      "name": "甬矽转债",
+      "score": 4.282
+    },
+    {
+      "rank": 7,
+      "code": "127047.SZ",
+      "name": "帝欧转债",
+      "score": 4.2182
+    },
+    {
+      "rank": 8,
+      "code": "118000.SH",
+      "name": "嘉元转债",
+      "score": 4.2045
+    },
+    {
+      "rank": 9,
+      "code": "123088.SZ",
+      "name": "威唐转债",
+      "score": 4.1805
+    },
+    {
+      "rank": 10,
+      "code": "128138.SZ",
+      "name": "侨银转债",
+      "score": 4.1582
+    }
+  ],
+  "orders": [
+    {
+      "code": "123092.SZ",
+      "name": "天壕转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 139.0,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128138.SZ",
+      "name": "侨银转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 132.98500061035156,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

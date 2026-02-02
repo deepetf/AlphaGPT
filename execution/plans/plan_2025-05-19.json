@@ -1,0 +1,123 @@
+{
+  "date": "2025-05-19",
+  "created_at": "2026-02-01T17:01:47.568800",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123250.SZ",
+      "name": "嘉益转债",
+      "score": 5.7882
+    },
+    {
+      "rank": 2,
+      "code": "110062.SH",
+      "name": "烽火转债",
+      "score": 5.506
+    },
+    {
+      "rank": 3,
+      "code": "123052.SZ",
+      "name": "飞鹿转债",
+      "score": 5.4462
+    },
+    {
+      "rank": 4,
+      "code": "127106.SZ",
+      "name": "伟隆转债",
+      "score": 5.431
+    },
+    {
+      "rank": 5,
+      "code": "123054.SZ",
+      "name": "思特转债",
+      "score": 5.4166
+    },
+    {
+      "rank": 6,
+      "code": "123061.SZ",
+      "name": "航新转债",
+      "score": 5.3671
+    },
+    {
+      "rank": 7,
+      "code": "110063.SH",
+      "name": "鹰19转债",
+      "score": 5.3651
+    },
+    {
+      "rank": 8,
+      "code": "113593.SH",
+      "name": "沪工转债",
+      "score": 5.3626
+    },
+    {
+      "rank": 9,
+      "code": "128120.SZ",
+      "name": "联诚转债",
+      "score": 5.3488
+    },
+    {
+      "rank": 10,
+      "code": "123245.SZ",
+      "name": "集智转债",
+      "score": 5.3405
+    }
+  ],
+  "orders": [
+    {
+      "code": "128082.SZ",
+      "name": "华锋转债",
+      "side": "SELL",
+      "quantity": 60,
+      "price": 143.9969940185547,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123093.SZ",
+      "name": "金陵转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 123.68000030517578,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113549.SH",
+      "name": "白电转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 126.24400329589844,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127106.SZ",
+      "name": "伟隆转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 134.54600524902344,
+      "reason": "Top-K入选",
+      "rank": 4
+    },
+    {
+      "code": "110063.SH",
+      "name": "鹰19转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 111.90699768066406,
+      "reason": "Top-K入选",
+      "rank": 7
+    },
+    {
+      "code": "123245.SZ",
+      "name": "集智转债",
+      "side": "BUY",
+      "quantity": 40,
+      "price": 229.7209930419922,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "date": "2023-07-14",
+  "created_at": "2026-02-01T17:09:44.244833",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "111014.SH",
+      "name": "李子转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 2,
+      "code": "123199.SZ",
+      "name": "山河转债",
+      "score": 9.2784
+    },
+    {
+      "rank": 3,
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "score": 9.2784
+    },
+    {
+      "rank": 4,
+      "code": "127086.SZ",
+      "name": "恒邦转债",
+      "score": 9.2767
+    },
+    {
+      "rank": 5,
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "score": 6.9492
+    },
+    {
+      "rank": 6,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 6.819
+    },
+    {
+      "rank": 7,
+      "code": "113596.SH",
+      "name": "城地转债",
+      "score": 6.4573
+    },
+    {
+      "rank": 8,
+      "code": "123092.SZ",
+      "name": "天壕转债",
+      "score": 6.4143
+    },
+    {
+      "rank": 9,
+      "code": "123072.SZ",
+      "name": "乐歌转债",
+      "score": 6.3874
+    },
+    {
+      "rank": 10,
+      "code": "128042.SZ",
+      "name": "凯中转债",
+      "score": 6.341
+    }
+  ],
+  "orders": [
+    {
+      "code": "123013.SZ",
+      "name": "横河转债",
+      "side": "SELL",
+      "quantity": 20,
+      "price": 448.3059997558594,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118035.SH",
+      "name": "国力转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 150.2519989013672,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128042.SZ",
+      "name": "凯中转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 127.7020034790039,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "123092.SZ",
+      "name": "天壕转债",
+      "side": "BUY",
+      "quantity": 40,
+      "price": 221.11300659179688,
+      "reason": "Top-K入选",
+      "rank": 8
+    }
+  ]
+}

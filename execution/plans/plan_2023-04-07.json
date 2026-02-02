@@ -1,0 +1,105 @@
+{
+  "date": "2023-04-07",
+  "created_at": "2026-02-01T17:09:41.611508",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "118032.SH",
+      "name": "建龙转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "123015.SZ",
+      "name": "蓝盾转退",
+      "score": 7.6776
+    },
+    {
+      "rank": 3,
+      "code": "113576.SH",
+      "name": "起步转债",
+      "score": 7.2131
+    },
+    {
+      "rank": 4,
+      "code": "128026.SZ",
+      "name": "众兴转债",
+      "score": 7.0632
+    },
+    {
+      "rank": 5,
+      "code": "128085.SZ",
+      "name": "鸿达转债",
+      "score": 6.806
+    },
+    {
+      "rank": 6,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 6.6958
+    },
+    {
+      "rank": 7,
+      "code": "128025.SZ",
+      "name": "特一转债",
+      "score": 6.3294
+    },
+    {
+      "rank": 8,
+      "code": "123002.SZ",
+      "name": "国祯转债",
+      "score": 6.226
+    },
+    {
+      "rank": 9,
+      "code": "113016.SH",
+      "name": "小康转债",
+      "score": 6.1792
+    },
+    {
+      "rank": 10,
+      "code": "128023.SZ",
+      "name": "亚太转债",
+      "score": 6.1207
+    }
+  ],
+  "orders": [
+    {
+      "code": "128039.SZ",
+      "name": "三力转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 121.43499755859375,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123180.SZ",
+      "name": "浙矿转债",
+      "side": "SELL",
+      "quantity": 60,
+      "price": 138.5,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128023.SZ",
+      "name": "亚太转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 112.0,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "118032.SH",
+      "name": "建龙转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 122.625,
+      "reason": "Top-K入选",
+      "rank": 1
+    }
+  ]
+}

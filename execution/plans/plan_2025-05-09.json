@@ -1,0 +1,105 @@
+{
+  "date": "2025-05-09",
+  "created_at": "2026-02-01T17:01:46.948491",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "118055.SH",
+      "name": "伟测转债",
+      "score": 13.0595
+    },
+    {
+      "rank": 2,
+      "code": "123175.SZ",
+      "name": "百畅转债",
+      "score": 5.6027
+    },
+    {
+      "rank": 3,
+      "code": "128082.SZ",
+      "name": "华锋转债",
+      "score": 5.5069
+    },
+    {
+      "rank": 4,
+      "code": "123185.SZ",
+      "name": "能辉转债",
+      "score": 5.3935
+    },
+    {
+      "rank": 5,
+      "code": "123141.SZ",
+      "name": "宏丰转债",
+      "score": 5.3575
+    },
+    {
+      "rank": 6,
+      "code": "123142.SZ",
+      "name": "申昊转债",
+      "score": 5.3538
+    },
+    {
+      "rank": 7,
+      "code": "118038.SH",
+      "name": "金宏转债",
+      "score": 5.2122
+    },
+    {
+      "rank": 8,
+      "code": "123250.SZ",
+      "name": "嘉益转债",
+      "score": 5.1977
+    },
+    {
+      "rank": 9,
+      "code": "113589.SH",
+      "name": "天创转债",
+      "score": 5.1876
+    },
+    {
+      "rank": 10,
+      "code": "123189.SZ",
+      "name": "晓鸣转债",
+      "score": 5.148
+    }
+  ],
+  "orders": [
+    {
+      "code": "113694.SH",
+      "name": "清源转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 117.1969985961914,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118054.SH",
+      "name": "安集转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 137.29800415039062,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123250.SZ",
+      "name": "嘉益转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 121.55000305175781,
+      "reason": "Top-K入选",
+      "rank": 8
+    },
+    {
+      "code": "113589.SH",
+      "name": "天创转债",
+      "side": "BUY",
+      "quantity": 40,
+      "price": 216.9929962158203,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
+}

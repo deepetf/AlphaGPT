@@ -1,0 +1,123 @@
+{
+  "date": "2025-07-24",
+  "created_at": "2026-02-01T17:01:51.813991",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "111023.SH",
+      "name": "利柏转债",
+      "score": 18.9068
+    },
+    {
+      "rank": 2,
+      "code": "118057.SH",
+      "name": "甬矽转债",
+      "score": 6.1975
+    },
+    {
+      "rank": 3,
+      "code": "113033.SH",
+      "name": "利群转债",
+      "score": 6.0821
+    },
+    {
+      "rank": 4,
+      "code": "113565.SH",
+      "name": "宏辉转债",
+      "score": 5.9054
+    },
+    {
+      "rank": 5,
+      "code": "128127.SZ",
+      "name": "文科转债",
+      "score": 5.8856
+    },
+    {
+      "rank": 6,
+      "code": "128095.SZ",
+      "name": "恩捷转债",
+      "score": 5.788
+    },
+    {
+      "rank": 7,
+      "code": "123108.SZ",
+      "name": "乐普转2",
+      "score": 5.6779
+    },
+    {
+      "rank": 8,
+      "code": "128124.SZ",
+      "name": "科华转债",
+      "score": 5.663
+    },
+    {
+      "rank": 9,
+      "code": "128131.SZ",
+      "name": "崇达转2",
+      "score": 5.629
+    },
+    {
+      "rank": 10,
+      "code": "128101.SZ",
+      "name": "联创转债",
+      "score": 5.5948
+    }
+  ],
+  "orders": [
+    {
+      "code": "123064.SZ",
+      "name": "万孚转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 125.39900207519531,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128134.SZ",
+      "name": "鸿路转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 117.37999725341797,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123090.SZ",
+      "name": "三诺转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 119.63999938964844,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128095.SZ",
+      "name": "恩捷转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 121.0,
+      "reason": "Top-K入选",
+      "rank": 6
+    },
+    {
+      "code": "128101.SZ",
+      "name": "联创转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 128.88999938964844,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "123108.SZ",
+      "name": "乐普转2",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 113.0999984741211,
+      "reason": "Top-K入选",
+      "rank": 7
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "date": "2023-05-16",
+  "created_at": "2026-02-01T17:09:42.606363",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113670.SH",
+      "name": "金23转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "123192.SZ",
+      "name": "科思转债",
+      "score": 18.9104
+    },
+    {
+      "rank": 3,
+      "code": "123193.SZ",
+      "name": "海能转债",
+      "score": 13.0615
+    },
+    {
+      "rank": 4,
+      "code": "113669.SH",
+      "name": "景23转债",
+      "score": 13.0612
+    },
+    {
+      "rank": 5,
+      "code": "123195.SZ",
+      "name": "蓝晓转02",
+      "score": 9.2812
+    },
+    {
+      "rank": 6,
+      "code": "113628.SH",
+      "name": "晨丰转债",
+      "score": 5.5935
+    },
+    {
+      "rank": 7,
+      "code": "113060.SH",
+      "name": "浙22转债",
+      "score": 5.572
+    },
+    {
+      "rank": 8,
+      "code": "113652.SH",
+      "name": "伟22转债",
+      "score": 5.4551
+    },
+    {
+      "rank": 9,
+      "code": "113651.SH",
+      "name": "松霖转债",
+      "score": 5.4483
+    },
+    {
+      "rank": 10,
+      "code": "128025.SZ",
+      "name": "特一转债",
+      "score": 5.445
+    }
+  ],
+  "orders": [
+    {
+      "code": "123194.SZ",
+      "name": "百洋转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 126.51000213623047,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "111013.SH",
+      "name": "新港转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 137.83599853515625,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113670.SH",
+      "name": "金23转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 121.35800170898438,
+      "reason": "Top-K入选",
+      "rank": 1
+    },
+    {
+      "code": "128025.SZ",
+      "name": "特一转债",
+      "side": "BUY",
+      "quantity": 40,
+      "price": 200.5,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

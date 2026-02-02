@@ -1,0 +1,123 @@
+{
+  "date": "2025-02-17",
+  "created_at": "2026-02-01T17:01:43.125884",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113070.SH",
+      "name": "渝水转债",
+      "score": 18.9092
+    },
+    {
+      "rank": 2,
+      "code": "127090.SZ",
+      "name": "兴瑞转债",
+      "score": 5.2964
+    },
+    {
+      "rank": 3,
+      "code": "127088.SZ",
+      "name": "赫达转债",
+      "score": 5.2499
+    },
+    {
+      "rank": 4,
+      "code": "123203.SZ",
+      "name": "明电转02",
+      "score": 5.246
+    },
+    {
+      "rank": 5,
+      "code": "111016.SH",
+      "name": "神通转债",
+      "score": 5.2348
+    },
+    {
+      "rank": 6,
+      "code": "118042.SH",
+      "name": "奥维转债",
+      "score": 5.2271
+    },
+    {
+      "rank": 7,
+      "code": "123217.SZ",
+      "name": "富仕转债",
+      "score": 5.2198
+    },
+    {
+      "rank": 8,
+      "code": "118036.SH",
+      "name": "力合转债",
+      "score": 5.202
+    },
+    {
+      "rank": 9,
+      "code": "113675.SH",
+      "name": "新23转债",
+      "score": 5.1951
+    },
+    {
+      "rank": 10,
+      "code": "118043.SH",
+      "name": "福立转债",
+      "score": 5.1689
+    }
+  ],
+  "orders": [
+    {
+      "code": "127075.SZ",
+      "name": "百川转2",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 117.61699676513672,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123227.SZ",
+      "name": "雅创转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 141.20599365234375,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123232.SZ",
+      "name": "金现转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 133.0,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118043.SH",
+      "name": "福立转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 142.89300537109375,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "113675.SH",
+      "name": "新23转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 125.79000091552734,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "111016.SH",
+      "name": "神通转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 123.23699951171875,
+      "reason": "Top-K入选",
+      "rank": 5
+    }
+  ]
+}

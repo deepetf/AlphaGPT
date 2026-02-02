@@ -1,0 +1,105 @@
+{
+  "date": "2026-01-07",
+  "created_at": "2026-02-01T17:28:27.890473",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "118062.SH",
+      "name": "天准转债",
+      "score": 16.4497
+    },
+    {
+      "rank": 2,
+      "code": "123263.SZ",
+      "name": "鼎捷转债",
+      "score": 16.4486
+    },
+    {
+      "rank": 3,
+      "code": "123262.SZ",
+      "name": "神宇转债",
+      "score": 13.0614
+    },
+    {
+      "rank": 4,
+      "code": "118000.SH",
+      "name": "嘉元转债",
+      "score": 6.9468
+    },
+    {
+      "rank": 5,
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "score": 6.67
+    },
+    {
+      "rank": 6,
+      "code": "118021.SH",
+      "name": "新致转债",
+      "score": 6.4165
+    },
+    {
+      "rank": 7,
+      "code": "123207.SZ",
+      "name": "冠中转债",
+      "score": 6.339
+    },
+    {
+      "rank": 8,
+      "code": "123187.SZ",
+      "name": "超达转债",
+      "score": 6.2782
+    },
+    {
+      "rank": 9,
+      "code": "123175.SZ",
+      "name": "百畅转债",
+      "score": 6.2362
+    },
+    {
+      "rank": 10,
+      "code": "123160.SZ",
+      "name": "泰福转债",
+      "score": 6.2323
+    }
+  ],
+  "orders": [
+    {
+      "code": "123109.SZ",
+      "name": "昌红转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 125.19999694824219,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123189.SZ",
+      "name": "晓鸣转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 135.21299743652344,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123175.SZ",
+      "name": "百畅转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 119.49600219726562,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "123160.SZ",
+      "name": "泰福转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 148.60000610351562,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

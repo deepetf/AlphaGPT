@@ -1,0 +1,87 @@
+{
+  "date": "2025-06-06",
+  "created_at": "2026-02-01T17:01:49.082685",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123118.SZ",
+      "name": "惠城转债",
+      "score": 6.9711
+    },
+    {
+      "rank": 2,
+      "code": "123122.SZ",
+      "name": "富瀚转债",
+      "score": 6.8603
+    },
+    {
+      "rank": 3,
+      "code": "127043.SZ",
+      "name": "川恒转债",
+      "score": 6.6601
+    },
+    {
+      "rank": 4,
+      "code": "123126.SZ",
+      "name": "瑞丰转债",
+      "score": 6.6108
+    },
+    {
+      "rank": 5,
+      "code": "123124.SZ",
+      "name": "晶瑞转2",
+      "score": 6.4952
+    },
+    {
+      "rank": 6,
+      "code": "113658.SH",
+      "name": "密卫转债",
+      "score": 6.4696
+    },
+    {
+      "rank": 7,
+      "code": "113640.SH",
+      "name": "苏利转债",
+      "score": 6.4192
+    },
+    {
+      "rank": 8,
+      "code": "118018.SH",
+      "name": "瑞科转债",
+      "score": 6.4148
+    },
+    {
+      "rank": 9,
+      "code": "123131.SZ",
+      "name": "奥飞转债",
+      "score": 6.3965
+    },
+    {
+      "rank": 10,
+      "code": "123121.SZ",
+      "name": "帝尔转债",
+      "score": 6.3841
+    }
+  ],
+  "orders": [
+    {
+      "code": "113629.SH",
+      "name": "泉峰转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 123.36299896240234,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118018.SH",
+      "name": "瑞科转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 107.40899658203125,
+      "reason": "Top-K入选",
+      "rank": 8
+    }
+  ]
+}

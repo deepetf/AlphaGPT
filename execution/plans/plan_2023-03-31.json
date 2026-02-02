@@ -1,0 +1,123 @@
+{
+  "date": "2023-03-31",
+  "created_at": "2026-02-01T17:09:41.480116",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123180.SZ",
+      "name": "浙矿转债",
+      "score": 16.4502
+    },
+    {
+      "rank": 2,
+      "code": "123179.SZ",
+      "name": "立高转债",
+      "score": 13.061
+    },
+    {
+      "rank": 3,
+      "code": "123177.SZ",
+      "name": "测绘转债",
+      "score": 9.2788
+    },
+    {
+      "rank": 4,
+      "code": "123015.SZ",
+      "name": "蓝盾转退",
+      "score": 7.2807
+    },
+    {
+      "rank": 5,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 6.8357
+    },
+    {
+      "rank": 6,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 6.642
+    },
+    {
+      "rank": 7,
+      "code": "113045.SH",
+      "name": "环旭转债",
+      "score": 6.606
+    },
+    {
+      "rank": 8,
+      "code": "128085.SZ",
+      "name": "鸿达转债",
+      "score": 6.3939
+    },
+    {
+      "rank": 9,
+      "code": "113576.SH",
+      "name": "起步转债",
+      "score": 6.3253
+    },
+    {
+      "rank": 10,
+      "code": "128072.SZ",
+      "name": "翔鹭转债",
+      "score": 6.2684
+    }
+  ],
+  "orders": [
+    {
+      "code": "113628.SH",
+      "name": "晨丰转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 116.23600006103516,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123178.SZ",
+      "name": "花园转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 120.60299682617188,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123126.SZ",
+      "name": "瑞丰转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 112.49099731445312,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128085.SZ",
+      "name": "鸿达转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 108.46199798583984,
+      "reason": "Top-K入选",
+      "rank": 8
+    },
+    {
+      "code": "113576.SH",
+      "name": "起步转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 107.61299896240234,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "128072.SZ",
+      "name": "翔鹭转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 114.97899627685547,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

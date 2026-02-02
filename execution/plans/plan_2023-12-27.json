@@ -1,0 +1,87 @@
+{
+  "date": "2023-12-27",
+  "created_at": "2026-02-01T17:09:48.800250",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123232.SZ",
+      "name": "金现转债",
+      "score": 6.2089
+    },
+    {
+      "rank": 2,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 5.745
+    },
+    {
+      "rank": 3,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 5.5055
+    },
+    {
+      "rank": 4,
+      "code": "123010.SZ",
+      "name": "博世转债",
+      "score": 5.1101
+    },
+    {
+      "rank": 5,
+      "code": "128041.SZ",
+      "name": "盛路转债",
+      "score": 4.9029
+    },
+    {
+      "rank": 6,
+      "code": "123013.SZ",
+      "name": "横河转债",
+      "score": 4.8766
+    },
+    {
+      "rank": 7,
+      "code": "113027.SH",
+      "name": "华钰转债",
+      "score": 4.7571
+    },
+    {
+      "rank": 8,
+      "code": "128127.SZ",
+      "name": "文科转债",
+      "score": 4.7543
+    },
+    {
+      "rank": 9,
+      "code": "113628.SH",
+      "name": "晨丰转债",
+      "score": 4.7502
+    },
+    {
+      "rank": 10,
+      "code": "118021.SH",
+      "name": "新致转债",
+      "score": 4.7307
+    }
+  ],
+  "orders": [
+    {
+      "code": "113596.SH",
+      "name": "城地转债",
+      "side": "SELL",
+      "quantity": 100,
+      "price": 97.13600158691406,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118021.SH",
+      "name": "新致转债",
+      "side": "BUY",
+      "quantity": 40,
+      "price": 201.56399536132812,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

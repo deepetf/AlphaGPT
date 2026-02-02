@@ -1,0 +1,141 @@
+{
+  "date": "2023-07-07",
+  "created_at": "2026-02-01T17:09:44.080347",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "123199.SZ",
+      "name": "山河转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 3,
+      "code": "127086.SZ",
+      "name": "恒邦转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 4,
+      "code": "118035.SH",
+      "name": "国力转债",
+      "score": 20.4159
+    },
+    {
+      "rank": 5,
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "score": 6.3577
+    },
+    {
+      "rank": 6,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 5.9126
+    },
+    {
+      "rank": 7,
+      "code": "123013.SZ",
+      "name": "横河转债",
+      "score": 5.9058
+    },
+    {
+      "rank": 8,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 5.8703
+    },
+    {
+      "rank": 9,
+      "code": "113596.SH",
+      "name": "城地转债",
+      "score": 5.6108
+    },
+    {
+      "rank": 10,
+      "code": "123118.SZ",
+      "name": "惠城转债",
+      "score": 5.5666
+    }
+  ],
+  "orders": [
+    {
+      "code": "127014.SZ",
+      "name": "北方转债",
+      "side": "SELL",
+      "quantity": 40,
+      "price": 228.0,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113561.SH",
+      "name": "正裕转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 127.70700073242188,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128041.SZ",
+      "name": "盛路转债",
+      "side": "SELL",
+      "quantity": 30,
+      "price": 324.0,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113546.SH",
+      "name": "迪贝转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 128.8000030517578,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123199.SZ",
+      "name": "山河转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 135.0,
+      "reason": "Top-K入选",
+      "rank": 2
+    },
+    {
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 128.0,
+      "reason": "Top-K入选",
+      "rank": 1
+    },
+    {
+      "code": "127086.SZ",
+      "name": "恒邦转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 125.4000015258789,
+      "reason": "Top-K入选",
+      "rank": 3
+    },
+    {
+      "code": "113596.SH",
+      "name": "城地转债",
+      "side": "BUY",
+      "quantity": 100,
+      "price": 96.62899780273438,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
+}

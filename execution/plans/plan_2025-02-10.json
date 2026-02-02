@@ -1,0 +1,105 @@
+{
+  "date": "2025-02-10",
+  "created_at": "2026-02-01T17:01:42.774847",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123252.SZ",
+      "name": "银邦转债",
+      "score": 9.2824
+    },
+    {
+      "rank": 2,
+      "code": "127075.SZ",
+      "name": "百川转2",
+      "score": 5.7085
+    },
+    {
+      "rank": 3,
+      "code": "127079.SZ",
+      "name": "华亚转债",
+      "score": 5.4887
+    },
+    {
+      "rank": 4,
+      "code": "127078.SZ",
+      "name": "优彩转债",
+      "score": 5.4812
+    },
+    {
+      "rank": 5,
+      "code": "118016.SH",
+      "name": "京源转债",
+      "score": 5.3654
+    },
+    {
+      "rank": 6,
+      "code": "118027.SH",
+      "name": "宏图转债",
+      "score": 5.3212
+    },
+    {
+      "rank": 7,
+      "code": "123082.SZ",
+      "name": "北陆转债",
+      "score": 5.3066
+    },
+    {
+      "rank": 8,
+      "code": "123168.SZ",
+      "name": "惠云转债",
+      "score": 5.2396
+    },
+    {
+      "rank": 9,
+      "code": "128072.SZ",
+      "name": "翔鹭转债",
+      "score": 5.1753
+    },
+    {
+      "rank": 10,
+      "code": "123169.SZ",
+      "name": "正海转债",
+      "score": 5.1735
+    }
+  ],
+  "orders": [
+    {
+      "code": "111012.SH",
+      "name": "福新转债",
+      "side": "SELL",
+      "quantity": 30,
+      "price": 266.72100830078125,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127033.SZ",
+      "name": "中装转2",
+      "side": "SELL",
+      "quantity": 140,
+      "price": 73.22200012207031,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123169.SZ",
+      "name": "正海转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 129.02099609375,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "123168.SZ",
+      "name": "惠云转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 115.25499725341797,
+      "reason": "Top-K入选",
+      "rank": 8
+    }
+  ]
+}

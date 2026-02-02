@@ -1,0 +1,87 @@
+{
+  "date": "2024-07-29",
+  "created_at": "2026-02-02T12:43:13.910874",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123241.SZ",
+      "name": "欧通转债",
+      "score": 0.5477
+    },
+    {
+      "rank": 2,
+      "code": "123242.SZ",
+      "name": "赛龙转债",
+      "score": 0.4472
+    },
+    {
+      "rank": 3,
+      "code": "123243.SZ",
+      "name": "严牌转债",
+      "score": 0.4472
+    },
+    {
+      "rank": 4,
+      "code": "113686.SH",
+      "name": "泰瑞转债",
+      "score": 0.4472
+    },
+    {
+      "rank": 5,
+      "code": "110064.SH",
+      "name": "建工转债",
+      "score": 0.0
+    },
+    {
+      "rank": 6,
+      "code": "110063.SH",
+      "name": "鹰19转债",
+      "score": 0.0
+    },
+    {
+      "rank": 7,
+      "code": "110055.SH",
+      "name": "伊力转债",
+      "score": 0.0
+    },
+    {
+      "rank": 8,
+      "code": "110067.SH",
+      "name": "华安转债",
+      "score": 0.0
+    },
+    {
+      "rank": 9,
+      "code": "110062.SH",
+      "name": "烽火转债",
+      "score": 0.0
+    },
+    {
+      "rank": 10,
+      "code": "110060.SH",
+      "name": "天路转债",
+      "score": 0.0
+    }
+  ],
+  "orders": [
+    {
+      "code": "110058.SH",
+      "name": "永鼎转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 115.27300262451172,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123242.SZ",
+      "name": "赛龙转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 157.3000030517578,
+      "reason": "Top-K入选",
+      "rank": 2
+    }
+  ]
+}

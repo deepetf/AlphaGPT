@@ -108,3 +108,10 @@ class RobustConfig:
     
     # 总分缩放
     SCALE = 5.0               # 最终分数缩放系数
+    
+    # ========== 熵正则化 (Entropy Regularization) ==========
+    ENTROPY_BETA_START = 0.04 # 初始熵正则系数 (鼓励探索) V2.3: 提升以增强探索
+    ENTROPY_BETA_END = 0.005  # 结束熵正则系数 (保证收敛)
+    
+    # ========== 多样性池 (Diversity Pool) ==========
+    DIVERSITY_POOL_SIZE = 50  # 多样性池最大容量

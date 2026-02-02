@@ -151,6 +151,9 @@ class AlphaEngine:
         # 4. 记录所有 New King 历史
         self.king_history = []
         
+        # 5. 多样性池 (formula_readable -> metrics_dict)
+        self.diverse_pool = {}
+        
         print(f"Model vocab size: {self.model.vocab_size}")
 
     def _tokens_to_strings(self, tokens: list) -> list:
@@ -165,6 +168,16 @@ class AlphaEngine:
         if not isinstance(formula[0], str):
             raise TypeError("decode_formula only accepts string lists, not token IDs")
         return ' '.join(formula)
+    
+    def _calculate_similarity(self, formula_a: list, formula_b: list) -> float:
+        """
+        计算两个公式的 Jaccard 相似度 (基于 Token 集合)
+        """
+        set_a = set(formula_a)
+        set_b = set(formula_b)
+        intersection = len(set_a.intersection(set_b))
+        union = len(set_a.union(set_b))
+        return intersection / union if union > 0 else 0.0
 
     def train(self):
         print("🚀 Starting CB Alpha Mining (Multi-Process CPU)...")
@@ -177,6 +190,7 @@ class AlphaEngine:
         print(f"   • Split Date:  {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
         print(f"   • Top-K:       {RobustConfig.TOP_K}")
         print(f"   • Fee Rate:    {RobustConfig.FEE_RATE:.4f} ({RobustConfig.FEE_RATE*100:.2f}% 单边)")
+        print(f"   • Entropy β:   {RobustConfig.ENTROPY_BETA_START} → {RobustConfig.ENTROPY_BETA_END} (linear decay)")
         print("-" * 60)
         print("🧬 GENOME (Vocabulary)")
         print(f"   • Factors ({len(ModelConfig.INPUT_FEATURES)}): {ModelConfig.INPUT_FEATURES}")
@@ -211,6 +225,7 @@ class AlphaEngine:
                 inp = torch.zeros((bs, 1), dtype=torch.long, device=ModelConfig.DEVICE)
                 
                 log_probs = []
+                entropies = []
                 tokens_list = []
                 
                 # 自回归生成公式 (在 Main Process GPU 上进行)
@@ -220,6 +235,7 @@ class AlphaEngine:
                     action = dist.sample()
                     
                     log_probs.append(dist.log_prob(action))
+                    entropies.append(dist.entropy())
                     tokens_list.append(action)
                     inp = torch.cat([inp, action.unsqueeze(1)], dim=1)
                 
@@ -268,6 +284,46 @@ class AlphaEngine:
                             
                             tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | MDD {metrics.get('max_drawdown', 0):.1%} | {self.best_formula_readable}")
 
+                        # V2.3: 收集多样性公式 (Diversity Pool)
+                        # 仅当分数足够高且公式独特时入池
+                        if score_val > 0:
+                            readable = self.decode_formula(formula_str)
+                            new_result = {
+                                'score': score_val,
+                                'sharpe': sharpe_val,
+                                'annualized_ret': ret_val,
+                                'formula': formula_str,
+                                'readable': readable
+                            }
+                            
+                            # V2.3: Jaccard 相似度过滤
+                            # 检查与池中现有公式的相似度
+                            similar_key = None
+                            for pool_key, pool_data in self.diverse_pool.items():
+                                similarity = self._calculate_similarity(formula_str, pool_data['formula'])
+                                if similarity > 0.8:  # 相似度阈值
+                                    similar_key = pool_key
+                                    break
+                            
+                            # 入池逻辑
+                            if similar_key is None:
+                                # Case 1: 与池中无相似公式 -> 正常入池
+                                if readable not in self.diverse_pool:
+                                    if len(self.diverse_pool) < RobustConfig.DIVERSITY_POOL_SIZE:
+                                        self.diverse_pool[readable] = new_result
+                                    else:
+                                        # 池满: 替换最低分公式 (如果新公式更好)
+                                        min_key = min(self.diverse_pool, key=lambda k: self.diverse_pool[k]['score'])
+                                        if score_val > self.diverse_pool[min_key]['score']:
+                                            del self.diverse_pool[min_key]
+                                            self.diverse_pool[readable] = new_result
+                            else:
+                                # Case 2: 与池中某公式高度相似 -> 仅当分数显著更高 (+10%) 时替换
+                                similar_score = self.diverse_pool[similar_key]['score']
+                                if score_val > similar_score * 1.1:  # 需要高出 10%
+                                    del self.diverse_pool[similar_key]
+                                    self.diverse_pool[readable] = new_result
+
                 rewards = torch.tensor(rewards_list, device=ModelConfig.DEVICE)
                 
                 # 优势函数归一化
@@ -280,13 +336,24 @@ class AlphaEngine:
                 
                 loss = loss.mean()
                 
+                # V2.3: 熵正则化 (带线性衰减)
+                # current_beta = START - (START - END) * (step / TOTAL_STEPS)
+                total_steps = ModelConfig.TRAIN_STEPS
+                current_beta = RobustConfig.ENTROPY_BETA_START - (
+                    RobustConfig.ENTROPY_BETA_START - RobustConfig.ENTROPY_BETA_END
+                ) * (step / total_steps)
+                avg_entropy = torch.stack(entropies).mean()
+                loss = loss - current_beta * avg_entropy
+                
                 self.opt.zero_grad()
                 loss.backward()
                 self.opt.step()
                 
                 pbar.set_postfix({
                     'AvgRew': f'{rewards.mean().item():.2f}',
-                    'Best': f'{self.best_score:.2f}'
+                    'Best': f'{self.best_score:.2f}',
+                    'Ent': f'{avg_entropy.item():.2f}',
+                    'β': f'{current_beta:.3f}'
                 })
 
             end_time = time.time()
@@ -364,7 +431,12 @@ class AlphaEngine:
                 'annualized_ret': self.best_return  # 年化收益率
             },
             'history': self.king_history,
-            'total_kings': len(self.king_history)
+            'total_kings': len(self.king_history),
+            'diverse_top_50': sorted(
+                list(self.diverse_pool.values()),
+                key=lambda x: x['score'],
+                reverse=True
+            )[:RobustConfig.DIVERSITY_POOL_SIZE]
         }
         
         result_path = os.path.join(output_dir, 'best_cb_formula.json')

@@ -1,0 +1,87 @@
+{
+  "date": "2023-07-24",
+  "created_at": "2026-02-01T17:09:44.465018",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "118036.SH",
+      "name": "力合转债",
+      "score": 18.9101
+    },
+    {
+      "rank": 2,
+      "code": "127088.SZ",
+      "name": "赫达转债",
+      "score": 16.4486
+    },
+    {
+      "rank": 3,
+      "code": "123203.SZ",
+      "name": "明电转02",
+      "score": 16.4486
+    },
+    {
+      "rank": 4,
+      "code": "123201.SZ",
+      "name": "纽泰转债",
+      "score": 13.0593
+    },
+    {
+      "rank": 5,
+      "code": "123200.SZ",
+      "name": "海泰转债",
+      "score": 9.278
+    },
+    {
+      "rank": 6,
+      "code": "127087.SZ",
+      "name": "星帅转2",
+      "score": 9.2771
+    },
+    {
+      "rank": 7,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 8.0839
+    },
+    {
+      "rank": 8,
+      "code": "128036.SZ",
+      "name": "金农转债",
+      "score": 6.9394
+    },
+    {
+      "rank": 9,
+      "code": "113532.SH",
+      "name": "海环转债",
+      "score": 6.7331
+    },
+    {
+      "rank": 10,
+      "code": "113628.SH",
+      "name": "晨丰转债",
+      "score": 6.351
+    }
+  ],
+  "orders": [
+    {
+      "code": "113595.SH",
+      "name": "花王转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 107.77300262451172,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113628.SH",
+      "name": "晨丰转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 126.28099822998047,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
+}

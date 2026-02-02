@@ -1,0 +1,87 @@
+{
+  "date": "2025-04-11",
+  "created_at": "2026-02-01T17:01:45.890238",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123254.SZ",
+      "name": "亿纬转债",
+      "score": 20.9676
+    },
+    {
+      "rank": 2,
+      "code": "113693.SH",
+      "name": "志邦转债",
+      "score": 16.4477
+    },
+    {
+      "rank": 3,
+      "code": "118052.SH",
+      "name": "浩瀚转债",
+      "score": 13.0583
+    },
+    {
+      "rank": 4,
+      "code": "118053.SH",
+      "name": "正帆转债",
+      "score": 9.279
+    },
+    {
+      "rank": 5,
+      "code": "123034.SZ",
+      "name": "通光转债",
+      "score": 6.0041
+    },
+    {
+      "rank": 6,
+      "code": "128082.SZ",
+      "name": "华锋转债",
+      "score": 5.8634
+    },
+    {
+      "rank": 7,
+      "code": "113545.SH",
+      "name": "金能转债",
+      "score": 5.708
+    },
+    {
+      "rank": 8,
+      "code": "110060.SH",
+      "name": "天路转债",
+      "score": 5.5635
+    },
+    {
+      "rank": 9,
+      "code": "128081.SZ",
+      "name": "海亮转债",
+      "score": 5.4422
+    },
+    {
+      "rank": 10,
+      "code": "110059.SH",
+      "name": "浦发转债",
+      "score": 5.3585
+    }
+  ],
+  "orders": [
+    {
+      "code": "128076.SZ",
+      "name": "金轮转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 118.75,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123254.SZ",
+      "name": "亿纬转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 114.9000015258789,
+      "reason": "Top-K入选",
+      "rank": 1
+    }
+  ]
+}

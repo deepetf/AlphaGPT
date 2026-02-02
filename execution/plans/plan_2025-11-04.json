@@ -1,0 +1,123 @@
+{
+  "date": "2025-11-04",
+  "created_at": "2026-02-01T17:01:57.349247",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "110099.SH",
+      "name": "福能转债",
+      "score": 16.4493
+    },
+    {
+      "rank": 2,
+      "code": "123173.SZ",
+      "name": "恒锋转债",
+      "score": 6.4183
+    },
+    {
+      "rank": 3,
+      "code": "127019.SZ",
+      "name": "国城转债",
+      "score": 6.2759
+    },
+    {
+      "rank": 4,
+      "code": "127080.SZ",
+      "name": "声迅转债",
+      "score": 6.2504
+    },
+    {
+      "rank": 5,
+      "code": "123171.SZ",
+      "name": "共同转债",
+      "score": 6.2394
+    },
+    {
+      "rank": 6,
+      "code": "113699.SH",
+      "name": "金25转债",
+      "score": 6.2068
+    },
+    {
+      "rank": 7,
+      "code": "118016.SH",
+      "name": "京源转债",
+      "score": 6.1937
+    },
+    {
+      "rank": 8,
+      "code": "128119.SZ",
+      "name": "龙大转债",
+      "score": 6.1088
+    },
+    {
+      "rank": 9,
+      "code": "111012.SH",
+      "name": "福新转债",
+      "score": 6.098
+    },
+    {
+      "rank": 10,
+      "code": "110092.SH",
+      "name": "三房转债",
+      "score": 6.084
+    }
+  ],
+  "orders": [
+    {
+      "code": "118007.SH",
+      "name": "山石转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 139.2969970703125,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118008.SH",
+      "name": "海优转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 127.177001953125,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123142.SZ",
+      "name": "申昊转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 121.11100006103516,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118016.SH",
+      "name": "京源转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 143.94500732421875,
+      "reason": "Top-K入选",
+      "rank": 7
+    },
+    {
+      "code": "110092.SH",
+      "name": "三房转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 103.89399719238281,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "111012.SH",
+      "name": "福新转债",
+      "side": "BUY",
+      "quantity": 20,
+      "price": 342.6189880371094,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
+}

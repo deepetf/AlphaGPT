@@ -1,0 +1,123 @@
+{
+  "date": "2025-10-29",
+  "created_at": "2026-02-01T17:01:56.858597",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "113699.SH",
+      "name": "金25转债",
+      "score": 18.9107
+    },
+    {
+      "rank": 2,
+      "code": "113697.SH",
+      "name": "应流转债",
+      "score": 9.2784
+    },
+    {
+      "rank": 3,
+      "code": "123138.SZ",
+      "name": "丝路转债",
+      "score": 5.8471
+    },
+    {
+      "rank": 4,
+      "code": "123142.SZ",
+      "name": "申昊转债",
+      "score": 5.5449
+    },
+    {
+      "rank": 5,
+      "code": "123131.SZ",
+      "name": "奥飞转债",
+      "score": 5.4774
+    },
+    {
+      "rank": 6,
+      "code": "118007.SH",
+      "name": "山石转债",
+      "score": 5.3985
+    },
+    {
+      "rank": 7,
+      "code": "118008.SH",
+      "name": "海优转债",
+      "score": 5.2555
+    },
+    {
+      "rank": 8,
+      "code": "113588.SH",
+      "name": "润达转债",
+      "score": 5.2212
+    },
+    {
+      "rank": 9,
+      "code": "118006.SH",
+      "name": "阿拉转债",
+      "score": 5.2173
+    },
+    {
+      "rank": 10,
+      "code": "123109.SZ",
+      "name": "昌红转债",
+      "score": 5.2133
+    }
+  ],
+  "orders": [
+    {
+      "code": "118000.SH",
+      "name": "嘉元转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 142.18600463867188,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113589.SH",
+      "name": "天创转债",
+      "side": "SELL",
+      "quantity": 40,
+      "price": 214.4810028076172,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123054.SZ",
+      "name": "思特转债",
+      "side": "SELL",
+      "quantity": 60,
+      "price": 144.5970001220703,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118006.SH",
+      "name": "阿拉转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 129.39999389648438,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "123109.SZ",
+      "name": "昌红转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 123.4800033569336,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "118008.SH",
+      "name": "海优转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 128.31199645996094,
+      "reason": "Top-K入选",
+      "rank": 7
+    }
+  ]
+}

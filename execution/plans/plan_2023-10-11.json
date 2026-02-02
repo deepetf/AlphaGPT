@@ -1,0 +1,123 @@
+{
+  "date": "2023-10-11",
+  "created_at": "2026-02-01T17:09:46.774786",
+  "strategy": "AlphaGPT_CB_Top10",
+  "assets": [
+    {
+      "rank": 1,
+      "code": "123222.SZ",
+      "name": "博俊转债",
+      "score": 16.4483
+    },
+    {
+      "rank": 2,
+      "code": "113578.SH",
+      "name": "全筑转债",
+      "score": 6.0181
+    },
+    {
+      "rank": 3,
+      "code": "128062.SZ",
+      "name": "亚药转债",
+      "score": 5.9179
+    },
+    {
+      "rank": 4,
+      "code": "113595.SH",
+      "name": "花王转债",
+      "score": 5.5809
+    },
+    {
+      "rank": 5,
+      "code": "128082.SZ",
+      "name": "华锋转债",
+      "score": 5.2691
+    },
+    {
+      "rank": 6,
+      "code": "128039.SZ",
+      "name": "三力转债",
+      "score": 5.1411
+    },
+    {
+      "rank": 7,
+      "code": "113546.SH",
+      "name": "迪贝转债",
+      "score": 5.1112
+    },
+    {
+      "rank": 8,
+      "code": "127060.SZ",
+      "name": "湘佳转债",
+      "score": 5.0989
+    },
+    {
+      "rank": 9,
+      "code": "123142.SZ",
+      "name": "申昊转债",
+      "score": 5.0981
+    },
+    {
+      "rank": 10,
+      "code": "118006.SH",
+      "name": "阿拉转债",
+      "score": 5.0877
+    }
+  ],
+  "orders": [
+    {
+      "code": "123141.SZ",
+      "name": "宏丰转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 129.9550018310547,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123140.SZ",
+      "name": "天地转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 133.91000366210938,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118007.SH",
+      "name": "山石转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 126.03600311279297,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128082.SZ",
+      "name": "华锋转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 148.47000122070312,
+      "reason": "Top-K入选",
+      "rank": 5
+    },
+    {
+      "code": "113546.SH",
+      "name": "迪贝转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 127.29399871826172,
+      "reason": "Top-K入选",
+      "rank": 7
+    },
+    {
+      "code": "128039.SZ",
+      "name": "三力转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 114.60600280761719,
+      "reason": "Top-K入选",
+      "rank": 6
+    }
+  ]
+}
