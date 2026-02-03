@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any
 
 # 全局配置缓存
 _config_cache: Optional[Dict[str, Any]] = None
+_loaded_config_path: Optional[str] = None
 
 # 默认配置文件路径
 _DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'default_config.yaml')
@@ -40,10 +41,17 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     
     # 2. 如果提供了自定义配置，则合并
     if config_path:
-        if not os.path.exists(config_path):
-            raise FileNotFoundError(f"配置文件不存在: {config_path}")
+        target_path = config_path
+        if not os.path.exists(target_path):
+            # 尝试相对于模块目录查找
+            module_dir = os.path.dirname(os.path.abspath(__file__))
+            potential_path = os.path.join(module_dir, config_path)
+            if os.path.exists(potential_path):
+                target_path = potential_path
+            else:
+                raise FileNotFoundError(f"配置文件不存在: {config_path}")
         
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(target_path, 'r', encoding='utf-8') as f:
             custom_config = yaml.safe_load(f)
         
         if custom_config:
@@ -54,8 +62,15 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     
     # 4. 缓存配置
     _config_cache = config
+    global _loaded_config_path
+    _loaded_config_path = config_path  # 记录原始路径
     
     return config
+
+
+def get_loaded_config_path() -> Optional[str]:
+    """获取最后加载的自定义配置路径"""
+    return _loaded_config_path
 
 
 def get_config() -> Dict[str, Any]:

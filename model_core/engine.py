@@ -32,8 +32,16 @@ _global_ret = None
 _global_mask = None
 _global_split_idx = None  # 训练/验证切分索引
 
-def _init_worker(feat_tensor, target_ret, valid_mask, split_idx):
+def _init_worker(feat_tensor, target_ret, valid_mask, split_idx, config_path=None):
     """子进程初始化函数"""
+    # 关键修复: 子进程需要重新加载动态配置，否则 INPUT_FEATURES 为空导致校验失败
+    if config_path:
+        try:
+            from .config_loader import load_config
+            load_config(config_path)
+        except Exception as e:
+            print(f"[Worker] Failed to load config from {config_path}: {e}")
+
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
     
     # 关键优化: 强制单线程运行，防止多进程 CPU 竞争 (Oversubscription)
@@ -89,19 +97,17 @@ def _worker_eval(formula):
         # 4. 硬淘汰条件 (Hard Filters)
         # 4.1 验证集 Sharpe 太低
         if metrics['sharpe_val'] < RobustConfig.MIN_SHARPE_VAL:
-            return -5.0, None, "METRIC_SHARPE", f"val={metrics['sharpe_val']:.2f}"
+            return RobustConfig.PENALTY_SHARPE, None, "METRIC_SHARPE", f"val={metrics['sharpe_val']:.2f}"
         
         # 4.2 活跃率太低 (选不到足够标的)
         if metrics['active_ratio'] < RobustConfig.MIN_ACTIVE_RATIO:
-            return -4.0, None, "METRIC_ACTIVE", f"ratio={metrics['active_ratio']:.2f}"
+            return RobustConfig.PENALTY_ACTIVE, None, "METRIC_ACTIVE", f"ratio={metrics['active_ratio']:.2f}"
         
-        # 4.3 训练/验证方向翻转 (过拟合信号)
-        if metrics['sharpe_train'] * metrics['sharpe_val'] < 0:
-            return -3.0, None, "METRIC_FLIP", "sign_mismatch"
+        # 4.3 (已移除) 训练/验证方向翻转改为软惩罚
         
         # 4.4 有效交易日太少 (统计不可靠)
         if metrics['valid_days_train'] < RobustConfig.MIN_VALID_DAYS or metrics['valid_days_val'] < RobustConfig.MIN_VALID_DAYS:
-            return -2.5, None, "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
+            return RobustConfig.PENALTY_DAYS, None, "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
 
         
         # 5. 综合评分 (Soft Scoring)
@@ -124,11 +130,25 @@ def _worker_eval(formula):
         # 5.6 公式结构惩罚 (来自 validate_formula)
         # structural_penalty 是负数或 0，直接加到分数上
         
-        # 5.7 最终分数
-        final_score = (base_score + stability_bonus) * RobustConfig.SCALE + ret_bonus - mdd_penalty - len_penalty + structural_penalty
+        # 5.7 [New] 翻转软惩罚 (Dynamic Soft Penalty)
+        flip_penalty = 0.0
+        is_flip = False
+        detail_msg = "OK"
+        if metrics['sharpe_train'] * metrics['sharpe_val'] < 0:
+            is_flip = True
+            # 动态惩罚: 罚分与 Val 的亏损程度成正比: Penalty = -1 * COEF * abs(Val)
+            flip_penalty = -1.0 * RobustConfig.PENALTY_FLIP_COEF * abs(metrics['sharpe_val'])
+            detail_msg = f"Soft Flip ({flip_penalty:.2f}, val={metrics['sharpe_val']:.2f})"
+
+        # 5.8 最终分数
+        final_score = (base_score + stability_bonus) * RobustConfig.SCALE + ret_bonus - mdd_penalty - len_penalty + structural_penalty + flip_penalty
         
         # 返回分数和详细信息
-        return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics), "PASS", "OK"
+        if is_flip:
+            # [Candidate Isolation] 有分数(RL可学习)，但info=None(不作为King候选)
+            return final_score, None, "METRIC_FLIP", detail_msg
+        else:
+            return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics), "PASS", "OK"
     
     except (ImportError, NameError, AttributeError, SyntaxError) as e:
         # 系统级错误：直接抛出，中断训练，方便 Debug (如刚才的 ImportError)
@@ -230,13 +250,17 @@ class AlphaEngine:
         cpu_mask = self.loader.valid_mask.to('cpu')
         split_idx = self.loader.split_idx
         
+        # 获取当前 Config 路径 (传递给子进程)
+        from .config_loader import get_loaded_config_path
+        config_path = get_loaded_config_path()
+        
         # 启动进程池
         # 注意: Windows 下每次都需要在这里从头启动 executor 比较安全，或者长期持有
         # 这里我们选择长期持有 executor 上下文
         with ProcessPoolExecutor(
             max_workers=num_workers, 
             initializer=_init_worker,
-            initargs=(cpu_feat, cpu_ret, cpu_mask, split_idx)
+            initargs=(cpu_feat, cpu_ret, cpu_mask, split_idx, config_path)
         ) as executor:
             
             pbar = tqdm(range(ModelConfig.TRAIN_STEPS))
@@ -244,10 +268,16 @@ class AlphaEngine:
             global_struct_reasons = Counter()
             stats_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'training_stats.jsonl')
             
+            # [Grammar] 1. 准备元数据 (移至循环外以优化性能)
+            is_feat, is_unary, is_binary, net_change = self.model.get_grammar_masks(ModelConfig.DEVICE)
+            
             for step in pbar:
                 step_stats = Counter()
                 bs = ModelConfig.BATCH_SIZE
                 inp = torch.zeros((bs, 1), dtype=torch.long, device=ModelConfig.DEVICE)
+
+                current_depths = torch.zeros(bs, dtype=torch.long, device=ModelConfig.DEVICE)
+
                 
                 log_probs = []
                 entropies = []
@@ -255,10 +285,39 @@ class AlphaEngine:
 
                 
                 # 自回归生成公式 (在 Main Process GPU 上进行)
-                for _ in range(ModelConfig.MAX_FORMULA_LEN):
+                for gen_step in range(ModelConfig.MAX_FORMULA_LEN):
                     logits, _ = self.model(inp)
+
+                    # [Grammar] 2. Action Masking
+                    mask = torch.ones(bs, self.model.vocab_size, dtype=torch.bool, device=ModelConfig.DEVICE)
+                    
+                    # Rule 1: D < 1 -> Ban All Ops (Underflow)
+                    mask &= ~((current_depths < 1).unsqueeze(1) & (is_unary | is_binary))
+                    
+                    # Rule 2: D < 2 -> Ban Binary (Underflow)
+                    mask &= ~((current_depths < 2).unsqueeze(1) & is_binary)
+                    
+                    # Rule 3: R <= D - 1 -> Ban Feature (Overrun, 无法归约)
+                    # 剩余步数 R = (Total - 1) - current_step
+                    # e.g. Total=12. Step=0, R=11. Step=11, R=0.
+                    R = ModelConfig.MAX_FORMULA_LEN - 1 - gen_step
+                    mask &= ~((R <= current_depths - 1).unsqueeze(1) & is_feat)
+                    
+                    # Rule 4: R < D - 1 -> Ban Unary (Force Binary Reduce)
+                    mask &= ~((R < current_depths - 1).unsqueeze(1) & is_unary)
+                    
+                    # Rule 5: D >= MAX -> Ban Feature (Stack Limit)
+                    mask &= ~((current_depths >= RobustConfig.MAX_STACK_DEPTH).unsqueeze(1) & is_feat)
+                    
+                    # Apply Mask
+                    logits = logits.masked_fill(~mask, -1e9)
+
                     dist = Categorical(logits=logits)
+
                     action = dist.sample()
+                    
+                    # [Grammar] 3. 更新深度
+                    current_depths += net_change[action]
                     
                     log_probs.append(dist.log_prob(action))
                     entropies.append(dist.entropy())

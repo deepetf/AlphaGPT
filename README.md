@@ -2,11 +2,25 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V3.3 (Long-Run Optimization)**
+Current Version: **V3.4 (Grammar-Guided Decoding)**
 
 ---
 
 ## 📅 Version History
+
+### **V3.4: Grammar-Guided Decoding (Current)**
+*引入算子语法约束，彻底解决无效公式生成问题。*
+- **Action Masking (语法引导解码)**:
+    - 在 Transformer 生成过程中引入 **动作掩码 (Action Masking)**。
+    - 强制遵循 RPN 堆栈规则：防止下溢 (`Underflow`)、防止长度溢出 (`Overrun`)、强制归约 (`Force Reduction`)。
+    - **效果**: 将 `STRUCT_INVALID` 错误率从 99.8% 降至 **0%**，极大提升了训练效率。
+- **Worker Config Fix**:
+    - 修复了 Windows 环境下多进程训练时，子进程无法正确加载自定义特性 (`INPUT_FEATURES`) 的致命 Bug。
+- **Dynamic Soft Penalty**:
+    - 改进过拟合惩罚机制，使罚分与过拟合严重程度成正比，改善 RL 训练的梯度信号。
+- **Variable Safety**:
+    - 修复了 `engine.py` 中训练步数变量被生成步数覆盖的逻辑漏洞。
+
 
 ### **V3.3: Long-Run Optimization (Current)**
 *Optimized for long-duration training stability and diversity.*

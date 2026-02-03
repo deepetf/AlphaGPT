@@ -135,6 +135,39 @@ class ConfigMeta(type):
     @property
     def DENSITY_PENALTY(cls) -> float:
         return cls._rc.get('density_penalty', -2.0)
+        
+    # ========== 惩罚参数配置 ==========
+    @property
+    def PENALTY_FLIP_COEF(cls) -> float:
+        return cls._rc.get('penalty_flip_coef', 2.0)
+    
+    @property
+    def PENALTY_STRUCT(cls) -> float:
+        return cls._rc.get('penalty_struct', -5.0)
+
+    @property
+    def PENALTY_EXEC(cls) -> float:
+        return cls._rc.get('penalty_exec', -5.0)
+
+    @property
+    def PENALTY_SHARPE(cls) -> float:
+        return cls._rc.get('penalty_sharpe', -5.0)
+
+    @property
+    def PENALTY_ACTIVE(cls) -> float:
+        return cls._rc.get('penalty_active', -4.0)
+
+    @property
+    def PENALTY_DAYS(cls) -> float:
+        return cls._rc.get('penalty_days', -2.5)
+
+    @property
+    def PENALTY_LOW_VAR(cls) -> float:
+        return cls._rc.get('penalty_low_var', -2.0)
+
+    @property
+    def MAX_STACK_DEPTH(cls) -> int:
+        return cls._rc.get('max_stack_depth', 7)
 
 
 class ModelConfig(metaclass=ConfigMeta):
