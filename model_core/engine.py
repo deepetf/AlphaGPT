@@ -13,8 +13,10 @@ import time
 import argparse
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
+from collections import Counter
 
 from .config import ModelConfig, RobustConfig
+
 from .data_loader import CBDataLoader
 from .alphagpt import AlphaGPT
 from .vm import StackVM
@@ -60,18 +62,21 @@ def _worker_eval(formula):
         is_valid, structural_penalty, reason = validate_formula(formula)
         
         if not is_valid:
-            # 硬过滤: 直接拒绝
-            return -5.0, None
+            return -5.0, None, "STRUCT_INVALID", reason
         
         # 1. 执行公式
-        res = _global_vm.execute(formula, _global_feat)
-        
-        if res is None:
-            return -5.0, None
+        try:
+            res = _global_vm.execute(formula, _global_feat)
+            if res is None:
+                return -5.0, None, "EXEC_NONE", "Returned None"
+        except Exception as e:
+            return -5.0, None, "EXEC_ERR", type(e).__name__
         
         # 2. 检查因子方差
-        if res.std() < 1e-4:
-            return -2.0, None
+        var_threshold = 1e-4
+        if res.std() < var_threshold:
+            return -2.0, None, "LOW_VARIANCE", f"std={res.std():.2e}, thr={var_threshold}"
+
 
         # 3. 稳健性评估
         metrics = _global_bt.evaluate_robust(
@@ -84,19 +89,20 @@ def _worker_eval(formula):
         # 4. 硬淘汰条件 (Hard Filters)
         # 4.1 验证集 Sharpe 太低
         if metrics['sharpe_val'] < RobustConfig.MIN_SHARPE_VAL:
-            return -5.0, None
+            return -5.0, None, "METRIC_SHARPE", f"val={metrics['sharpe_val']:.2f}"
         
         # 4.2 活跃率太低 (选不到足够标的)
         if metrics['active_ratio'] < RobustConfig.MIN_ACTIVE_RATIO:
-            return -4.0, None
+            return -4.0, None, "METRIC_ACTIVE", f"ratio={metrics['active_ratio']:.2f}"
         
         # 4.3 训练/验证方向翻转 (过拟合信号)
         if metrics['sharpe_train'] * metrics['sharpe_val'] < 0:
-            return -3.0, None
+            return -3.0, None, "METRIC_FLIP", "sign_mismatch"
         
         # 4.4 有效交易日太少 (统计不可靠)
         if metrics['valid_days_train'] < RobustConfig.MIN_VALID_DAYS or metrics['valid_days_val'] < RobustConfig.MIN_VALID_DAYS:
-            return -2.5, None
+            return -2.5, None, "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
+
         
         # 5. 综合评分 (Soft Scoring)
         # 5.1 基础分: 加权 Sharpe
@@ -122,7 +128,7 @@ def _worker_eval(formula):
         final_score = (base_score + stability_bonus) * RobustConfig.SCALE + ret_bonus - mdd_penalty - len_penalty + structural_penalty
         
         # 返回分数和详细信息
-        return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics)
+        return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics), "PASS", "OK"
     
     except (ImportError, NameError, AttributeError, SyntaxError) as e:
         # 系统级错误：直接抛出，中断训练，方便 Debug (如刚才的 ImportError)
@@ -135,7 +141,8 @@ def _worker_eval(formula):
         # 如果需要调试，可以打开下面的注释
         # import traceback
         # traceback.print_exc()
-        return -5.0, None
+        return -5.0, None, "EXEC_ERR", "RuntimeError"
+
 
 
 class AlphaEngine:
@@ -233,14 +240,19 @@ class AlphaEngine:
         ) as executor:
             
             pbar = tqdm(range(ModelConfig.TRAIN_STEPS))
+            global_stats = Counter()
+            global_struct_reasons = Counter()
+            stats_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'training_stats.jsonl')
             
             for step in pbar:
+                step_stats = Counter()
                 bs = ModelConfig.BATCH_SIZE
                 inp = torch.zeros((bs, 1), dtype=torch.long, device=ModelConfig.DEVICE)
                 
                 log_probs = []
                 entropies = []
                 tokens_list = []
+
                 
                 # 自回归生成公式 (在 Main Process GPU 上进行)
                 for _ in range(ModelConfig.MAX_FORMULA_LEN):
@@ -263,9 +275,14 @@ class AlphaEngine:
                 results = list(executor.map(_worker_eval, formula_list))
                 
                 # 聚合结果
-                for i, (rew, best_info) in enumerate(results):
+                for i, (rew, best_info, status, detail) in enumerate(results):
+                    final_status = status
                     rewards_list.append(rew)
                     
+                    if status == "STRUCT_INVALID":
+                        global_struct_reasons[detail] += 1
+                    
+                    score_val = None
                     if best_info:
                         # V2.2: best_info 现包含 (score, annualized_ret, sharpe_all, formula, metrics)
                         score_val, ret_val, sharpe_val, formula_str, metrics = best_info
@@ -300,9 +317,10 @@ class AlphaEngine:
 
                         # V2.3: 收集多样性公式 (Diversity Pool)
                         # 仅当分数足够高且公式独特时入池
-                        if score_val > 0:
+                        if status == "PASS" and score_val > 0:
                             readable = self.decode_formula(formula_str)
                             new_result = {
+                                'step': step,  # 记录产生步数
                                 'score': score_val,
                                 'sharpe': sharpe_val,
                                 'annualized_ret': ret_val,
@@ -337,8 +355,50 @@ class AlphaEngine:
                                 if score_val > similar_score * 1.1:  # 需要高出 10%
                                     del self.diverse_pool[similar_key]
                                     self.diverse_pool[readable] = new_result
+                                    final_status = "SIM_REPLACE"
+                                else:
+                                    final_status = "SIM_REJECT"
+
+                    
+                    step_stats[final_status] += 1
+                    global_stats[final_status] += 1
+
+                log_entry = {
+                    "step": step,
+                    "stats": dict(step_stats),
+                    "timestamp": time.time()
+                }
+                with open(stats_path, 'a', encoding='utf-8') as stats_file:
+                    stats_file.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+                if step % 20 == 0:
+                    total = sum(step_stats.values()) or 1
+                    metric_keys = ["METRIC_SHARPE", "METRIC_ACTIVE", "METRIC_FLIP", "METRIC_DAYS"]
+                    metric_pct = sum(step_stats[key] for key in metric_keys) / total
+                    exec_pct = (step_stats["EXEC_NONE"] + step_stats["EXEC_ERR"]) / total
+                    
+                    msg = (
+                        f"[Stats Step {step}] "
+                        f"Pass {step_stats['PASS']/total:.1%} | "
+                        f"Struct {step_stats['STRUCT_INVALID']/total:.1%} | "
+                        f"LowVar {step_stats['LOW_VARIANCE']/total:.1%} | "
+                        f"Exec {exec_pct:.1%} | "
+                        f"Metric {metric_pct:.1%} ("
+                        f"Shp {step_stats['METRIC_SHARPE']/total:.0%}, "
+                        f"Act {step_stats['METRIC_ACTIVE']/total:.0%}, "
+                        f"Flp {step_stats['METRIC_FLIP']/total:.0%}, "
+                        f"Day {step_stats['METRIC_DAYS']/total:.0%}) | "
+                        f"SimRej {step_stats['SIM_REJECT']/total:.1%}"
+                    )
+                    tqdm.write(msg)
+                    
+                    top_struct = global_struct_reasons.most_common(3)
+                    if top_struct:
+                        struct_msg = ", ".join([f"{key[:15]}..({count})" for key, count in top_struct])
+                        tqdm.write(f"   Top Struct Fail: {struct_msg}")
 
                 rewards = torch.tensor(rewards_list, device=ModelConfig.DEVICE)
+
                 
                 # 优势函数归一化
                 adv = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
