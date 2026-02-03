@@ -62,6 +62,11 @@ class OpsRegistry:
         return list(cls._ops.keys())
     
     @classmethod
+    def list_ts_ops(cls) -> List[str]:
+        """列出所有时序算子 (以 TS_ 开头)"""
+        return [name for name in cls._ops.keys() if name.startswith('TS_')]
+    
+    @classmethod
     def freeze(cls):
         """冻结注册表，防止训练过程中动态添加算子"""
         cls._frozen = True

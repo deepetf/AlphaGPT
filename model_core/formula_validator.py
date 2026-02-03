@@ -18,6 +18,8 @@ V2 更新:
 """
 
 from typing import List, Tuple, Set
+from .ops_registry import OpsRegistry
+from .config import RobustConfig
 
 # ============================================================
 # 算子分类 (Operator Categories)
@@ -126,9 +128,9 @@ MAX_TOTAL_DISCRETE = 3        # 公式中允许的最大离散算子总数
 TOTAL_DISCRETE_PENALTY = -1.0 # 低危: 每超过一个的惩罚
 
 # V2.3: 局部密度检测 (Local Density Check) - 解决“间接堆叠”问题
-DENSITY_WINDOW = 6            # 滑动窗口大小
-MAX_TS_IN_WINDOW = 3          # 窗口内允许的最大 TS_* 算子数量
-DENSITY_PENALTY = -2.0        # 中危: 密度过高惩罚
+# V2.3: 局部密度检测 (Local Density Check) - 解决“间接堆叠”问题
+# 参数现已移至 RobustConfig (config.py/yaml)
+
 
 # 注: SIGN-LOG 距离检查使用硬过滤 (直接拒绝)，不使用软惩罚
 
@@ -245,13 +247,17 @@ def validate_formula(formula: List[str]) -> Tuple[bool, float, str]:
     
     # 10. [V2.3] 局部密度检测 (Local Density Check)
     # 检查滑动窗口内的 TS_* 算子密度，打击间接堆叠
-    if len(formula) >= DENSITY_WINDOW:
-        for i in range(len(formula) - DENSITY_WINDOW + 1):
-            window = formula[i : i + DENSITY_WINDOW]
+    density_window = RobustConfig.DENSITY_WINDOW
+    max_ts = RobustConfig.MAX_TS_IN_WINDOW
+    density_penalty = RobustConfig.DENSITY_PENALTY
+    
+    if len(formula) >= density_window:
+        for i in range(len(formula) - density_window + 1):
+            window = formula[i : i + density_window]
             ts_count = sum(1 for t in window if t.startswith(TS_PREFIX))
             
-            if ts_count > MAX_TS_IN_WINDOW:
-                penalty = DENSITY_PENALTY * (ts_count - MAX_TS_IN_WINDOW)
+            if ts_count > max_ts:
+                penalty = density_penalty * (ts_count - max_ts)
                 total_penalty += penalty
                 reasons.append(f"High TS Density @ {i} ({penalty})")
                 # 只在第一次触发时惩罚，避免重复惩罚

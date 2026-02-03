@@ -1,5 +1,5 @@
 # ============================================================================
-# AlphaGPT 默认配置文件
+# AlphaGPT 默认配置文件 (V3.2)
 # ============================================================================
 # 本文件包含 AlphaGPT 引擎的可调参数配置。
 # 使用方式:
@@ -8,6 +8,18 @@
 #
 # 注意: 只需在自定义配置中覆盖需要修改的参数，其余参数将使用本文件中的默认值。
 # ============================================================================
+
+# ============================================================================
+# 训练控制 (Training Control)
+# ============================================================================
+# train_steps:
+#   定义: 训练总循环次数 (Update Steps)
+#   用法: 控制训练时长。每步生成一个 Batch (默认512) 的公式。
+#   建议: 
+#     - 调试 (Debug): 100 ~ 500       (快速检查代码是否有 Bug)
+#     - 快速验证 (Fast): 1000 ~ 2000  (初步查看因子收敛情况)
+#     - 深度搜索 (Deep): 5000 ~ 10000+ (给模型足够时间探索复杂结构，寻找 "Super Alpha")
+train_steps: 2000
 
 # ============================================================================
 # 模型输入特征 (INPUT_FEATURES)
@@ -48,7 +60,7 @@ robust_config:
   # 分段验证 (Split Validation)
   # --------------------------------------------------------------------------
   # 定义: 训练集/验证集的切分日期
-  # 用法: 切分日期之前的数据用于训练，之后的数据用于验证
+  # 用法: 切分日期之前的数据用于训练，之后的数据用于验证 (Out-of-Sample Test)
   # 引用位置:
   #   - model_core/data_loader.py -> 计算 split_idx
   #   - model_core/engine.py -> 打印训练配置
@@ -65,129 +77,139 @@ robust_config:
   
   # stability_k:
   #   定义: 稳定性系数，越大对波动惩罚越重
-  #   用法: 见 rolling_window
   #   引用位置: model_core/backtest.py -> evaluate_robust()
+  #   调节方向:
+  #     - 调高 (如 2.0): **寻求绝对稳健**。只要 Sharpe 不稳定就重罚，可能会错过高收益但略有波动的因子。
+  #     - 调低 (如 1.0): **容忍波动**。只要平均 Sharpe 高即可，不太在乎短期回撤。
   stability_k: 1.5
 
   # --------------------------------------------------------------------------
   # 硬淘汰阈值 (Hard Thresholds)
   # --------------------------------------------------------------------------
-  # 不满足以下条件的公式将被直接淘汰（返回负分）
+  # 只要不满足以下任一条件，公式直接被视为无效 (Score = -5.0)，不会进入排名。
   
   # min_sharpe_val:
-  #   定义: 验证集最低 Sharpe Ratio
-  #   用法: sharpe_val < min_sharpe_val -> 惩罚 -5.0
+  #   定义: 验证集最低 Sharpe Ratio。低于此值直接淘汰。
   #   引用位置: model_core/engine.py -> _worker_eval()
   min_sharpe_val: 0.2
   
   # min_active_ratio:
-  #   定义: 最低持仓满足率 (实际持仓数 / top_k)
-  #   用法: active_ratio < min_active_ratio -> 惩罚 -4.0
+  #   定义: 最低持仓满足率 (实际持仓数 / top_k)。如果选不出股票，淘汰。
   #   引用位置: model_core/engine.py -> _worker_eval()
   min_active_ratio: 0.3
   
   # min_valid_days:
-  #   定义: 训练/验证期间最少有效交易天数
-  #   用法: valid_days < min_valid_days -> 惩罚 -2.5
+  #   定义: 训练/验证期间最少有效交易天数。如果大量时间空仓，淘汰。
   #   引用位置: model_core/engine.py -> _worker_eval()
   min_valid_days: 20
   
   # min_valid_count:
   #   定义: 实盘模式下最少有效标的数量 (熔断阈值)
-  #   用法: 当可交易标的数 < min_valid_count 时触发熔断
-  #   引用位置: model_core/config.py (预留，暂未使用)
+  #   引用位置: model_core/config.py (预留)
   min_valid_count: 30
   
   # top_k:
   #   定义: 策略每日选股数量
-  #   用法: 每日选取因子值 Top-K 的标的持仓
-  #   引用位置:
-  #     - model_core/engine.py -> CBBacktest(top_k=RobustConfig.TOP_K)
-  #     - model_core/backtest.py -> __init__()
+  #   引用位置: model_core/engine.py -> CBBacktest
   top_k: 10
-
+  
   # --------------------------------------------------------------------------
   # 交易费率 (Transaction Fee)
   # --------------------------------------------------------------------------
   # fee_rate:
   #   定义: 单边交易费率
-  #   用法: 每次换仓按 fee_rate 扣除成本
-  #   引用位置:
-  #     - model_core/backtest.py -> __init__()
-  #     - model_core/engine.py -> 打印训练配置
-  fee_rate: 0.0005  # 千分之 0.5
+  #   引用位置: model_core/backtest.py -> __init__
+  fee_rate: 0.0005  # 单边千分之 0.5
 
   # --------------------------------------------------------------------------
   # 评分权重 (Scoring Weights)
   # --------------------------------------------------------------------------
-  # 评分公式:
-  # final_score = (base_score + stability_bonus) × scale + ret_bonus - mdd_penalty - len_penalty
-  #
-  # 其中:
-  #   base_score = train_weight × sharpe_train + val_weight × sharpe_val
-  #   stability_bonus = stability_metric × stability_w
-  #   ret_bonus = annualized_ret × ret_w
-  #   mdd_penalty = max_drawdown × mdd_w
-  #   len_penalty = len(formula) × len_w
+  # 评分公式: Final Score = (Base Score + Stability Bonus) * Scale + Ret Bonus - Penalties
+  # 引用位置: model_core/engine.py -> _worker_eval()
   
   # train_weight / val_weight:
-  #   定义: 训练集/验证集 Sharpe 的权重
-  #   引用位置: model_core/engine.py -> _worker_eval()
+  #   调节方向:
+  #     - 增加 val_weight (如 0.8): **防止过拟合**。极度看重验证集表现 (OOS)。
+  #     - 增加 train_weight (如 0.6): **更容易收敛**。允许在训练集表现好但验证集一般的因子存活。
   train_weight: 0.4
   val_weight: 0.6
   
-  # stability_w:
-  #   定义: 稳定性得分权重 (正向加分)
-  #   引用位置: model_core/engine.py -> _worker_eval()
+  # stability_w: 稳定性加分权重。
   stability_w: 0.5
   
-  # ret_w:
-  #   定义: 年化收益率奖励权重
-  #   示例: 50% 年化收益 -> +3.0 分 (0.5 × 6.0)
-  #   引用位置: model_core/engine.py -> _worker_eval()
+  # ret_w: 年化收益率加分权重。
+  #   - 调高 (如 10.0): **收益优先**。哪怕回撤大一点，只要赚得多就给高分。
   ret_w: 6.0
   
-  # mdd_w:
-  #   定义: 最大回撤惩罚权重
-  #   示例: 30% 回撤 -> -3.6 分 (0.3 × 12.0)
-  #   引用位置: model_core/engine.py -> _worker_eval()
+  # mdd_w: 最大回撤惩罚权重。
+  #   - 调高 (如 20.0): **风险厌恶**。稍微有一点大回撤就重罚，逼迫模型寻找 "稳如老狗" 的曲线。
   mdd_w: 12.0
   
-  # len_w:
-  #   定义: 公式长度惩罚权重 (鼓励简洁公式)
-  #   示例: 10 token 公式 -> -1.0 分 (10 × 0.1)
-  #   引用位置: model_core/engine.py -> _worker_eval()
+  # len_w: 长度惩罚。
+  #   - 调高 (如 0.5): **奥卡姆剃刀**。强迫模型生成极简公式 (3-5 个算子)。
   len_w: 0.1
   
-  # scale:
-  #   定义: 最终分数缩放系数
-  #   用法: (base_score + stability_bonus) × scale
-  #   引用位置: model_core/engine.py -> _worker_eval()
+  # scale: 分数缩放系数。控制数值范围，一般不用动。
   scale: 5.0
-
-  # --------------------------------------------------------------------------
-  # 熵正则化 (Entropy Regularization)
-  # --------------------------------------------------------------------------
-  # 用于平衡探索与利用，训练过程中线性衰减
-  # current_beta = entropy_beta_start - (start - end) × (step / total_steps)
   
-  # entropy_beta_start:
-  #   定义: 初始熵正则系数 (鼓励探索)
-  #   引用位置: model_core/engine.py -> train() 循环内
-  entropy_beta_start: 0.04
+  # --------------------------------------------------------------------------
+  # 熵正则化 (Entropy Regularization) - 探索力度控制
+  # --------------------------------------------------------------------------
+  # 用于平衡 "探索(Exploration)" 与 "利用(Exploitation)"。
+  # 引用位置: model_core/engine.py -> train() 循环内
+  #
+  # 调节方向:
+  #   - 调高 start (如 0.04): **强探索模式**。
+  #     - 目的: 打破局部最优，寻找全新结构的因子。
+  #     - 代价: 初期会有大量无效公式，可能前 50 步都没有 King。
+  #   - 调低 start (如 0.01): **快速收敛模式**。
+  #     - 目的: 快速微调已知的高分模式，通过测试。
+  #     - 代价: 容易陷入同质化，生成的因子长得都差不多。
+  #
+  # 建议配置 (针对长时间训练):
+  #   - Entropy Start: 0.03 (保持高探索)
+  #   - Entropy End: 0.01 (防止过早收敛)
+  entropy_beta_start: 0.03
+  entropy_beta_end: 0.01
   
-  # entropy_beta_end:
-  #   定义: 结束熵正则系数 (保证收敛)
-  #   引用位置: model_core/engine.py -> train() 循环内
-  entropy_beta_end: 0.005
-
   # --------------------------------------------------------------------------
-  # 多样性池 (Diversity Pool)
+  # 多样性池 (Diversity Pool) - 结果去重控制
   # --------------------------------------------------------------------------
-  # diversity_pool_size:
-  #   定义: 多样性池最大容量
-  #   用法: 保存 Top-N 个高分且多样化的公式，用于结果输出
-  #   引用位置:
-  #     - model_core/engine.py -> 入池逻辑
-  #     - model_core/engine.py -> _save_results()
+  # 引用位置: model_core/engine.py -> 入池逻辑
   diversity_pool_size: 50
+  
+  # jaccard_threshold:
+  #   定义: 策略相似度容忍阈值 (0.0 ~ 1.0)。
+  #   原理: 比较两个公式使用的 "算子+变量" 集合的重叠程度。
+  #
+  #   调节方向:
+  #   - 调低 (如 0.6): **极度严格 (追求创新)**。
+  #     - 效果: 稍微有点像的公式都不让进 Top 50，逼迫模型必须另辟蹊径。
+  #     - 场景: 想要找几个截然不同的思路时使用。
+  #   - 调高 (如 0.9): **极度宽松 (允许变体)**。
+  #     - 效果: 允许 "换汤不换药" 的微调版共存 (比如改了一个参数)。
+  #     - 场景: 想要对某个好因子进行深度挖掘和微调时使用。
+  #
+  #   推荐值: 0.8 (平衡点)
+  jaccard_threshold: 0.8
+  
+  # --------------------------------------------------------------------------
+  # 局部密度检测 (Local Density Check) - 间接堆叠打击
+  # --------------------------------------------------------------------------
+  # 原理: 检测滑动窗口内的时序算子 (TS_*) 密度。
+  # 目的: 禁止 `TS_MEAN(TS_MEAN(TS_MEAN(...)))` 这种无意义的深层平滑堆叠。
+  # 引用位置: model_core/formula_validator.py
+  
+  density_window: 6
+  
+  # max_ts_in_window:
+  #   调节方向:
+  #   - 调低 (3): **严打堆叠**。几乎只能用简单的单层时序逻辑。
+  #   - 调高 (4/5): **放宽限制**。允许复杂的嵌套逻辑 (如 Alpha 差分后再做平滑)。
+  max_ts_in_window: 4
+  
+  # density_penalty:
+  #   调节方向:
+  #   - 调低 (-10.0): **杀无赦**。一旦违规直接淘汰。
+  #   - 调高 (-2.0): **扣分警告**。如果收益特别高，勉强允许违规（因为 Total Score 可能会是正的）。
+  density_penalty: -2.0

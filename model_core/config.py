@@ -32,6 +32,11 @@ class ConfigMeta(type):
     @property
     def INPUT_DIM(cls) -> int:
         return len(cls.INPUT_FEATURES)
+    
+    @property
+    def TRAIN_STEPS(cls) -> int:
+        from .config_loader import get_config_val
+        return get_config_val('train_steps', 100)
 
     # ========== RobustConfig 动态属性 ==========
     @property
@@ -114,6 +119,22 @@ class ConfigMeta(type):
     @property
     def DIVERSITY_POOL_SIZE(cls) -> int:
         return cls._rc.get('diversity_pool_size', 50)
+    
+    @property
+    def JACCARD_THRESHOLD(cls) -> float:
+        return cls._rc.get('jaccard_threshold', 0.8)
+    
+    @property
+    def DENSITY_WINDOW(cls) -> int:
+        return cls._rc.get('density_window', 6)
+    
+    @property
+    def MAX_TS_IN_WINDOW(cls) -> int:
+        return cls._rc.get('max_ts_in_window', 3)
+    
+    @property
+    def DENSITY_PENALTY(cls) -> float:
+        return cls._rc.get('density_penalty', -2.0)
 
 
 class ModelConfig(metaclass=ConfigMeta):
@@ -137,7 +158,7 @@ class ModelConfig(metaclass=ConfigMeta):
     
     # ========== 训练参数 ==========
     BATCH_SIZE = 512
-    TRAIN_STEPS = 100
+
     MAX_FORMULA_LEN = 12
     TRADE_SIZE_USD = 1000.0
     MIN_LIQUIDITY = 5000.0  # 低于此流动性视为归零/无法交易

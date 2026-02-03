@@ -93,6 +93,13 @@ def get_robust_config() -> Dict[str, Any]:
     return get_config().get('robust_config', {})
 
 
+def get_config_val(key: str, default: Any = None) -> Any:
+    """
+    获取顶层配置项
+    """
+    return get_config().get(key, default)
+
+
 def _deep_merge(base: Dict, override: Dict) -> Dict:
     """
     深度合并两个字典

@@ -2,13 +2,19 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V3.2 (Dynamic Configuration)**
+Current Version: **V3.3 (Long-Run Optimization)**
 
 ---
 
 ## 📅 Version History
 
-### **V3.2: Dynamic Configuration (Current)**
+### **V3.3: Long-Run Optimization (Current)**
+*Optimized for long-duration training stability and diversity.*
+- **Training Stability**: Adjusted default `Entropy Beta` and `Train Steps` (2000) to prevent premature convergence.
+- **Documentation**: Added "Playbook-style" tuning comments in `default_config.yaml`.
+- **Dynamic Config**: `TRAIN_STEPS` is now dynamically configurable via YAML.
+
+### **V3.2: Dynamic Configuration**
 *Refactored configuration architecture for flexibility and ease of use.*
 - **Dynamic Loading**:
     - 将 `INPUT_FEATURES` 和 `RobustConfig` 移至外部 YAML 配置文件 (`default_config.yaml`)。

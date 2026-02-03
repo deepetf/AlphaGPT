@@ -124,13 +124,26 @@ def _worker_eval(formula):
         # 返回分数和详细信息
         return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics)
     
+    except (ImportError, NameError, AttributeError, SyntaxError) as e:
+        # 系统级错误：直接抛出，中断训练，方便 Debug (如刚才的 ImportError)
+        import traceback
+        traceback.print_exc()
+        raise e  # 让主进程感知到 Worker 挂了
+
     except Exception:
+        # 运行时错误 (如除零、NaN、矩阵尺寸不匹配)：视为公式无效，给最低分
+        # 如果需要调试，可以打开下面的注释
+        # import traceback
+        # traceback.print_exc()
         return -5.0, None
 
 
 class AlphaEngine:
     def __init__(self):
         print("Initializing AlphaEngine...")
+        # 打印配置来源
+        config_source = getattr(RobustConfig, '_config_path', 'default_config.yaml')
+        print(f"📄 Config Source: {config_source}")
         print(f"Using Device: {ModelConfig.DEVICE}")
         
         # 1. 初始化并加载数据
@@ -302,7 +315,7 @@ class AlphaEngine:
                             similar_key = None
                             for pool_key, pool_data in self.diverse_pool.items():
                                 similarity = self._calculate_similarity(formula_str, pool_data['formula'])
-                                if similarity > 0.8:  # 相似度阈值
+                                if similarity > RobustConfig.JACCARD_THRESHOLD:  # 相似度阈值
                                     similar_key = pool_key
                                     break
                             
@@ -475,6 +488,9 @@ if __name__ == "__main__":
     # 加载配置 (必须在创建 AlphaEngine 之前)
     from .config_loader import load_config
     config = load_config(args.config)
+    
+    # 记录配置文件路径以便在 init 中打印
+    RobustConfig._config_path = args.config if args.config else "default_config.yaml"
     
     if args.config:
         print(f"📁 已加载自定义配置: {args.config}")
