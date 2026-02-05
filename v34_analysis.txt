@@ -1,0 +1,23 @@
+Total Runs: 5
+Latest Run (V3.4 Verification): Steps 0 -> 109 (110 steps)
+
+Aggregated Stats for Latest Run:
+{
+  "METRIC_SHARPE": 41239,
+  "METRIC_FLIP": 1211,
+  "STRUCT_INVALID": 842,
+  "PASS": 8059,
+  "LOW_VARIANCE": 81,
+  "SIM_REJECT": 4885,
+  "SIM_REPLACE": 3
+}
+
+STRUCT_INVALID Rate: 1.50%
+PASS Count: 8059
+
+Last 5 Steps Detail:
+Step 105: {"SIM_REJECT": 219, "PASS": 287, "METRIC_FLIP": 4, "METRIC_SHARPE": 2}
+Step 106: {"PASS": 297, "SIM_REJECT": 212, "METRIC_SHARPE": 3}
+Step 107: {"SIM_REJECT": 207, "PASS": 293, "LOW_VARIANCE": 2, "METRIC_SHARPE": 6, "METRIC_FLIP": 4}
+Step 108: {"PASS": 306, "SIM_REJECT": 202, "METRIC_SHARPE": 4}
+Step 109: {"SIM_REJECT": 193, "PASS": 317, "METRIC_FLIP": 1, "METRIC_SHARPE": 1}

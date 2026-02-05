@@ -1,31 +1,31 @@
 {
   "date": "2024-01-26",
-  "created_at": "2026-02-02T12:41:00.622668",
+  "created_at": "2026-02-03T09:10:33.551051",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "127103.SZ",
       "name": "东南转债",
-      "score": 0.5477
+      "score": 547722624.0
     },
     {
       "rank": 2,
       "code": "123237.SZ",
       "name": "佳禾转债",
-      "score": 0.5477
+      "score": 547722624.0
     },
     {
       "rank": 3,
       "code": "110055.SH",
       "name": "伊力转债",
-      "score": 0.0
+      "score": -0.0
     },
     {
       "rank": 4,
       "code": "110059.SH",
       "name": "浦发转债",
-      "score": 0.0
+      "score": -0.0
     },
     {
       "rank": 5,
@@ -37,13 +37,13 @@
       "rank": 6,
       "code": "110060.SH",
       "name": "天路转债",
-      "score": 0.0
+      "score": -0.0
     },
     {
       "rank": 7,
       "code": "110062.SH",
       "name": "烽火转债",
-      "score": 0.0
+      "score": -0.0
     },
     {
       "rank": 8,

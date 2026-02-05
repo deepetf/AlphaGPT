@@ -13,7 +13,7 @@ import time
 import argparse
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
-from collections import Counter
+from collections import Counter, OrderedDict, deque
 
 from .config import ModelConfig, RobustConfig
 
@@ -70,20 +70,20 @@ def _worker_eval(formula):
         is_valid, structural_penalty, reason = validate_formula(formula)
         
         if not is_valid:
-            return -5.0, None, "STRUCT_INVALID", reason
+            return RobustConfig.PENALTY_STRUCT, None, "STRUCT_INVALID", reason
         
         # 1. 执行公式
         try:
             res = _global_vm.execute(formula, _global_feat)
             if res is None:
-                return -5.0, None, "EXEC_NONE", "Returned None"
+                return RobustConfig.PENALTY_EXEC, None, "EXEC_NONE", "Returned None"
         except Exception as e:
-            return -5.0, None, "EXEC_ERR", type(e).__name__
+            return RobustConfig.PENALTY_EXEC, None, "EXEC_ERR", type(e).__name__
         
         # 2. 检查因子方差
         var_threshold = 1e-4
         if res.std() < var_threshold:
-            return -2.0, None, "LOW_VARIANCE", f"std={res.std():.2e}, thr={var_threshold}"
+            return RobustConfig.PENALTY_LOWVAR, None, "LOW_VARIANCE", f"std={res.std():.2e}, thr={var_threshold}"
 
 
         # 3. 稳健性评估
@@ -94,20 +94,43 @@ def _worker_eval(formula):
             split_idx=_global_split_idx
         )
         
-        # 4. 硬淘汰条件 (Hard Filters)
+        # 4. 硬淘汰条件 (Hard Filters) - [V3.5] 增加线性梯度与 Clamp
+        gaps = []
+        fail_status = "PASS"
+        fail_reason = "OK"
+        
         # 4.1 验证集 Sharpe 太低
         if metrics['sharpe_val'] < RobustConfig.MIN_SHARPE_VAL:
-            return RobustConfig.PENALTY_SHARPE, None, "METRIC_SHARPE", f"val={metrics['sharpe_val']:.2f}"
+            # 归一化 Gap: (阈值 - 实际值) / max(1, abs(阈值))
+            sharpe_gap = (RobustConfig.MIN_SHARPE_VAL - metrics['sharpe_val']) / max(1.0, abs(RobustConfig.MIN_SHARPE_VAL))
+            gaps.append(max(0.0, float(sharpe_gap)))
+            if fail_status == "PASS":
+                fail_status, fail_reason = "METRIC_SHARPE", f"val={metrics['sharpe_val']:.2f}"
         
         # 4.2 活跃率太低 (选不到足够标的)
         if metrics['active_ratio'] < RobustConfig.MIN_ACTIVE_RATIO:
-            return RobustConfig.PENALTY_ACTIVE, None, "METRIC_ACTIVE", f"ratio={metrics['active_ratio']:.2f}"
-        
-        # 4.3 (已移除) 训练/验证方向翻转改为软惩罚
+            active_gap = (RobustConfig.MIN_ACTIVE_RATIO - metrics['active_ratio']) / RobustConfig.MIN_ACTIVE_RATIO
+            gaps.append(max(0.0, float(active_gap)))
+            if fail_status == "PASS":
+                fail_status, fail_reason = "METRIC_ACTIVE", f"ratio={metrics['active_ratio']:.2f}"
         
         # 4.4 有效交易日太少 (统计不可靠)
-        if metrics['valid_days_train'] < RobustConfig.MIN_VALID_DAYS or metrics['valid_days_val'] < RobustConfig.MIN_VALID_DAYS:
-            return RobustConfig.PENALTY_DAYS, None, "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
+        min_days = RobustConfig.MIN_VALID_DAYS
+        if metrics['valid_days_train'] < min_days or metrics['valid_days_val'] < min_days:
+            worst_days = min(metrics['valid_days_train'], metrics['valid_days_val'])
+            days_gap = (min_days - worst_days) / min_days
+            gaps.append(max(0.0, float(days_gap)))
+            if fail_status == "PASS":
+                fail_status, fail_reason = "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
+
+        if gaps:
+            avg_gap = sum(gaps) / len(gaps)
+            # Clamped Metric Penalty: clamp(base - scale * gap, min=-6.0, max=-4.0)
+            p_max = RobustConfig.PENALTY_METRIC_MAX
+            p_min = RobustConfig.PENALTY_METRIC_MIN
+            penalty = p_max - (p_max - p_min) * avg_gap
+            penalty = max(float(p_min), min(float(p_max), penalty))
+            return float(penalty), None, fail_status, f"{fail_reason} | gap={avg_gap:.2f}"
 
         
         # 5. 综合评分 (Soft Scoring)
@@ -161,7 +184,7 @@ def _worker_eval(formula):
         # 如果需要调试，可以打开下面的注释
         # import traceback
         # traceback.print_exc()
-        return -5.0, None, "EXEC_ERR", "RuntimeError"
+        return RobustConfig.PENALTY_EXEC, None, "EXEC_ERR", "RuntimeError"
 
 
 
@@ -170,7 +193,7 @@ class AlphaEngine:
         print("Initializing AlphaEngine...")
         # 打印配置来源
         config_source = getattr(RobustConfig, '_config_path', 'default_config.yaml')
-        print(f"📄 Config Source: {config_source}")
+        print(f"Config source: {config_source}")
         print(f"Using Device: {ModelConfig.DEVICE}")
         
         # 1. 初始化并加载数据
@@ -194,6 +217,9 @@ class AlphaEngine:
         
         # 5. 多样性池 (formula_readable -> metrics_dict)
         self.diverse_pool = {}
+        
+        # 6. Session 级回测缓存 (V3.5: formula_tuple -> result_tuple)
+        self.eval_cache = OrderedDict()
         
         print(f"Model vocab size: {self.model.vocab_size}")
 
@@ -221,21 +247,19 @@ class AlphaEngine:
         return intersection / union if union > 0 else 0.0
 
     def train(self):
-        print("🚀 Starting CB Alpha Mining (Multi-Process CPU)...")
+        print("Starting CB Alpha Mining (Multi-Process CPU)...")
         print("=" * 60)
-        print("🔧 TRAINING CONFIGURATION")
-        print(f"   • Steps:       {ModelConfig.TRAIN_STEPS}")
-        print(f"   • Batch Size:  {ModelConfig.BATCH_SIZE}")
-        print(f"   • Device:      {ModelConfig.DEVICE}")
-        print(f"   • Workers:     {os.cpu_count() or 4}")
-        print(f"   • Split Date:  {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
-        print(f"   • Top-K:       {RobustConfig.TOP_K}")
-        print(f"   • Fee Rate:    {RobustConfig.FEE_RATE:.4f} ({RobustConfig.FEE_RATE*100:.2f}% 单边)")
-        print(f"   • Entropy β:   {RobustConfig.ENTROPY_BETA_START} → {RobustConfig.ENTROPY_BETA_END} (linear decay)")
-        print("-" * 60)
-        print("🧬 GENOME (Vocabulary)")
-        print(f"   • Factors ({len(ModelConfig.INPUT_FEATURES)}): {ModelConfig.INPUT_FEATURES}")
-        print(f"   • Operators ({len(OpsRegistry.list_ops())}): {OpsRegistry.list_ops()}")
+        print("TRAINING CONFIGURATION")
+        print(f"   - Steps:       {ModelConfig.TRAIN_STEPS}")
+        print(f"   - Batch Size:  {ModelConfig.BATCH_SIZE}")
+        print(f"   - Device:      {ModelConfig.DEVICE}")
+        print(f"   - Workers:     {os.cpu_count() or 4}")
+        print(f"   - Split Date:  {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
+        print(f"   - Top-K:       {RobustConfig.TOP_K}")
+        print(f"   - Fee Rate:    {RobustConfig.FEE_RATE:.4f} ({RobustConfig.FEE_RATE*100:.2f}% single-side)")
+        print(f"   - Entropy beta:{RobustConfig.ENTROPY_BETA_START} -> {RobustConfig.ENTROPY_BETA_END} (linear decay)")
+        print(f"   - Factors ({len(ModelConfig.INPUT_FEATURES)}): {ModelConfig.INPUT_FEATURES}")
+        print(f"   - Operators ({len(OpsRegistry.list_ops())}): {OpsRegistry.list_ops()}")
         print("=" * 60)
         
         start_time = time.time()
@@ -271,9 +295,56 @@ class AlphaEngine:
             # [Grammar] 1. 准备元数据 (移至循环外以优化性能)
             is_feat, is_unary, is_binary, net_change = self.model.get_grammar_masks(ModelConfig.DEVICE)
             
+            # [V4.1] 状态监控变量 (工程加固版)
+            # 1. 成功率窗口 (用于平滑控制)
+            window_size = 10
+            hard_pass_rate_history = deque([1.0]*window_size, maxlen=window_size)
+            hard_pass_abs_history = deque([ModelConfig.BATCH_SIZE]*window_size, maxlen=window_size)
+            struct_rate_history = deque([0.0]*window_size, maxlen=window_size)
+            
+            # 2. 持续故障触发器 (熔断逻辑)
+            struct_failure_strike = 0  # 连续高 Struct 计数
+            lowvar_failure_strike = 0  # 连续高 LowVar 计数
+            lowvar_recovery_strike = 0
+            saturation_strike = 0
+            lowvar_penalty_multiplier = 1.0
+            
+            # 3. 控制器状态
+            cool_down_timer = 0
+            total_steps = ModelConfig.TRAIN_STEPS
+            
             for step in pbar:
                 step_stats = Counter()
+                # [V4.1] 定义三级成功计数
+                counts = {"HardPass": 0, "MetricPass": 0, "SimPass": 0}
                 bs = ModelConfig.BATCH_SIZE
+                
+                # [V4.1] 计算当前平滑指标
+                rolling_hpr = sum(hard_pass_rate_history) / window_size
+                rolling_hpa = sum(hard_pass_abs_history) / window_size
+                rolling_str = sum(struct_rate_history) / window_size
+                
+                # [V4.1] 自适应熵控制回路 (Rolling 版)
+                base_beta = RobustConfig.ENTROPY_BETA_START - (
+                    RobustConfig.ENTROPY_BETA_START - RobustConfig.ENTROPY_BETA_END
+                ) * (step / total_steps)
+                
+                if cool_down_timer > 0:
+                    cool_down_timer -= 1
+                    current_beta = getattr(self, '_current_beta_locked', base_beta)
+                else:
+                    # [V4.1.1] 强化一级触发 (PR < 1%) -> 救火档锁定 0.06
+                    if rolling_hpr < 0.01 or rolling_hpa < 1:
+                        current_beta = 0.06
+                        self._current_beta_locked = current_beta
+                        cool_down_timer = 10
+                    elif rolling_hpr < 0.05:
+                        current_beta = base_beta + 0.005
+                    elif rolling_hpr > 0.02 and rolling_str < 0.9:
+                        current_beta = base_beta
+                    else:
+                        current_beta = base_beta
+
                 inp = torch.zeros((bs, 1), dtype=torch.long, device=ModelConfig.DEVICE)
 
                 current_depths = torch.zeros(bs, dtype=torch.long, device=ModelConfig.DEVICE)
@@ -328,18 +399,90 @@ class AlphaEngine:
                 
                 # 准备任务: 立即将 token ID 转为字符串，消除解码不一致风险
                 formula_list = [self._tokens_to_strings(seq.tolist()) for seq in seqs]
-                rewards_list = []
                 
-                # 并行回测 (CPU)
-                results = list(executor.map(_worker_eval, formula_list))
+                # [V3.5] 批次去重与 LRU 缓存 (核心提速逻辑)
+                unique_formula_to_indices = {}
+                for idx, f in enumerate(formula_list):
+                    # Canonical Key: 对 RPN 进行简单规范化 (目前仅作为 tuple)
+                    f_tuple = tuple(f)
+                    if f_tuple not in unique_formula_to_indices:
+                        unique_formula_to_indices[f_tuple] = []
+                    unique_formula_to_indices[f_tuple].append(idx)
+                
+                num_unique_gen = len(unique_formula_to_indices)
+                
+                # 识别不在缓存中的唯一公式
+                to_eval_formulas = []
+                f_idx_to_eval = {}
+                for f_tuple in unique_formula_to_indices:
+                    if f_tuple not in self.eval_cache:
+                        f_idx_to_eval[f_tuple] = len(to_eval_formulas)
+                        to_eval_formulas.append(list(f_tuple))
+                
+                num_to_eval = len(to_eval_formulas)
+                
+                # 仅回测从未见过且当前批次唯一的公式
+                if to_eval_formulas:
+                    new_results = list(executor.map(_worker_eval, to_eval_formulas))
+                    for f_tuple, eval_idx in f_idx_to_eval.items():
+                        # LRU Update
+                        if f_tuple in self.eval_cache:
+                            self.eval_cache.move_to_end(f_tuple)
+                        self.eval_cache[f_tuple] = new_results[eval_idx]
+                    
+                    # [V3.5] Cache 容量管理 (LRU 淘汰)
+                    max_cache = RobustConfig.CACHE_MAX_SIZE
+                    if len(self.eval_cache) > max_cache:
+                        # 淘汰最早的 20%
+                        for _ in range(int(max_cache * 0.2)):
+                            self.eval_cache.popitem(last=False)
+                
+                # 组装 512 个结果
+                results = []
+                for f in formula_list:
+                    res_tuple = self.eval_cache[tuple(f)]
+                    results.append(res_tuple)
+                    # 每次命中都移到末尾 (LRU)
+                    self.eval_cache.move_to_end(tuple(f))
+                
+                # [V3.5] 提速指标计算
+                batch_hit_rate = (bs - num_unique_gen) / bs
+                cache_hit_rate = (num_unique_gen - num_to_eval) / bs
+                uniq_rate_gen = num_unique_gen / bs
+                
+                rewards_list = []
+                step_gaps = []
+                step_struct_reasons = Counter()
+
                 
                 # 聚合结果
                 for i, (rew, best_info, status, detail) in enumerate(results):
                     final_status = status
+                    
+                    # [V4.1] 三级成功定义
+                    is_hard_pass = status not in ["STRUCT_INVALID", "EXEC_ERR", "EXEC_NONE", "LOW_VARIANCE"]
+                    if is_hard_pass:
+                        counts["HardPass"] += 1
+                        if status == "PASS":
+                            counts["MetricPass"] += 1
+                    
+                    # [V4.1] 动态惩罚倍率应用 (针对顽固 LowVar)
+                    if status == "LOW_VARIANCE":
+                        rew = rew * lowvar_penalty_multiplier
+                    
                     rewards_list.append(rew)
+                    step_stats[status] += 1
                     
                     if status == "STRUCT_INVALID":
                         global_struct_reasons[detail] += 1
+                        step_struct_reasons[detail] += 1
+                    
+                    # 提取 Gap 指标
+                    if "gap=" in detail:
+                        try:
+                            gap_val = float(detail.split("gap=")[-1])
+                            step_gaps.append(gap_val)
+                        except: pass
                     
                     score_val = None
                     if best_info:
@@ -417,44 +560,118 @@ class AlphaEngine:
                                     final_status = "SIM_REPLACE"
                                 else:
                                     final_status = "SIM_REJECT"
+                                    # [V3.5] 应用相似度拒绝惩罚，避免躲进冗余区
+                                    rewards_list[i] = RobustConfig.PENALTY_SIM
+                    
+                    # [V4.1.2] SimPass 定义修复: 通用的 MetricPass 且未被 SIM_REJECT (包含 SIM_REPLACE)
+                    if final_status != "SIM_REJECT" and is_hard_pass and status == "PASS":
+                        counts["SimPass"] += 1
 
                     
                     step_stats[final_status] += 1
                     global_stats[final_status] += 1
 
+                # [V4.1.1] 奖励饱和监控 (Standard Deviation)
+                rewards_tensor = torch.tensor(rewards_list, dtype=torch.float)
+                reward_std = rewards_tensor.std().item()
+                # 修正: 监控 MetricFail 的 Std 而不是 MetricPass (PASS)
+                metric_fail_rewards = [r for i, r in enumerate(rewards_list) if "METRIC" in results[i][2]]
+                metric_fail_std = torch.tensor(metric_fail_rewards).std().item() if len(metric_fail_rewards) > 1 else 0.0
+
                 log_entry = {
                     "step": step,
                     "stats": dict(step_stats),
+                    "reward_std": reward_std,
+                    "metric_fail_std": metric_fail_std, # 新增 MetricFail Std
                     "timestamp": time.time()
                 }
                 with open(stats_path, 'a', encoding='utf-8') as stats_file:
                     stats_file.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
                 if step % 20 == 0:
-                    total = sum(step_stats.values()) or 1
-                    metric_keys = ["METRIC_SHARPE", "METRIC_ACTIVE", "METRIC_FLIP", "METRIC_DAYS"]
-                    metric_pct = sum(step_stats[key] for key in metric_keys) / total
-                    exec_pct = (step_stats["EXEC_NONE"] + step_stats["EXEC_ERR"]) / total
+                    total = bs
+                    if step_gaps:
+                        avg_gap = np.mean(step_gaps)
+                        p50_gap = np.percentile(step_gaps, 50)
+                        p90_gap = np.percentile(step_gaps, 90)
+                    else:
+                        avg_gap = p50_gap = p90_gap = 0.0
+                    
+                    # [V4.1] 动力学观测 2.0++: 包含 FailAbs 与分级 Pass
+                    struct_abs = step_stats['STRUCT_INVALID']
+                    lowvar_abs = step_stats['LOW_VARIANCE']
+                    metric_abs = sum(step_stats[s] for s in step_stats if 'METRIC' in s)
+                    sim_abs = step_stats['SIM_REJECT']
+                    
+                    # [V4.1.1] 计算 SimFailShare 与 TopFail
+                    # [V4.1.2] 修正: 分母为 MetricPass (在这些 Good Ones 里有多少是重复的)
+                    sim_fs_denom = counts['MetricPass']
+                    sim_fail_share = sim_abs / sim_fs_denom if sim_fs_denom > 0 else 0.0
+                    top_fails = step_struct_reasons.most_common(3)
+                    top_fail_str = " | ".join([f"{k}:{v}" for k, v in top_fails])
                     
                     msg = (
-                        f"[Stats Step {step}] "
-                        f"Pass {step_stats['PASS']/total:.1%} | "
-                        f"Struct {step_stats['STRUCT_INVALID']/total:.1%} | "
-                        f"LowVar {step_stats['LOW_VARIANCE']/total:.1%} | "
-                        f"Exec {exec_pct:.1%} | "
-                        f"Metric {metric_pct:.1%} ("
-                        f"Shp {step_stats['METRIC_SHARPE']/total:.0%}, "
-                        f"Act {step_stats['METRIC_ACTIVE']/total:.0%}, "
-                        f"Flp {step_stats['METRIC_FLIP']/total:.0%}, "
-                        f"Day {step_stats['METRIC_DAYS']/total:.0%}) | "
-                        f"SimRej {step_stats['SIM_REJECT']/total:.1%}"
+                        f"[Step {step}] "
+                        f"H/M/S_Pass: {counts['HardPass']}/{counts['MetricPass']}/{counts['SimPass']} | "
+                        f"RollPR {rolling_hpr:.1%} | "
+                        f"FailAbs[S:{struct_abs}, L:{lowvar_abs}, M:{metric_abs}, R:{sim_abs}] | "
+                        f"Gap(avg/p50/p90) {avg_gap:.2f}/{p50_gap:.2f}/{p90_gap:.2f} | "
+                        f"RStd {reward_std:.2f} | MStd {metric_fail_std:.2f} | "
+                        f"SimFS {sim_fail_share:.1%} | B:{current_beta:.4f}"
                     )
                     tqdm.write(msg)
-                    
-                    top_struct = global_struct_reasons.most_common(3)
-                    if top_struct:
-                        struct_msg = ", ".join([f"{key[:15]}..({count})" for key, count in top_struct])
-                        tqdm.write(f"   Top Struct Fail: {struct_msg}")
+                    if top_fail_str:
+                        tqdm.write(f"   TopFail: {top_fail_str}")
+                
+                # [V4.1] 更新滚动窗口与持续故障触发器
+                hpr = counts['HardPass'] / bs
+                hard_pass_rate_history.append(hpr)
+                hard_pass_abs_history.append(counts['HardPass'])
+                struct_rate = step_stats['STRUCT_INVALID'] / bs
+                struct_rate_history.append(struct_rate)
+                
+                # 熔断规则 1: 结构坍缩 (30步 > 90%)
+                if struct_rate > 0.9:
+                    struct_failure_strike += 1
+                else:
+                    struct_failure_strike = 0
+                
+                if struct_failure_strike >= 30:
+                    tqdm.write(">>> [CRITICAL] Struct Collapse detected! Entering Reinforcement Mode.")
+                    current_beta = 0.06
+                    self._current_beta_locked = current_beta
+                    cool_down_timer = 20
+                    struct_failure_strike = 0
+                
+                # 熔断规则 2: 低方差坍缩 (50步 > 70%)
+                if (step_stats['LOW_VARIANCE'] / bs) > 0.7:
+                    lowvar_failure_strike += 1
+                else:
+                    lowvar_failure_strike = max(0, lowvar_failure_strike - 1)
+                
+                if lowvar_failure_strike >= 50:
+                    tqdm.write(">>> [WARNING] Persistent LowVar detected. Hardening penalty.")
+                    lowvar_penalty_multiplier = 1.15
+                    lowvar_failure_strike = 0
+                
+                # [V4.1.1] 熔断规则 3: 低方差恢复
+                if (step_stats['LOW_VARIANCE'] / bs) < 0.1:
+                    lowvar_recovery_strike += 1
+                else:
+                    lowvar_recovery_strike = 0
+                if lowvar_recovery_strike >= 20 and lowvar_penalty_multiplier > 1.0:
+                    tqdm.write(">>> [INFO] LowVar recovered. Normalizing penalty.")
+                    lowvar_penalty_multiplier = 1.0
+                    lowvar_recovery_strike = 0
+
+                # [V4.1.1] 熔断规则 4: 奖励饱和告警
+                if reward_std < 0.1:
+                    saturation_strike += 1
+                else:
+                    saturation_strike = 0
+                if saturation_strike >= 50:
+                    tqdm.write(f">>> [LOG] Reward Saturation Detected (RStd {reward_std:.3f} < 0.1). Check Reward Design.")
+                    saturation_strike = 0
 
                 rewards = torch.tensor(rewards_list, device=ModelConfig.DEVICE)
 
@@ -469,12 +686,7 @@ class AlphaEngine:
                 
                 loss = loss.mean()
                 
-                # V2.3: 熵正则化 (带线性衰减)
-                # current_beta = START - (START - END) * (step / TOTAL_STEPS)
-                total_steps = ModelConfig.TRAIN_STEPS
-                current_beta = RobustConfig.ENTROPY_BETA_START - (
-                    RobustConfig.ENTROPY_BETA_START - RobustConfig.ENTROPY_BETA_END
-                ) * (step / total_steps)
+                # V3.5: 使用带精炼控制回路的熵正则化
                 avg_entropy = torch.stack(entropies).mean()
                 loss = loss - current_beta * avg_entropy
                 
@@ -491,7 +703,7 @@ class AlphaEngine:
 
             end_time = time.time()
             duration = end_time - start_time
-            print(f"\n✅ Training Completed in {duration:.2f} seconds ({duration/60:.2f} minutes).")
+            print(f"\nTraining completed in {duration:.2f} seconds ({duration/60:.2f} minutes).")
             
             self._save_results()
     
@@ -576,7 +788,7 @@ class AlphaEngine:
         with open(result_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
         
-        print(f"\n✅ Saved to: {result_path}")
+        print(f"\nSaved to: {result_path}")
         print(f"   Total New Kings discovered: {len(self.king_history)}")
         print(f"   Best Score: {self.best_score:.2f}")
         print(f"   Best Sharpe: {self.best_sharpe:.2f}")
@@ -609,12 +821,13 @@ if __name__ == "__main__":
     config = load_config(args.config)
     
     # 记录配置文件路径以便在 init 中打印
-    RobustConfig._config_path = args.config if args.config else "default_config.yaml"
+    # 记录配置路径 (仅用于打印/调试)
+    RobustConfig._config_path = args.config if args.config else "default_config.yaml"  # type: ignore[attr-defined]
     
     if args.config:
-        print(f"📁 已加载自定义配置: {args.config}")
+        print(f"Loaded custom config: {args.config}")
     else:
-        print("📁 使用默认配置: default_config.yaml")
+        print("Using default config: default_config.yaml")
     
     # Windows 为了支持 ProcessPool，必须要有这个 protect
     eng = AlphaEngine()

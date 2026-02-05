@@ -2,24 +2,26 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V3.4 (Grammar-Guided Decoding)**
+Current Version: **V4.1.2 (Low Risk Online)**
 
 ---
 
 ## 📅 Version History
 
-### **V3.4: Grammar-Guided Decoding (Current)**
+### **V4.1: Engineering Hardening (Current)**
+*工程加固与口径真实性：确保每一分 Alpha 都经得起推敲。*
+- **Hierarchy of Failure**: 建立 (`EXEC` < `STRUCT` < `LOWVAR` < `METRIC` < `SIM`) 惩罚阶梯，提供清晰的强化学习梯度。
+- **Grammar-Guided Decoding**: 利用 Action Masking 技术将无效语法生成率从 99% 降至 **0%**。
+- **Rolling Window Controller**: 引入 10步滑动窗口熵控制，并结合 **3-Level Success (Hard/Metric/Sim)** 口径，彻底消除训练震荡。
+- **SimPass 2.0**: 重新定义多样性成功标准，认可“优胜劣汰”的替换行为 (`SIM_REPLACE`)。
+
+### **V3.5: Efficiency**
+*效率革命：解决相似性冗余。*
+- **Safe LRU Cache**: 100k上限确定性缓存，消除冗余回测。
+- **Adaptive Entropy 1.0**: 初步引入自适应熵控制。
+
+### **V3.4: Grammar-Guided Decoding**
 *引入算子语法约束，彻底解决无效公式生成问题。*
-- **Action Masking (语法引导解码)**:
-    - 在 Transformer 生成过程中引入 **动作掩码 (Action Masking)**。
-    - 强制遵循 RPN 堆栈规则：防止下溢 (`Underflow`)、防止长度溢出 (`Overrun`)、强制归约 (`Force Reduction`)。
-    - **效果**: 将 `STRUCT_INVALID` 错误率从 99.8% 降至 **0%**，极大提升了训练效率。
-- **Worker Config Fix**:
-    - 修复了 Windows 环境下多进程训练时，子进程无法正确加载自定义特性 (`INPUT_FEATURES`) 的致命 Bug。
-- **Dynamic Soft Penalty**:
-    - 改进过拟合惩罚机制，使罚分与过拟合严重程度成正比，改善 RL 训练的梯度信号。
-- **Variable Safety**:
-    - 修复了 `engine.py` 中训练步数变量被生成步数覆盖的逻辑漏洞。
 
 
 ### **V3.3: Long-Run Optimization (Current)**

@@ -19,7 +19,7 @@
 #     - 调试 (Debug): 100 ~ 500       (快速检查代码是否有 Bug)
 #     - 快速验证 (Fast): 1000 ~ 2000  (初步查看因子收敛情况)
 #     - 深度搜索 (Deep): 5000 ~ 10000+ (给模型足够时间探索复杂结构，寻找 "Super Alpha")
-train_steps: 110
+train_steps: 200
 # ============================================================================
 # 模型输入特征 (INPUT_FEATURES)
 # ============================================================================
@@ -164,12 +164,19 @@ robust_config:
 
   # Hard Filters (硬淘汰惩罚值): 
   # 当触发以下条件时，公式不仅被重罚，还会被标记为无效，不进入排行榜。
-  penalty_struct: -5.0   # 结构无效 (RPN错误, NaN等)
-  penalty_exec: -5.0     # 执行错误 (VM Crash)
-  penalty_sharpe: -5.0   # 验证集 Sharpe 过低 (< min_sharpe_val)
-  penalty_active: -4.0   # 活跃度过低 (< min_active_ratio)
-  penalty_days: -2.5     # 有效交易日过少
-  penalty_low_var: -2.0  # 因子方差过低 (死因子)
+  # [V3.5] 惩罚阶梯 (Hierarchy of Failure)
+  # 排序 (从重到轻): EXEC < STRUCT < LOWVAR < METRIC < SIM
+  penalty_exec: -10.0      # 执行错误 (最底层)
+  penalty_struct: -8.0     # 结构/语法无效
+  penalty_lowvar: -6.5     # 死因子 (方差过低)
+  
+  # METRIC 线性梯度惩罚
+  penalty_metric_max: -4.0 # 恰好不满足硬指标时的惩罚
+  penalty_metric_min: -6.0 # 远低于阈值时的极限惩罚 (仍优于 LowVar)
+  
+  # 其他
+  penalty_sim: -1.5        # 相似度拒绝 (轻惩罚)
+  cache_max_size: 100000   # 缓存上限
   
   # --------------------------------------------------------------------------
   # 熵正则化 (Entropy Regularization) - 探索力度控制
@@ -188,14 +195,15 @@ robust_config:
   # 建议配置 (针对长时间训练):
   #   - Entropy Start: 0.03 (保持高探索)
   #   - Entropy End: 0.01 (防止过早收敛)
-  entropy_beta_start: 0.03
-  entropy_beta_end: 0.02
+  entropy_beta_start: 0.04
+  entropy_beta_end: 0.015
   
   # --------------------------------------------------------------------------
   # 多样性池 (Diversity Pool) - 结果去重控制
   # --------------------------------------------------------------------------
   # 引用位置: model_core/engine.py -> 入池逻辑
   diversity_pool_size: 100
+  
   
   # jaccard_threshold:
   #   定义: 策略相似度容忍阈值 (0.0 ~ 1.0)。
@@ -210,7 +218,7 @@ robust_config:
   #     - 场景: 想要对某个好因子进行深度挖掘和微调时使用。
   #
   #   推荐值: 0.8 (平衡点)
-  jaccard_threshold: 0.8
+  jaccard_threshold: 0.85
   
   # --------------------------------------------------------------------------
   # 局部密度检测 (Local Density Check) - 间接堆叠打击

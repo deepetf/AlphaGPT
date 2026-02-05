@@ -1,37 +1,37 @@
 {
   "date": "2024-07-09",
-  "created_at": "2026-02-02T12:42:52.121763",
+  "created_at": "2026-02-03T09:11:56.024156",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "123220.SZ",
-      "name": "易瑞转债",
-      "score": 0.4472
+      "code": "110055.SH",
+      "name": "伊力转债",
+      "score": -0.0
     },
     {
       "rank": 2,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": 0.0
-    },
-    {
-      "rank": 3,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": 0.0
-    },
-    {
-      "rank": 4,
       "code": "110060.SH",
       "name": "天路转债",
       "score": 0.0
     },
     {
-      "rank": 5,
+      "rank": 3,
+      "code": "110062.SH",
+      "name": "烽火转债",
+      "score": -0.0
+    },
+    {
+      "rank": 4,
       "code": "110063.SH",
       "name": "鹰19转债",
       "score": 0.0
+    },
+    {
+      "rank": 5,
+      "code": "110058.SH",
+      "name": "永鼎转债",
+      "score": -0.0
     },
     {
       "rank": 6,
@@ -43,45 +43,26 @@
       "rank": 7,
       "code": "110067.SH",
       "name": "华安转债",
-      "score": 0.0
+      "score": -0.0
     },
     {
       "rank": 8,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": 0.0
+      "code": "110068.SH",
+      "name": "龙净转债",
+      "score": -0.0
     },
     {
       "rank": 9,
-      "code": "110068.SH",
-      "name": "龙净转债",
+      "code": "110059.SH",
+      "name": "浦发转债",
       "score": 0.0
     },
     {
       "rank": 10,
-      "code": "110059.SH",
-      "name": "浦发转债",
+      "code": "110052.SH",
+      "name": "贵广转债",
       "score": 0.0
     }
   ],
-  "orders": [
-    {
-      "code": "110052.SH",
-      "name": "贵广转债",
-      "side": "SELL",
-      "quantity": 80,
-      "price": 118.08799743652344,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "123220.SZ",
-      "name": "易瑞转债",
-      "side": "BUY",
-      "quantity": 100,
-      "price": 91.70099639892578,
-      "reason": "Top-K入选",
-      "rank": 1
-    }
-  ]
+  "orders": []
 }

@@ -1,37 +1,37 @@
 {
   "date": "2024-11-15",
-  "created_at": "2026-02-02T12:45:07.957147",
+  "created_at": "2026-02-03T09:13:17.632676",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "127104.SZ",
-      "name": "姚记转债",
-      "score": 0.4472
+      "code": "113688.SH",
+      "name": "国检转债",
+      "score": 447213600.0
     },
     {
       "rank": 2,
-      "code": "123249.SZ",
-      "name": "英搏转债",
-      "score": 0.4472
+      "code": "110097.SH",
+      "name": "天润转债",
+      "score": 447213600.0
     },
     {
       "rank": 3,
-      "code": "113689.SH",
-      "name": "洛凯转债",
-      "score": 0.4472
+      "code": "110067.SH",
+      "name": "华安转债",
+      "score": 0.0
     },
     {
       "rank": 4,
-      "code": "113688.SH",
-      "name": "国检转债",
-      "score": 0.4472
+      "code": "110064.SH",
+      "name": "建工转债",
+      "score": 0.0
     },
     {
       "rank": 5,
-      "code": "110097.SH",
-      "name": "天润转债",
-      "score": 0.4472
+      "code": "110063.SH",
+      "name": "鹰19转债",
+      "score": 0.0
     },
     {
       "rank": 6,
@@ -47,41 +47,50 @@
     },
     {
       "rank": 8,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": 0.0
-    },
-    {
-      "rank": 9,
       "code": "110073.SH",
       "name": "国投转债",
       "score": 0.0
     },
     {
+      "rank": 9,
+      "code": "110060.SH",
+      "name": "天路转债",
+      "score": -0.0
+    },
+    {
       "rank": 10,
-      "code": "110064.SH",
-      "name": "建工转债",
+      "code": "110074.SH",
+      "name": "精达转债",
       "score": 0.0
     }
   ],
   "orders": [
     {
-      "code": "110060.SH",
-      "name": "天路转债",
+      "code": "123249.SZ",
+      "name": "英搏转债",
       "side": "SELL",
-      "quantity": 50,
-      "price": 190.14100646972656,
+      "quantity": 60,
+      "price": 139.8800048828125,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "110063.SH",
-      "name": "鹰19转债",
+      "code": "113689.SH",
+      "name": "洛凯转债",
       "side": "SELL",
-      "quantity": 90,
-      "price": 107.08599853515625,
+      "quantity": 60,
+      "price": 160.2449951171875,
       "reason": "剔除出Top-K",
       "rank": 0
+    },
+    {
+      "code": "110074.SH",
+      "name": "精达转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 157.9739990234375,
+      "reason": "Top-K入选",
+      "rank": 10
     },
     {
       "code": "110097.SH",
@@ -90,16 +99,7 @@
       "quantity": 80,
       "price": 121.697998046875,
       "reason": "Top-K入选",
-      "rank": 5
-    },
-    {
-      "code": "127104.SZ",
-      "name": "姚记转债",
-      "side": "BUY",
-      "quantity": 60,
-      "price": 161.5500030517578,
-      "reason": "Top-K入选",
-      "rank": 1
+      "rank": 2
     }
   ]
 }

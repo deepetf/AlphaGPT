@@ -134,6 +134,34 @@ TOTAL_DISCRETE_PENALTY = -1.0 # 低危: 每超过一个的惩罚
 
 # 注: SIGN-LOG 距离检查使用硬过滤 (直接拒绝)，不使用软惩罚
 
+# ============================================================
+# RPN 堆栈模拟校验 (RPN Stack Simulation)
+# ============================================================
+
+# 模块级缓存
+_CACHE_OPS_ARITY = None
+_CACHE_FEATURES = None
+_CACHE_FEAT_HASH = None
+
+def _get_validation_cache():
+    global _CACHE_OPS_ARITY, _CACHE_FEATURES, _CACHE_FEAT_HASH
+    from .ops_registry import OpsRegistry
+    from .config import ModelConfig
+    
+    # Init Ops Cache (Static)
+    if _CACHE_OPS_ARITY is None:
+        _CACHE_OPS_ARITY = {name: arity for name, _, arity in OpsRegistry.get_ops_config()}
+        
+    # Init/Update Features Cache (Dynamic)
+    current_feats = ModelConfig.INPUT_FEATURES
+    current_hash = hash(tuple(current_feats))
+    
+    if _CACHE_FEATURES is None or current_hash != _CACHE_FEAT_HASH:
+        _CACHE_FEATURES = set(current_feats)
+        _CACHE_FEAT_HASH = current_hash
+        
+    return _CACHE_OPS_ARITY, _CACHE_FEATURES
+
 
 def validate_formula(formula: List[str]) -> Tuple[bool, float, str]:
     """
@@ -148,8 +176,32 @@ def validate_formula(formula: List[str]) -> Tuple[bool, float, str]:
         - penalty: 累计软惩罚分数 (仅当 is_valid=True 时有意义)
         - reason: 拒绝/惩罚原因
     """
-    if not formula:
-        return False, -5.0, "Empty formula"
+    if not isinstance(formula, list) or not formula:
+        return False, -5.0, "Empty/Invalid formula"
+    
+    # [V6] RPN 堆栈模拟校验
+    # 目的: 提前拦截无效 RPN，解决 EXEC_NONE 效率问题
+    ops_arity, features = _get_validation_cache()
+    
+    stack_depth = 0
+    for i, token in enumerate(formula):
+        if not isinstance(token, str):
+            return False, -5.0, "TYPE_ERROR"
+            
+        if token in features:
+            stack_depth += 1
+        elif token in ops_arity:
+            arity = ops_arity[token]
+            if stack_depth < arity:
+                return False, -5.0, "RPN_UNDERFLOW"
+            stack_depth = stack_depth - arity + 1
+        else:
+            # 统一归类未知 Token
+            return False, -5.0, "UNKNOWN_TOKEN"
+            
+    if stack_depth != 1:
+        return False, -5.0, f"RPN_LEFTOVER (d={stack_depth})"
+
     
     total_penalty = 0.0
     reasons = []

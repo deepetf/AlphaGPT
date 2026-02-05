@@ -1,30 +1,30 @@
 {
   "date": "2024-07-11",
-  "created_at": "2026-02-02T12:42:52.955033",
+  "created_at": "2026-02-03T09:11:56.695491",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "113685.SH",
       "name": "升24转债",
-      "score": 0.5477
+      "score": 547722624.0
     },
     {
       "rank": 2,
-      "code": "123220.SZ",
-      "name": "易瑞转债",
-      "score": 0.4472
+      "code": "110062.SH",
+      "name": "烽火转债",
+      "score": -0.0
     },
     {
       "rank": 3,
-      "code": "123205.SZ",
-      "name": "大叶转债",
-      "score": 0.4472
+      "code": "110055.SH",
+      "name": "伊力转债",
+      "score": -0.0
     },
     {
       "rank": 4,
-      "code": "110055.SH",
-      "name": "伊力转债",
+      "code": "110060.SH",
+      "name": "天路转债",
       "score": 0.0
     },
     {
@@ -43,45 +43,26 @@
       "rank": 7,
       "code": "110067.SH",
       "name": "华安转债",
-      "score": 0.0
+      "score": -0.0
     },
     {
       "rank": 8,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": 0.0
+      "code": "110058.SH",
+      "name": "永鼎转债",
+      "score": -0.0
     },
     {
       "rank": 9,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": 0.0
+      "code": "110068.SH",
+      "name": "龙净转债",
+      "score": -0.0
     },
     {
       "rank": 10,
-      "code": "110058.SH",
-      "name": "永鼎转债",
+      "code": "110059.SH",
+      "name": "浦发转债",
       "score": 0.0
     }
   ],
-  "orders": [
-    {
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "side": "SELL",
-      "quantity": 70,
-      "price": 133.322998046875,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "123205.SZ",
-      "name": "大叶转债",
-      "side": "BUY",
-      "quantity": 70,
-      "price": 136.1999969482422,
-      "reason": "Top-K入选",
-      "rank": 3
-    }
-  ]
+  "orders": []
 }

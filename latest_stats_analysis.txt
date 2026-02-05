@@ -1,0 +1,36 @@
+Step: 105
+Stats:
+{
+  "STRUCT_INVALID": 510,
+  "PASS": 1,
+  "METRIC_SHARPE": 1
+}
+========================================
+Step: 106
+Stats:
+{
+  "STRUCT_INVALID": 511,
+  "METRIC_SHARPE": 1
+}
+========================================
+Step: 107
+Stats:
+{
+  "STRUCT_INVALID": 511,
+  "METRIC_SHARPE": 1
+}
+========================================
+Step: 108
+Stats:
+{
+  "STRUCT_INVALID": 507,
+  "METRIC_SHARPE": 5
+}
+========================================
+Step: 109
+Stats:
+{
+  "STRUCT_INVALID": 511,
+  "METRIC_SHARPE": 1
+}
+========================================

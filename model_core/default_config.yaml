@@ -170,7 +170,7 @@ robust_config:
   penalty_sharpe: -5.0   # 验证集 Sharpe 过低 (< min_sharpe_val)
   penalty_active: -4.0   # 活跃度过低 (< min_active_ratio)
   penalty_days: -2.5     # 有效交易日过少
-  penalty_low_var: -2.0  # 因子方差过低 (死因子)
+  penalty_low_var: -5.5  # 因子方差过低 (死因子) - 设为最重惩罚之一以防止坍缩
   
   # --------------------------------------------------------------------------
   # 熵正则化 (Entropy Regularization) - 探索力度控制
@@ -189,8 +189,8 @@ robust_config:
   # 建议配置 (针对长时间训练):
   #   - Entropy Start: 0.03 (保持高探索)
   #   - Entropy End: 0.01 (防止过早收敛)
-  entropy_beta_start: 0.03
-  entropy_beta_end: 0.01
+  entropy_beta_start: 0.04
+  entropy_beta_end: 0.015
   
   # --------------------------------------------------------------------------
   # 多样性池 (Diversity Pool) - 结果去重控制

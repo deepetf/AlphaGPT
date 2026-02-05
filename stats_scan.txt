@@ -1,0 +1,38 @@
+Total Runs Detected: 4
+Run 1: Steps 0 -> 109 (Rows: 110)
+Run 2: Steps 0 -> 299 (Rows: 300)
+Run 3: Steps 0 -> 109 (Rows: 110)
+Run 4: Steps 0 -> 109 (Rows: 110)
+
+=== Latest Run Last 5 Steps ===
+Step: 105
+{
+  "STRUCT_INVALID": 510,
+  "PASS": 1,
+  "METRIC_SHARPE": 1
+}
+--------------------
+Step: 106
+{
+  "STRUCT_INVALID": 511,
+  "METRIC_SHARPE": 1
+}
+--------------------
+Step: 107
+{
+  "STRUCT_INVALID": 511,
+  "METRIC_SHARPE": 1
+}
+--------------------
+Step: 108
+{
+  "STRUCT_INVALID": 507,
+  "METRIC_SHARPE": 5
+}
+--------------------
+Step: 109
+{
+  "STRUCT_INVALID": 511,
+  "METRIC_SHARPE": 1
+}
+--------------------

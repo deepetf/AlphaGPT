@@ -1,76 +1,76 @@
 {
   "date": "2024-12-06",
-  "created_at": "2026-02-02T12:45:11.565069",
+  "created_at": "2026-02-03T09:13:22.456646",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "123232.SZ",
-      "name": "金现转债",
-      "score": 0.4472
+      "code": "127107.SZ",
+      "name": "领益转债",
+      "score": 447213600.0
     },
     {
       "rank": 2,
-      "code": "127107.SZ",
-      "name": "领益转债",
-      "score": 0.4472
-    },
-    {
-      "rank": 3,
-      "code": "123067.SZ",
-      "name": "斯莱转债",
-      "score": 0.4472
-    },
-    {
-      "rank": 4,
-      "code": "111012.SH",
-      "name": "福新转债",
-      "score": 0.4472
-    },
-    {
-      "rank": 5,
-      "code": "110073.SH",
-      "name": "国投转债",
-      "score": 0.0
-    },
-    {
-      "rank": 6,
-      "code": "110070.SH",
-      "name": "凌钢转债",
-      "score": 0.0
-    },
-    {
-      "rank": 7,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": 0.0
-    },
-    {
-      "rank": 8,
-      "code": "110074.SH",
-      "name": "精达转债",
-      "score": 0.0
-    },
-    {
-      "rank": 9,
       "code": "110064.SH",
       "name": "建工转债",
       "score": 0.0
     },
     {
-      "rank": 10,
+      "rank": 3,
+      "code": "110067.SH",
+      "name": "华安转债",
+      "score": 0.0
+    },
+    {
+      "rank": 4,
       "code": "110063.SH",
       "name": "鹰19转债",
+      "score": 0.0
+    },
+    {
+      "rank": 5,
+      "code": "110070.SH",
+      "name": "凌钢转债",
+      "score": 0.0
+    },
+    {
+      "rank": 6,
+      "code": "110073.SH",
+      "name": "国投转债",
+      "score": 0.0
+    },
+    {
+      "rank": 7,
+      "code": "110074.SH",
+      "name": "精达转债",
+      "score": 0.0
+    },
+    {
+      "rank": 8,
+      "code": "110060.SH",
+      "name": "天路转债",
+      "score": -0.0
+    },
+    {
+      "rank": 9,
+      "code": "110075.SH",
+      "name": "南航转债",
+      "score": 0.0
+    },
+    {
+      "rank": 10,
+      "code": "110062.SH",
+      "name": "烽火转债",
       "score": 0.0
     }
   ],
   "orders": [
     {
-      "code": "113569.SH",
-      "name": "科达转债",
+      "code": "110059.SH",
+      "name": "浦发转债",
       "side": "SELL",
-      "quantity": 60,
-      "price": 136.91600036621094,
+      "quantity": 90,
+      "price": 108.65899658203125,
       "reason": "剔除出Top-K",
       "rank": 0
     },
@@ -81,7 +81,7 @@
       "quantity": 80,
       "price": 124.5,
       "reason": "Top-K入选",
-      "rank": 2
+      "rank": 1
     }
   ]
 }

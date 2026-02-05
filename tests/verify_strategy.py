@@ -166,19 +166,32 @@ class StrategyVerifier:
         else:
             # Find formula by step
             found = False
-            for king in formula_data['history']:
-                if king['step'] == self.king_step:
+            # Check history
+            for king in formula_data.get('history', []):
+                if king.get('step') == self.king_step:
                     self.formula = king['formula']
                     self.formula_info = king
                     found = True
-                    logger.info(f"Using King formula from Step {self.king_step}")
+                    logger.info(f"Using King formula from Step {self.king_step} (found in history)")
                     break
             
+            # Check diversity pool if not found
             if not found:
-                available_steps = [k['step'] for k in formula_data['history']]
+                for king in formula_data.get('diverse_top_50', []):
+                    if king.get('step') == self.king_step:
+                        self.formula = king['formula']
+                        self.formula_info = king
+                        found = True
+                        logger.info(f"Using Diverse formula from Step {self.king_step} (found in diverse_top_50)")
+                        break
+            
+            if not found:
+                history_steps = [k['step'] for k in formula_data.get('history', []) if 'step' in k]
+                diverse_steps = [k['step'] for k in formula_data.get('diverse_top_50', []) if 'step' in k]
+                all_steps = sorted(list(set(history_steps + diverse_steps)))
                 raise ValueError(
-                    f"King step {self.king_step} not found. "
-                    f"Available steps: {available_steps}"
+                    f"King step {self.king_step} not found in history or diversity pool. "
+                    f"Available steps: {all_steps}"
                 )
         
         logger.info(f"Formula: {' '.join(self.formula)}")

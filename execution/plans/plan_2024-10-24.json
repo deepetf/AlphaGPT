@@ -1,6 +1,6 @@
 {
   "date": "2024-10-24",
-  "created_at": "2026-02-02T12:44:22.579461",
+  "created_at": "2026-02-03T09:12:59.937650",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
@@ -64,24 +64,5 @@
       "score": 0.0
     }
   ],
-  "orders": [
-    {
-      "code": "113596.SH",
-      "name": "城地转债",
-      "side": "SELL",
-      "quantity": 70,
-      "price": 186.9669952392578,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "side": "BUY",
-      "quantity": 90,
-      "price": 111.052001953125,
-      "reason": "Top-K入选",
-      "rank": 10
-    }
-  ]
+  "orders": []
 }

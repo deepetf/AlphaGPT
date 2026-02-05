@@ -1,0 +1,5 @@
+Step: 109
+Stats:
+{
+  "STRUCT_INVALID": 512
+}

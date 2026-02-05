@@ -1,76 +1,76 @@
 {
   "date": "2024-11-27",
-  "created_at": "2026-02-02T12:45:10.071080",
+  "created_at": "2026-02-03T09:13:20.201362",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "123250.SZ",
       "name": "嘉益转债",
-      "score": 0.4472
+      "score": 547722624.0
     },
     {
       "rank": 2,
       "code": "113692.SH",
       "name": "保隆转债",
-      "score": 0.4472
+      "score": 447213600.0
     },
     {
       "rank": 3,
-      "code": "113690.SH",
-      "name": "豪24转债",
-      "score": 0.4472
-    },
-    {
-      "rank": 4,
       "code": "110067.SH",
       "name": "华安转债",
       "score": 0.0
     },
     {
-      "rank": 5,
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "score": 0.0
-    },
-    {
-      "rank": 6,
-      "code": "110070.SH",
-      "name": "凌钢转债",
-      "score": 0.0
-    },
-    {
-      "rank": 7,
-      "code": "110073.SH",
-      "name": "国投转债",
-      "score": 0.0
-    },
-    {
-      "rank": 8,
+      "rank": 4,
       "code": "110064.SH",
       "name": "建工转债",
       "score": 0.0
     },
     {
-      "rank": 9,
+      "rank": 5,
       "code": "110063.SH",
       "name": "鹰19转债",
       "score": 0.0
     },
     {
-      "rank": 10,
+      "rank": 6,
+      "code": "110068.SH",
+      "name": "龙净转债",
+      "score": 0.0
+    },
+    {
+      "rank": 7,
+      "code": "110070.SH",
+      "name": "凌钢转债",
+      "score": 0.0
+    },
+    {
+      "rank": 8,
+      "code": "110073.SH",
+      "name": "国投转债",
+      "score": 0.0
+    },
+    {
+      "rank": 9,
       "code": "110060.SH",
       "name": "天路转债",
+      "score": -0.0
+    },
+    {
+      "rank": 10,
+      "code": "110074.SH",
+      "name": "精达转债",
       "score": 0.0
     }
   ],
   "orders": [
     {
-      "code": "110074.SH",
-      "name": "精达转债",
+      "code": "110062.SH",
+      "name": "烽火转债",
       "side": "SELL",
-      "quantity": 60,
-      "price": 161.66400146484375,
+      "quantity": 80,
+      "price": 113.3270034790039,
       "reason": "剔除出Top-K",
       "rank": 0
     },
