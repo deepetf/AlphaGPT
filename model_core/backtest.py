@@ -305,6 +305,9 @@ class CBBacktest:
         # 7. 全局 Sharpe
         sharpe_all = self._calc_sharpe(valid_net_ret)
         
+        # 8. IC/IR 指标计算
+        ic_metrics = self._compute_ic_metrics(factors, target_ret, valid_mask)
+        
         return {
             'sharpe_train': sharpe_train,
             'sharpe_val': sharpe_val,
@@ -316,6 +319,14 @@ class CBBacktest:
             'annualized_ret': annualized_ret,  # 年化收益率
             'valid_days_train': int(train_mask.sum().item()),
             'valid_days_val': int(val_mask.sum().item()),
+            # IC/IR 指标
+            'ic_mean': ic_metrics['ic_mean'],
+            'ic_std': ic_metrics['ic_std'],
+            'ic_ir': ic_metrics['ic_ir'],
+            'ic_ir_annual': ic_metrics['ic_ir_annual'],
+            'valid_ic_days': ic_metrics['valid_ic_days'],
+            'total_ic_days': ic_metrics['total_ic_days'],
+            'skipped_ic_days': ic_metrics['skipped_ic_days'],
         }
     
     def _calc_sharpe(self, returns: torch.Tensor) -> float:
@@ -374,6 +385,206 @@ class CBBacktest:
         max_dd = drawdown.max().item()
         
         return max_dd
+    
+    def _rank_with_ties(self, tensor: torch.Tensor) -> torch.Tensor:
+        """
+        计算 1-based 平均排名 (处理并列)
+        
+        Args:
+            tensor: 1D tensor [N]
+        
+        Returns:
+            ranks: 1D tensor [N]，1-based 平均排名
+        """
+        n = tensor.shape[0]
+        if n == 0:
+            return tensor.clone()
+        
+        # 向量化 Ranking 实现 (Performance Optimized)
+        # 1. 排序
+        # 必须在排序后的张量上使用 unique_consecutive
+        sorted_indices = torch.argsort(tensor)
+        sorted_tensor = tensor[sorted_indices]
+        
+        # 2. 找到唯一值和计数
+        # unique_consecutive 仅合并相邻重复，因此依赖于步骤 1 的排序
+        unique_vals, inverse_indices, counts = torch.unique_consecutive(
+            sorted_tensor, return_counts=True, return_inverse=True
+        )
+        
+        # 3. 计算每个唯一值的平均排名 (1-based)
+        # 累积计数给出了该组的结束位置 (End Rank, 1-based)
+        cumsum_counts = counts.cumsum(dim=0, dtype=torch.float64)
+        
+        # Start Rank (1-based) = End - count + 1
+        # Avg Rank = (Start + End) / 2 = (2 * End - count + 1) / 2
+        # 数学推导: ((cumsum - count + 1) + cumsum) / 2
+        avg_ranks_unique = (2 * cumsum_counts - counts + 1) / 2.0
+        
+        # 4. 映射回排序后的数组
+        # inverse_indices 将唯一值的平均排名广播回每个元素
+        ranks_sorted = avg_ranks_unique[inverse_indices]
+        
+        # 5. 映射回原始顺序 (Scatter)
+        ranks = torch.empty_like(tensor, dtype=torch.float64)
+        ranks[sorted_indices] = ranks_sorted
+        
+        return ranks
+    
+    def _compute_daily_ic(self, factor_day: torch.Tensor, ret_day: torch.Tensor, 
+                          mask_day: torch.Tensor) -> float:
+        """
+        计算单日 Spearman IC (信息系数)
+        
+        严格遵循 Implementation Plan 的 5 步公式：
+        1. 掩码与样本过滤
+        2. 中心化排名
+        3. 标准差 (ddof=0)
+        4. 分母检查
+        5. 无偏 IC
+        
+        Args:
+            factor_day: [N] 单日因子值
+            ret_day: [N] 单日收益率
+            mask_day: [N] 有效掩码
+        
+        Returns:
+            float: IC 值，或 None 如果需要跳过
+        """
+        # 确定 eps 值
+        dtype = factor_day.dtype
+        eps = 1e-6 if dtype == torch.float32 else 1e-12
+        
+        # Step 1: Mask & Sample Filter
+        # 组合有效掩码：valid_mask & isfinite(factor) & isfinite(ret)
+        combined_mask = mask_day.clone()
+        combined_mask &= torch.isfinite(factor_day)
+        combined_mask &= torch.isfinite(ret_day)
+        
+        valid_count = combined_mask.sum().item()
+        
+        # Hard skip: 样本数 < 2
+        if valid_count < 2:
+            return None
+        
+        # 提取有效样本
+        valid_factor = factor_day[combined_mask].to(torch.float64)
+        valid_ret = ret_day[combined_mask].to(torch.float64)
+        
+        # Step 2: Centered Ranks
+        rank_f = self._rank_with_ties(valid_factor)
+        rank_r = self._rank_with_ties(valid_ret)
+        
+        xr = rank_f - rank_f.mean()
+        yr = rank_r - rank_r.mean()
+        
+        # Step 3: Standard Deviation (ddof=0)
+        # PyTorch: std(unbiased=False) 使用 ddof=0
+        sx = xr.std(unbiased=False)
+        sy = yr.std(unbiased=False)
+        
+        # Step 4: Denominator Check
+        den = sx * sy
+        if den <= eps:
+            return None
+        
+        # Step 5: Unbiased IC
+        ic = (xr * yr).mean() / den
+        
+        # Step 6: Clamping
+        ic = torch.clamp(ic, -1.0, 1.0)
+        
+        return ic.item()
+    
+    def _compute_ic_metrics(self, factors: torch.Tensor, target_ret: torch.Tensor,
+                            valid_mask: torch.Tensor) -> dict:
+        """
+        计算 IC/IR 相关指标
+        
+        Args:
+            factors: [T, N] 因子值张量
+            target_ret: [T, N] 收益率张量
+            valid_mask: [T, N] 有效掩码
+        
+        Returns:
+            dict: {
+                'ic_mean': float,
+                'ic_std': float,
+                'ic_ir': float or None,
+                'ic_ir_annual': float or None,
+                'valid_ic_days': int,
+                'total_ic_days': int,
+                'skipped_ic_days': int
+            }
+        """
+        T, N = factors.shape
+        dtype = factors.dtype
+        eps = 1e-6 if dtype == torch.float32 else 1e-12
+        
+        daily_ics = []
+        valid_ic_days = 0
+        skipped_ic_days = 0
+        
+        # 遍历每天计算 IC (注意: target_ret[t] 已经是 t->t+1 收益，直接对齐)
+        for t in range(T):
+            # 虽然 target_ret[-1] 为 0，但我们仍应尝试计算依赖 valid_mask 过滤
+            mask_day = valid_mask[t]
+            factor_day = factors[t]
+            ret_day = target_ret[t]
+            
+            ic = self._compute_daily_ic(factor_day, ret_day, mask_day)
+            
+            if ic is not None:
+                daily_ics.append(ic)
+                valid_ic_days += 1
+            else:
+                skipped_ic_days += 1
+        
+        total_days = T   
+        
+        # Null Strategy: 有效天数 < 2
+        if valid_ic_days < 2:
+            return {
+                'ic_mean': None,
+                'ic_std': None,
+                'ic_ir': None,
+                'ic_ir_annual': None,
+                'valid_ic_days': valid_ic_days,
+                'total_ic_days': total_days,
+                'skipped_ic_days': skipped_ic_days
+            }
+        
+        # 转为 float64 进行聚合
+        ic_tensor = torch.tensor(daily_ics, dtype=torch.float64)
+        
+        ic_mean = ic_tensor.mean().item()
+        # Global IC Std: 使用 ddof=1 (unbiased=True)
+        ic_std = ic_tensor.std(unbiased=True).item()
+        
+        # Null Strategy: IC Std <= eps
+        if ic_std <= eps:
+            return {
+                'ic_mean': ic_mean,
+                'ic_std': ic_std,
+                'ic_ir': None,
+                'ic_ir_annual': None,
+                'valid_ic_days': valid_ic_days,
+                'total_ic_days': total_days,
+                'skipped_ic_days': skipped_ic_days
+            }
+        
+        ic_ir = ic_mean / ic_std
+        ic_ir_annual = ic_ir * (252 ** 0.5)
+        
+        return {
+            'ic_mean': ic_mean,
+            'ic_std': ic_std,
+            'ic_ir': ic_ir,
+            'ic_ir_annual': ic_ir_annual,
+            'valid_ic_days': valid_ic_days,
+            'total_ic_days': total_days,
+            'skipped_ic_days': skipped_ic_days
+        }
 
 
 # 保留旧类名以兼容现有代码

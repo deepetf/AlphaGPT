@@ -297,9 +297,10 @@ class AlphaEngine:
             
             # [V4.1] 状态监控变量 (工程加固版)
             # 1. 成功率窗口 (用于平滑控制)
+            # [V4.1.1] 初始化下调为 0.5，防止前期"历史太好"导致一级熵触发反应迟钝
             window_size = 10
-            hard_pass_rate_history = deque([1.0]*window_size, maxlen=window_size)
-            hard_pass_abs_history = deque([ModelConfig.BATCH_SIZE]*window_size, maxlen=window_size)
+            hard_pass_rate_history = deque([0.5]*window_size, maxlen=window_size)
+            hard_pass_abs_history = deque([int(ModelConfig.BATCH_SIZE * 0.5)]*window_size, maxlen=window_size)
             struct_rate_history = deque([0.0]*window_size, maxlen=window_size)
             
             # 2. 持续故障触发器 (熔断逻辑)
@@ -497,7 +498,7 @@ class AlphaEngine:
                             self.best_sharpe = sharpe_val
                             self.best_return = ret_val
                             
-                            # 记录到历史 (V2.2: 包含稳健性指标 + 年化收益)
+                            # 记录到历史 (V2.2: 包含稳健性指标 + 年化收益 + IC/IR)
                             king_num = len(self.king_history) + 1
                             self.king_history.append({
                                 'step': step,
@@ -508,6 +509,13 @@ class AlphaEngine:
                                 'max_drawdown': metrics.get('max_drawdown', 0),
                                 'stability': metrics.get('stability_metric', 0),
                                 'annualized_ret': ret_val,  # 年化收益率
+                                # IC/IR 指标
+                                'ic_mean': metrics.get('ic_mean', 0),
+                                'ic_std': metrics.get('ic_std', 0),
+                                'ic_ir': metrics.get('ic_ir'),
+                                'ic_ir_annual': metrics.get('ic_ir_annual'),
+                                'valid_ic_days': metrics.get('valid_ic_days', 0),
+                                'skipped_ic_days': metrics.get('skipped_ic_days', 0),
                                 'formula': formula_str,
                                 'readable': self.best_formula_readable
                             })
@@ -515,7 +523,12 @@ class AlphaEngine:
                             # 保存交易细节到独立文件
                             self._save_king_trades(king_num, formula_str, score_val, sharpe_val, ret_val)
                             
-                            tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | MDD {metrics.get('max_drawdown', 0):.1%} | {self.best_formula_readable}")
+                            # IC/IR 安全格式化
+                            ic_val = metrics.get('ic_mean', 0)
+                            ir_val = metrics.get('ic_ir')
+                            ir_str = f"{ir_val:.2f}" if ir_val is not None else "None"
+                            
+                            tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | IC {ic_val:.3f} (IR {ir_str}) | MDD {metrics.get('max_drawdown', 0):.1%} | {self.best_formula_readable}")
 
                         # V2.3: 收集多样性公式 (Diversity Pool)
                         # 仅当分数足够高且公式独特时入池
