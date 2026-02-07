@@ -31,8 +31,13 @@ _global_feat = None
 _global_ret = None
 _global_mask = None
 _global_split_idx = None  # 训练/验证切分索引
+# 止盈所需价格数据
+_global_open = None
+_global_high = None
+_global_prev_close = None
 
-def _init_worker(feat_tensor, target_ret, valid_mask, split_idx, config_path=None):
+def _init_worker(feat_tensor, target_ret, valid_mask, split_idx, 
+                 open_prices=None, high_prices=None, prev_close=None, config_path=None):
     """子进程初始化函数"""
     # 关键修复: 子进程需要重新加载动态配置，否则 INPUT_FEATURES 为空导致校验失败
     if config_path:
@@ -43,18 +48,24 @@ def _init_worker(feat_tensor, target_ret, valid_mask, split_idx, config_path=Non
             print(f"[Worker] Failed to load config from {config_path}: {e}")
 
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
+    global _global_open, _global_high, _global_prev_close
     
     # 关键优化: 强制单线程运行，防止多进程 CPU 竞争 (Oversubscription)
     torch.set_num_threads(1)
     
     _global_vm = StackVM()
-    _global_bt = CBBacktest(top_k=RobustConfig.TOP_K)
+    _global_bt = CBBacktest(top_k=RobustConfig.TOP_K, take_profit=RobustConfig.TAKE_PROFIT)
     
     # 将 Tensor 移动到 CPU 以避免多进程 CUDA/XPU 冲突
     _global_feat = feat_tensor.to('cpu')
     _global_ret = target_ret.to('cpu')
     _global_mask = valid_mask.to('cpu')
     _global_split_idx = split_idx
+    
+    # 止盈价格数据
+    _global_open = open_prices.to('cpu') if open_prices is not None else None
+    _global_high = high_prices.to('cpu') if high_prices is not None else None
+    _global_prev_close = prev_close.to('cpu') if prev_close is not None else None
 
 def _worker_eval(formula):
     """
@@ -63,6 +74,7 @@ def _worker_eval(formula):
     使用 evaluate_robust 获取多维指标，并计算综合奖励。
     """
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
+    global _global_open, _global_high, _global_prev_close
     
     try:
         # 0. 公式结构验证 (在昂贵的回测之前进行)
@@ -86,12 +98,15 @@ def _worker_eval(formula):
             return RobustConfig.PENALTY_LOWVAR, None, "LOW_VARIANCE", f"std={res.std():.2e}, thr={var_threshold}"
 
 
-        # 3. 稳健性评估
+        # 3. 稳健性评估 (含止盈逻辑)
         metrics = _global_bt.evaluate_robust(
             factors=res,
             target_ret=_global_ret,
             valid_mask=_global_mask,
-            split_idx=_global_split_idx
+            split_idx=_global_split_idx,
+            open_prices=_global_open,
+            high_prices=_global_high,
+            prev_close=_global_prev_close
         )
         
         # 4. 硬淘汰条件 (Hard Filters) - [V3.5] 增加线性梯度与 Clamp
@@ -274,6 +289,37 @@ class AlphaEngine:
         cpu_mask = self.loader.valid_mask.to('cpu')
         split_idx = self.loader.split_idx
         
+        # 止盈价格数据准备
+        # 时序对齐说明:
+        #   - weights[t] = t日收盘时的持仓决策
+        #   - target_ret[t] = close[t+1]/close[t] - 1 = 持有 t→t+1 的收益
+        #   - 止盈检查发生在持仓期间(t+1日盘中)
+        #   - 因此: open_prices[t] 应为 open[t+1], high_prices[t] 应为 high[t+1]
+        #   - prev_close[t] = close[t] = 买入价格
+        cpu_open = None
+        cpu_high = None
+        cpu_prev_close = None
+        if RobustConfig.TAKE_PROFIT > 0:
+            # 只在启用止盈时加载价格数据
+            if 'OPEN' in self.loader.raw_data_cache and 'HIGH' in self.loader.raw_data_cache:
+                raw_open = self.loader.raw_data_cache['OPEN'].to('cpu')
+                raw_high = self.loader.raw_data_cache['HIGH'].to('cpu')
+                close = self.loader.raw_data_cache['CLOSE'].to('cpu')
+                
+                # 时序对齐: roll(-1) 使得 [t] 位置存储的是 t+1 日的价格
+                cpu_open = torch.roll(raw_open, -1, dims=0)
+                cpu_high = torch.roll(raw_high, -1, dims=0)
+                # 最后一行无有效数据，置为极大值使其不触发止盈
+                cpu_open[-1] = 1e9
+                cpu_high[-1] = 1e9
+                
+                # prev_close[t] = close[t] = 买入价（t日收盘价）
+                cpu_prev_close = close.clone()
+                
+                print(f"   - Take Profit: {RobustConfig.TAKE_PROFIT:.1%} enabled, price data loaded (time-aligned)")
+            else:
+                print("   - Warning: TAKE_PROFIT enabled but OPEN/HIGH data not available")
+        
         # 获取当前 Config 路径 (传递给子进程)
         from .config_loader import get_loaded_config_path
         config_path = get_loaded_config_path()
@@ -284,7 +330,7 @@ class AlphaEngine:
         with ProcessPoolExecutor(
             max_workers=num_workers, 
             initializer=_init_worker,
-            initargs=(cpu_feat, cpu_ret, cpu_mask, split_idx, config_path)
+            initargs=(cpu_feat, cpu_ret, cpu_mask, split_idx, cpu_open, cpu_high, cpu_prev_close, config_path)
         ) as executor:
             
             pbar = tqdm(range(ModelConfig.TRAIN_STEPS))

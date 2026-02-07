@@ -1,76 +1,85 @@
 {
   "date": "2024-01-16",
-  "created_at": "2026-02-03T09:10:22.154616",
+  "created_at": "2026-02-06T11:09:30.637198",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "123235.SZ",
       "name": "亿田转债",
-      "score": 547722624.0
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
       "code": "111018.SH",
       "name": "华康转债",
-      "score": 547722624.0
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 3,
-      "code": "127102.SZ",
-      "name": "浙建转债",
-      "score": 447213600.0
+      "code": "123234.SZ",
+      "name": "中能转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 4,
       "code": "127101.SZ",
       "name": "豪鹏转债",
-      "score": 447213600.0
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 5,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "127102.SZ",
+      "name": "浙建转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 6,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": -0.0
+      "code": "127099.SZ",
+      "name": "盛航转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 7,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "118030.SH",
+      "name": "睿创转债",
+      "score": 177.085
     },
     {
       "rank": 8,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": -0.0
+      "code": "127052.SZ",
+      "name": "西子转债",
+      "score": 168.1402
     },
     {
       "rank": 9,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": -0.0
+      "code": "113582.SH",
+      "name": "火炬转债",
+      "score": 130.3435
     },
     {
       "rank": 10,
-      "code": "110047.SH",
-      "name": "山鹰转债",
-      "score": -0.0
+      "code": "127033.SZ",
+      "name": "中装转2",
+      "score": 61.7588
     }
   ],
   "orders": [
     {
-      "code": "110048.SH",
-      "name": "福能转债",
+      "code": "110070.SH",
+      "name": "凌钢转债",
       "side": "SELL",
-      "quantity": 60,
-      "price": 152.5070037841797,
+      "quantity": 80,
+      "price": 114.7969970703125,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "111009.SH",
+      "name": "盛泰转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 108.4000015258789,
       "reason": "剔除出Top-K",
       "rank": 0
     },
@@ -81,7 +90,16 @@
       "quantity": 90,
       "price": 109.25,
       "reason": "Top-K入选",
-      "rank": 3
+      "rank": 5
+    },
+    {
+      "code": "118030.SH",
+      "name": "睿创转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 120.61199951171875,
+      "reason": "Top-K入选",
+      "rank": 7
     }
   ]
 }

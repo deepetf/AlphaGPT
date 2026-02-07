@@ -1,96 +1,78 @@
 {
   "date": "2023-04-07",
-  "created_at": "2026-02-01T17:09:41.611508",
+  "created_at": "2026-02-06T12:04:21.398524",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "118032.SH",
-      "name": "建龙转债",
-      "score": 20.9676
+      "code": "123178.SZ",
+      "name": "花园转债",
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "123015.SZ",
-      "name": "蓝盾转退",
-      "score": 7.6776
+      "code": "123176.SZ",
+      "name": "精测转2",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 3,
-      "code": "113576.SH",
-      "name": "起步转债",
-      "score": 7.2131
+      "code": "123180.SZ",
+      "name": "浙矿转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 4,
-      "code": "128026.SZ",
-      "name": "众兴转债",
-      "score": 7.0632
+      "code": "123179.SZ",
+      "name": "立高转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 5,
-      "code": "128085.SZ",
-      "name": "鸿达转债",
-      "score": 6.806
+      "code": "123177.SZ",
+      "name": "测绘转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 6,
-      "code": "113595.SH",
-      "name": "花王转债",
-      "score": 6.6958
+      "code": "118032.SH",
+      "name": "建龙转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 7,
-      "code": "128025.SZ",
-      "name": "特一转债",
-      "score": 6.3294
+      "code": "110058.SH",
+      "name": "永鼎转债",
+      "score": 151.6257
     },
     {
       "rank": 8,
-      "code": "123002.SZ",
-      "name": "国祯转债",
-      "score": 6.226
+      "code": "128101.SZ",
+      "name": "联创转债",
+      "score": 150.1992
     },
     {
       "rank": 9,
-      "code": "113016.SH",
-      "name": "小康转债",
-      "score": 6.1792
+      "code": "123085.SZ",
+      "name": "万顺转2",
+      "score": 55.0166
     },
     {
       "rank": 10,
-      "code": "128023.SZ",
-      "name": "亚太转债",
-      "score": 6.1207
+      "code": "123012.SZ",
+      "name": "万顺转债",
+      "score": 52.6811
     }
   ],
   "orders": [
     {
-      "code": "128039.SZ",
-      "name": "三力转债",
+      "code": "113666.SH",
+      "name": "爱玛转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 121.43499755859375,
+      "quantity": 70,
+      "price": 145.4550018310547,
       "reason": "剔除出Top-K",
       "rank": 0
-    },
-    {
-      "code": "123180.SZ",
-      "name": "浙矿转债",
-      "side": "SELL",
-      "quantity": 60,
-      "price": 138.5,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "128023.SZ",
-      "name": "亚太转债",
-      "side": "BUY",
-      "quantity": 80,
-      "price": 112.0,
-      "reason": "Top-K入选",
-      "rank": 10
     },
     {
       "code": "118032.SH",
@@ -99,7 +81,7 @@
       "quantity": 80,
       "price": 122.625,
       "reason": "Top-K入选",
-      "rank": 1
+      "rank": 6
     }
   ]
 }

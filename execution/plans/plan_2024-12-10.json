@@ -1,68 +1,87 @@
 {
   "date": "2024-12-10",
-  "created_at": "2026-02-03T09:13:23.145876",
+  "created_at": "2026-02-06T11:12:30.447733",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "127107.SZ",
-      "name": "领益转债",
-      "score": 547722624.0
+      "code": "123250.SZ",
+      "name": "嘉益转债",
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": 0.0
+      "code": "127107.SZ",
+      "name": "领益转债",
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 3,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": 0.0
+      "code": "113692.SH",
+      "name": "保隆转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 4,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "113682.SH",
+      "name": "益丰转债",
+      "score": 689.3228
     },
     {
       "rank": 5,
-      "code": "110070.SH",
-      "name": "凌钢转债",
-      "score": 0.0
+      "code": "113546.SH",
+      "name": "迪贝转债",
+      "score": 37.5574
     },
     {
       "rank": 6,
-      "code": "110073.SH",
-      "name": "国投转债",
-      "score": 0.0
+      "code": "118010.SH",
+      "name": "洁特转债",
+      "score": 28.3955
     },
     {
       "rank": 7,
-      "code": "110074.SH",
-      "name": "精达转债",
-      "score": 0.0
+      "code": "123141.SZ",
+      "name": "宏丰转债",
+      "score": 24.0862
     },
     {
       "rank": 8,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": -0.0
+      "code": "113667.SH",
+      "name": "春23转债",
+      "score": 20.898
     },
     {
       "rank": 9,
-      "code": "110075.SH",
-      "name": "南航转债",
-      "score": 0.0
+      "code": "113577.SH",
+      "name": "春秋转债",
+      "score": 20.8619
     },
     {
       "rank": 10,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": 0.0
+      "code": "113584.SH",
+      "name": "家悦转债",
+      "score": 19.0801
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "123174.SZ",
+      "name": "精锻转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 117.72000122070312,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113584.SH",
+      "name": "家悦转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 119.90899658203125,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
 }

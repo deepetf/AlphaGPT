@@ -1,87 +1,68 @@
 {
   "date": "2025-03-31",
-  "created_at": "2026-02-01T17:01:45.243965",
+  "created_at": "2026-02-06T11:54:29.471343",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "123253.SZ",
       "name": "永贵转债",
-      "score": 20.4159
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 2,
-      "code": "128082.SZ",
-      "name": "华锋转债",
-      "score": 5.1658
+      "code": "123052.SZ",
+      "name": "飞鹿转债",
+      "score": 3127.1768
     },
     {
       "rank": 3,
-      "code": "123034.SZ",
-      "name": "通光转债",
-      "score": 4.8494
+      "code": "127047.SZ",
+      "name": "帝欧转债",
+      "score": 83.6203
     },
     {
       "rank": 4,
-      "code": "123049.SZ",
-      "name": "维尔转债",
-      "score": 4.7735
+      "code": "127050.SZ",
+      "name": "麒麟转债",
+      "score": 77.3337
     },
     {
       "rank": 5,
-      "code": "113589.SH",
-      "name": "天创转债",
-      "score": 4.6151
+      "code": "113574.SH",
+      "name": "华体转债",
+      "score": 73.1795
     },
     {
       "rank": 6,
-      "code": "128127.SZ",
-      "name": "文科转债",
-      "score": 4.5303
+      "code": "113664.SH",
+      "name": "大元转债",
+      "score": 26.3187
     },
     {
       "rank": 7,
-      "code": "113610.SH",
-      "name": "灵康转债",
-      "score": 4.3988
+      "code": "127096.SZ",
+      "name": "泰坦转债",
+      "score": 21.3946
     },
     {
       "rank": 8,
-      "code": "128076.SZ",
-      "name": "金轮转债",
-      "score": 4.3689
+      "code": "123186.SZ",
+      "name": "志特转债",
+      "score": 20.4412
     },
     {
       "rank": 9,
-      "code": "128120.SZ",
-      "name": "联诚转债",
-      "score": 4.2911
+      "code": "127054.SZ",
+      "name": "双箭转债",
+      "score": 19.0847
     },
     {
       "rank": 10,
-      "code": "113593.SH",
-      "name": "沪工转债",
-      "score": 4.2659
+      "code": "113068.SH",
+      "name": "金铜转债",
+      "score": 14.6676
     }
   ],
-  "orders": [
-    {
-      "code": "123061.SZ",
-      "name": "航新转债",
-      "side": "SELL",
-      "quantity": 70,
-      "price": 131.27699279785156,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "128076.SZ",
-      "name": "金轮转债",
-      "side": "BUY",
-      "quantity": 80,
-      "price": 122.98999786376953,
-      "reason": "Top-K入选",
-      "rank": 8
-    }
-  ]
+  "orders": []
 }

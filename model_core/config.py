@@ -149,6 +149,11 @@ class ConfigMeta(type):
     def FEE_RATE(cls) -> float:
         return cls._rc.get('fee_rate', 0.0005)
 
+    @property
+    def TAKE_PROFIT(cls) -> float:
+        # 止盈涨幅阈值，0 表示不止盈
+        return cls._rc.get('take_profit', 0.0)
+
 
 class RobustConfig(metaclass=ConfigMeta):
     """
@@ -215,6 +220,8 @@ class ModelConfig:
     # 这是数据加载器解析 Parquet 文件的字典
     BASIC_FACTORS = [
         ('CLOSE', 'close', 'ffill'),
+        ('OPEN', 'open', 'ffill'),       # 开盘价（用于止盈）
+        ('HIGH', 'high', 'ffill'),       # 最高价（用于止盈）
         ('VOL', 'vol', 'zero'),
         ('PREM', 'conv_prem', 'ffill'),
         ('DBLOW', 'dblow', 'ffill'),

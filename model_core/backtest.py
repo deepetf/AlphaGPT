@@ -19,19 +19,24 @@ class CBBacktest:
     4. 计算组合收益和夏普比率作为 Reward
     """
     
-    def __init__(self, top_k: int = 20, fee_rate: float = None):
+    def __init__(self, top_k: int = 20, fee_rate: float = None, take_profit: float = None):
         """
         Args:
             top_k: 每天持有的转债数量
             fee_rate: 单边交易费率，默认使用 RobustConfig.FEE_RATE
+            take_profit: 止盈涨幅阈值，0 表示不止盈，默认使用 RobustConfig.TAKE_PROFIT
         """
         self.top_k = top_k
         self.fee_rate = fee_rate if fee_rate is not None else RobustConfig.FEE_RATE
+        self.take_profit = take_profit if take_profit is not None else RobustConfig.TAKE_PROFIT
         # 要求有效标的至少是 top_k 的 2 倍 (最少 30 个)，保证选择性
         self.min_valid_count = max(30, top_k * 2)
     
     def evaluate(self, factors: torch.Tensor, target_ret: torch.Tensor, 
-                 valid_mask: torch.Tensor) -> tuple:
+                 valid_mask: torch.Tensor,
+                 open_prices: torch.Tensor = None,
+                 high_prices: torch.Tensor = None,
+                 prev_close: torch.Tensor = None) -> tuple:
         """
         评估因子的回测表现
         
@@ -39,6 +44,9 @@ class CBBacktest:
             factors: [Time, Assets] 因子值张量
             target_ret: [Time, Assets] 资产收益率张量 (T+1 收益)
             valid_mask: [Time, Assets] 有效标的掩码 (True=可交易)
+            open_prices: [Time, Assets] 开盘价，止盈时需要
+            high_prices: [Time, Assets] 最高价，止盈时需要
+            prev_close: [Time, Assets] 前收盘价，止盈时需要
         
         Returns:
             reward: 标量，用于 RL 训练的奖励信号
@@ -87,9 +95,66 @@ class CBBacktest:
         # 6. 计算交易成本
         tx_cost = turnover * self.fee_rate * 2
         
-        # 7. 计算组合收益
-        gross_ret = (weights * target_ret).sum(dim=1)  # [T]
-        net_ret = gross_ret - tx_cost  # [T]
+        # 7. 止盈收益调整
+        # 简化逻辑:
+        #   - 触发止盈 → 当日收益锁定为止盈收益
+        #   - 买回影响的是费用，不影响当日收益（按收盘价买回，次日生效）
+        effective_ret = target_ret.clone()
+        tp_extra_cost = torch.zeros(T, device=device)
+        
+        if self.take_profit > 0 and open_prices is not None and high_prices is not None and prev_close is not None:
+            # 数据有效性检查：过滤无效价格
+            valid_price_mask = (
+                (prev_close > 0) & (prev_close < 10000) &
+                (open_prices > 0) & (open_prices < 10000) &
+                (high_prices > 0) & (high_prices < 10000)
+            )
+            
+            tp_trigger_price = prev_close * (1 + self.take_profit)
+            
+            # --- 向量化计算 ---
+            # 1. 确定持仓 (Time, Assets)
+            holding_mask = weights > 0
+            
+            # 2. 识别触发止盈的交易 (仅针对持仓)
+            # 开盘跳空止盈
+            open_gap_up = (open_prices >= tp_trigger_price) & valid_price_mask
+            gap_up_mask = open_gap_up & holding_mask
+            
+            # 盘中止盈
+            intraday_tp = (high_prices >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
+            intra_tp_mask = intraday_tp & holding_mask
+            
+            # 3. 更新收益率
+            # 开盘跳空: 使用开盘收益率
+            open_ret = (open_prices / prev_close) - 1.0
+            effective_ret[gap_up_mask] = open_ret[gap_up_mask]
+            
+            # 盘止盈: 锁定 take_profit
+            effective_ret[intra_tp_mask] = self.take_profit
+            
+            # 4. 计算额外费用
+            # 逻辑: holding_mask 为 True 意味着且仅意味着该标的在 Top-K 中 (因为 weights 是由 Top-K 生成)
+            # 因此所有止盈触发的标的都需要买回 (rebuy_mask == gap_up_mask/intra_tp_mask)
+            # 费用 = 触发数量 * 2 (卖+买) * fee_rate / k
+            
+            # 计算每日持仓数量 k (Time,)
+            daily_k = holding_mask.sum(dim=1).float()
+            
+            # 每日止盈触发数量
+            gap_up_count = gap_up_mask.sum(dim=1).float()
+            intra_tp_count = intra_tp_mask.sum(dim=1).float()
+            total_tp_count = gap_up_count + intra_tp_count
+            
+            # 避免 k=0 的除零错误 (虽然 holding_mask 为空时 count 也是 0)
+            safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
+            
+            # 累计额外费用
+            tp_extra_cost += total_tp_count * 2 * self.fee_rate / safe_k
+        
+        # 8. 计算组合收益
+        gross_ret = (weights * effective_ret).sum(dim=1)  # [T]
+        net_ret = gross_ret - tx_cost - tp_extra_cost  # [T]
         
         # 8. 仅对有效交易日计算 Sharpe
         valid_net_ret = net_ret[valid_trading_day]
@@ -218,7 +283,10 @@ class CBBacktest:
         }
     
     def evaluate_robust(self, factors: torch.Tensor, target_ret: torch.Tensor,
-                        valid_mask: torch.Tensor, split_idx: int) -> dict:
+                        valid_mask: torch.Tensor, split_idx: int,
+                        open_prices: torch.Tensor = None,
+                        high_prices: torch.Tensor = None,
+                        prev_close: torch.Tensor = None) -> dict:
         """
         稳健性评估方法 (Robust Evaluation)
         
@@ -229,6 +297,9 @@ class CBBacktest:
             target_ret: [Time, Assets] 资产收益率张量 (T+1 收益)
             valid_mask: [Time, Assets] 有效标的掩码
             split_idx: 训练/验证切分索引
+            open_prices: [Time, Assets] 开盘价，止盈时需要
+            high_prices: [Time, Assets] 最高价，止盈时需要
+            prev_close: [Time, Assets] 前收盘价，止盈时需要
         
         Returns:
             dict: 包含多维评估指标
@@ -261,8 +332,46 @@ class CBBacktest:
         turnover = torch.abs(weights - prev_weights).sum(dim=1)
         tx_cost = turnover * self.fee_rate * 2
         
-        gross_ret = (weights * target_ret).sum(dim=1)
-        net_ret = gross_ret - tx_cost
+        # 止盈收益调整（含买回逻辑）
+        effective_ret = target_ret.clone()
+        tp_extra_cost = torch.zeros(T, device=device)
+        
+        if self.take_profit > 0 and open_prices is not None and high_prices is not None and prev_close is not None:
+            # 数据有效性检查：过滤无效价格
+            valid_price_mask = (
+                (prev_close > 0) & (prev_close < 10000) &
+                (open_prices > 0) & (open_prices < 10000) &
+                (high_prices > 0) & (high_prices < 10000)
+            )
+            tp_trigger_price = prev_close * (1 + self.take_profit)
+            
+            # --- 向量化计算 ---
+            # 1. 确定持仓
+            holding_mask = weights > 0
+            
+            # 2. 识别触发止盈的交易
+            open_gap_up = (open_prices >= tp_trigger_price) & valid_price_mask
+            gap_up_mask = open_gap_up & holding_mask
+            
+            intraday_tp = (high_prices >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
+            intra_tp_mask = intraday_tp & holding_mask
+            
+            # 3. 更新收益率
+            open_ret = (open_prices / prev_close) - 1.0
+            effective_ret[gap_up_mask] = open_ret[gap_up_mask]
+            effective_ret[intra_tp_mask] = self.take_profit
+            
+            # 4. 计算额外费用
+            daily_k = holding_mask.sum(dim=1).float()
+            
+            gap_up_count = gap_up_mask.sum(dim=1).float()
+            intra_tp_count = intra_tp_mask.sum(dim=1).float()
+            
+            safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
+            tp_extra_cost += (gap_up_count + intra_tp_count) * 2 * self.fee_rate / safe_k
+        
+        gross_ret = (weights * effective_ret).sum(dim=1)
+        net_ret = gross_ret - tx_cost - tp_extra_cost
         
         # 2. 分段计算 Sharpe
         # Train: [0, split_idx), Val: [split_idx, T)

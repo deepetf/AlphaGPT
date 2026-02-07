@@ -1,105 +1,105 @@
 {
   "date": "2025-11-12",
-  "created_at": "2026-02-01T17:01:58.042228",
+  "created_at": "2026-02-06T11:57:09.835661",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "123259.SZ",
-      "name": "锦浪转02",
-      "score": 13.0601
+      "code": "110099.SH",
+      "name": "福能转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 2,
-      "code": "123173.SZ",
-      "name": "恒锋转债",
-      "score": 6.3364
+      "code": "123259.SZ",
+      "name": "锦浪转02",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 3,
-      "code": "128121.SZ",
-      "name": "宏川转债",
-      "score": 6.307
+      "code": "113699.SH",
+      "name": "金25转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 4,
-      "code": "118016.SH",
-      "name": "京源转债",
-      "score": 6.3012
+      "code": "113682.SH",
+      "name": "益丰转债",
+      "score": 207.513
     },
     {
       "rank": 5,
-      "code": "123059.SZ",
-      "name": "银信转债",
-      "score": 6.0574
+      "code": "118031.SH",
+      "name": "天23转债",
+      "score": 147.2943
     },
     {
       "rank": 6,
-      "code": "113610.SH",
-      "name": "灵康转债",
-      "score": 6.0454
+      "code": "127044.SZ",
+      "name": "蒙娜转债",
+      "score": 37.7944
     },
     {
       "rank": 7,
-      "code": "127080.SZ",
-      "name": "声迅转债",
-      "score": 6.026
+      "code": "127017.SZ",
+      "name": "万青转债",
+      "score": 35.5734
     },
     {
       "rank": 8,
-      "code": "127019.SZ",
-      "name": "国城转债",
-      "score": 5.9957
+      "code": "123233.SZ",
+      "name": "凯盛转债",
+      "score": 24.1319
     },
     {
       "rank": 9,
-      "code": "113593.SH",
-      "name": "沪工转债",
-      "score": 5.9906
+      "code": "111004.SH",
+      "name": "明新转债",
+      "score": 22.2932
     },
     {
       "rank": 10,
-      "code": "123175.SZ",
-      "name": "百畅转债",
-      "score": 5.9865
+      "code": "113665.SH",
+      "name": "汇通转债",
+      "score": 17.1436
     }
   ],
   "orders": [
     {
-      "code": "118041.SH",
-      "name": "星球转债",
+      "code": "123215.SZ",
+      "name": "铭利转债",
       "side": "SELL",
       "quantity": 70,
-      "price": 131.281005859375,
+      "price": 133.8820037841797,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "118027.SH",
-      "name": "宏图转债",
+      "code": "113687.SH",
+      "name": "振华转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 113.68199920654297,
+      "quantity": 30,
+      "price": 399.97100830078125,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "113593.SH",
-      "name": "沪工转债",
-      "side": "BUY",
-      "quantity": 60,
-      "price": 143.7550048828125,
-      "reason": "Top-K入选",
-      "rank": 9
-    },
-    {
-      "code": "113610.SH",
-      "name": "灵康转债",
+      "code": "118031.SH",
+      "name": "天23转债",
       "side": "BUY",
       "quantity": 70,
-      "price": 130.35899353027344,
+      "price": 134.8699951171875,
       "reason": "Top-K入选",
-      "rank": 6
+      "rank": 5
+    },
+    {
+      "code": "113665.SH",
+      "name": "汇通转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 130.11700439453125,
+      "reason": "Top-K入选",
+      "rank": 10
     }
   ]
 }

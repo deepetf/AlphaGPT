@@ -1,87 +1,68 @@
 {
   "date": "2024-07-30",
-  "created_at": "2026-02-03T09:12:13.460858",
+  "created_at": "2026-02-06T11:11:36.882061",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "123243.SZ",
       "name": "严牌转债",
-      "score": 547722624.0
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "123242.SZ",
-      "name": "赛龙转债",
-      "score": 547722624.0
+      "code": "123241.SZ",
+      "name": "欧通转债",
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 3,
-      "code": "123241.SZ",
-      "name": "欧通转债",
-      "score": 547722624.0
+      "code": "123242.SZ",
+      "name": "赛龙转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 4,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "118048.SH",
+      "name": "利扬转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 5,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "113686.SH",
+      "name": "泰瑞转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 6,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": -0.0
+      "code": "123171.SZ",
+      "name": "共同转债",
+      "score": 76.6956
     },
     {
       "rank": 7,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": -0.0
+      "code": "123231.SZ",
+      "name": "信测转债",
+      "score": 42.9605
     },
     {
       "rank": 8,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "123127.SZ",
+      "name": "耐普转债",
+      "score": 36.1136
     },
     {
       "rank": 9,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": -0.0
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "score": 16.6287
     },
     {
       "rank": 10,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": -0.0
+      "code": "113050.SH",
+      "name": "南银转债",
+      "score": 15.6839
     }
   ],
-  "orders": [
-    {
-      "code": "113686.SH",
-      "name": "泰瑞转债",
-      "side": "SELL",
-      "quantity": 60,
-      "price": 191.40899658203125,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "side": "BUY",
-      "quantity": 80,
-      "price": 114.24800109863281,
-      "reason": "Top-K入选",
-      "rank": 10
-    }
-  ]
+  "orders": []
 }

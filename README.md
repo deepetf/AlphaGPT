@@ -2,13 +2,20 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V4.1.2 (Low Risk Online)**
+Current Version: **V4.2: Alpha Efficiency (Current)**
 
 ---
 
 ## 📅 Version History
 
-### **V4.1: Engineering Hardening (Current)**
+### **V4.2: Alpha Efficiency (Current)**
+*止盈逻辑与评价体系优化。*
+- **Vectorized Take-Profit**: 全面向量化止盈逻辑，大幅提升训练速度；支持开盘跳空与盘中止盈。
+- **Simplified Buy-Back**: 锁定止盈当日收益，仅对仍在 Top-K 的标的计算额外买回成本，平衡收益与换手。
+- **Strict Price Filter**: 引入价格有效性检查 (0 < Price < 10000)，彻底消除脏数据引起的收益率污染。
+- **IC/IR Alignment**: 修正因子评价对齐口径，对无效样本返回 None 以防止 RL 指标偏置。
+
+### **V4.1: Engineering Hardening**
 *工程加固与口径真实性：确保每一分 Alpha 都经得起推敲。*
 - **Hierarchy of Failure**: 建立 (`EXEC` < `STRUCT` < `LOWVAR` < `METRIC` < `SIM`) 惩罚阶梯，提供清晰的强化学习梯度。
 - **Grammar-Guided Decoding**: 利用 Action Masking 技术将无效语法生成率从 99% 降至 **0%**。
@@ -23,8 +30,7 @@ Current Version: **V4.1.2 (Low Risk Online)**
 ### **V3.4: Grammar-Guided Decoding**
 *引入算子语法约束，彻底解决无效公式生成问题。*
 
-
-### **V3.3: Long-Run Optimization (Current)**
+### **V3.3: Long-Run Optimization**
 *Optimized for long-duration training stability and diversity.*
 - **Training Stability**: Adjusted default `Entropy Beta` and `Train Steps` (2000) to prevent premature convergence.
 - **Documentation**: Added "Playbook-style" tuning comments in `default_config.yaml`.
@@ -96,6 +102,17 @@ Current Version: **V4.1.2 (Low Risk Online)**
 
 ---
 
+## 📊 Key Metrics Explained
+
+| Metric | Definition | Good | Bad |
+|--------|------------|------|-----|
+| **Split Sharpe** | 训练集与验证集的夏普比率 | Train与Val接近且>1.5 | Val < 0 或 Train >> Val (Overfitting) |
+| **Stability** | 滚动夏普均值 - 1.5 * 标准差 | > 0.5 | < 0 (不稳定) |
+| **Max Drawdown** | 历史最大回撤 | < 20% | > 40% |
+| **Active Ratio** | 实际持仓数 / 目标TopK | > 90% | < 50% (不可交易) |
+
+---
+
 ## 🛠️ Core Modules
 
 ### 1. AlphaGPT Model
@@ -111,7 +128,7 @@ Current Version: **V4.1.2 (Low Risk Online)**
 ### 3. CBBacktest (Robust)
 - Top-K 轮动策略回测器。
 - 支持 `Transaction Fee` 和 `Turnover` 惩罚。
--内置 V2.1 稳健性评估指标 (`Split Sharpe`, `Stability`, `Active Ratio`)。
+- 内置 V2.1 稳健性评估指标 (`Split Sharpe`, `Stability`, `Active Ratio`)。
 
 ---
 
@@ -144,17 +161,6 @@ python verify_kings.py --king 8
 ```bash
 python verify_king8_realtime.py
 ```
-
----
-
-## 📊 Key Metrics Explained
-
-| Metric | Definition | Good | Bad |
-|--------|------------|------|-----|
-| **Split Sharpe** | 训练集与验证集的夏普比率 | Train与Val接近且>1.5 | Val < 0 或 Train >> Val (Overfitting) |
-| **Stability** | 滚动夏普均值 - 1.5 * 标准差 | > 0.5 | < 0 (不稳定) |
-| **Max Drawdown** | 历史最大回撤 | < 20% | > 40% |
-| **Active Ratio** | 实际持仓数 / 目标TopK | > 90% | < 50% (不可交易) |
 
 ---
 

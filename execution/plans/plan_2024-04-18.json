@@ -1,68 +1,87 @@
 {
   "date": "2024-04-18",
-  "created_at": "2026-02-03T09:11:13.732880",
+  "created_at": "2026-02-06T11:10:30.085387",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": 0.0
+      "code": "111002.SH",
+      "name": "特纸转债",
+      "score": 1492.4366
     },
     {
       "rank": 2,
-      "code": "110047.SH",
-      "name": "山鹰转债",
-      "score": 0.0
+      "code": "127041.SZ",
+      "name": "弘亚转债",
+      "score": 278.8775
     },
     {
       "rank": 3,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "127098.SZ",
+      "name": "欧晶转债",
+      "score": 20.6799
     },
     {
       "rank": 4,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": 0.0
+      "code": "113679.SH",
+      "name": "芯能转债",
+      "score": 19.0653
     },
     {
       "rank": 5,
-      "code": "110048.SH",
-      "name": "福能转债",
-      "score": 0.0
+      "code": "127047.SZ",
+      "name": "帝欧转债",
+      "score": 18.0977
     },
     {
       "rank": 6,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": 0.0
+      "code": "123200.SZ",
+      "name": "海泰转债",
+      "score": 12.7296
     },
     {
       "rank": 7,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "128130.SZ",
+      "name": "景兴转债",
+      "score": 12.3765
     },
     {
       "rank": 8,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": 0.0
+      "code": "123223.SZ",
+      "name": "九典转02",
+      "score": 11.3751
     },
     {
       "rank": 9,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": 0.0
+      "code": "113631.SH",
+      "name": "皖天转债",
+      "score": 10.9414
     },
     {
       "rank": 10,
-      "code": "110052.SH",
-      "name": "贵广转债",
-      "score": 0.0
+      "code": "128090.SZ",
+      "name": "汽模转2",
+      "score": 7.6954
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "113637.SH",
+      "name": "华翔转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 121.33100128173828,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "128090.SZ",
+      "name": "汽模转2",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 118.98999786376953,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
 }

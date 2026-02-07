@@ -1,68 +1,96 @@
 {
   "date": "2024-02-08",
-  "created_at": "2026-02-03T09:10:37.550899",
+  "created_at": "2026-02-06T11:09:43.273822",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": 0.0
+      "code": "123237.SZ",
+      "name": "佳禾转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 2,
-      "code": "110047.SH",
-      "name": "山鹰转债",
-      "score": 0.0
+      "code": "127103.SZ",
+      "name": "东南转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 3,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": -0.0
+      "code": "123238.SZ",
+      "name": "卡倍转02",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 4,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": -0.0
+      "code": "118030.SH",
+      "name": "睿创转债",
+      "score": 250.0987
     },
     {
       "rank": 5,
-      "code": "110048.SH",
-      "name": "福能转债",
-      "score": 0.0
+      "code": "127089.SZ",
+      "name": "晶澳转债",
+      "score": 68.3328
     },
     {
       "rank": 6,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": 0.0
+      "code": "113037.SH",
+      "name": "紫银转债",
+      "score": 61.3034
     },
     {
       "rank": 7,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "127033.SZ",
+      "name": "中装转2",
+      "score": 22.5223
     },
     {
       "rank": 8,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": 0.0
+      "code": "123126.SZ",
+      "name": "瑞丰转债",
+      "score": 15.6538
     },
     {
       "rank": 9,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": 0.0
+      "code": "113053.SH",
+      "name": "隆22转债",
+      "score": 10.769
     },
     {
       "rank": 10,
-      "code": "110052.SH",
-      "name": "贵广转债",
-      "score": 0.0
+      "code": "127084.SZ",
+      "name": "柳工转2",
+      "score": 7.8961
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "127046.SZ",
+      "name": "百润转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 107.75,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "127084.SZ",
+      "name": "柳工转2",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 121.11199951171875,
+      "reason": "Top-K入选",
+      "rank": 10
+    },
+    {
+      "code": "127103.SZ",
+      "name": "东南转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 107.01300048828125,
+      "reason": "Top-K入选",
+      "rank": 2
+    }
+  ]
 }

@@ -1,68 +1,87 @@
 {
   "date": "2024-07-11",
-  "created_at": "2026-02-03T09:11:56.695491",
+  "created_at": "2026-02-06T11:11:24.173906",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "113685.SH",
       "name": "升24转债",
-      "score": 547722624.0
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 2,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "110063.SH",
+      "name": "鹰19转债",
+      "score": 96.1208
     },
     {
       "rank": 3,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "127102.SZ",
+      "name": "浙建转债",
+      "score": 56.3893
     },
     {
       "rank": 4,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": 0.0
+      "code": "123196.SZ",
+      "name": "正元转02",
+      "score": 35.0345
     },
     {
       "rank": 5,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "123099.SZ",
+      "name": "普利转退",
+      "score": 21.4935
     },
     {
       "rank": 6,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": 0.0
+      "code": "127090.SZ",
+      "name": "兴瑞转债",
+      "score": 14.8468
     },
     {
       "rank": 7,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": -0.0
+      "code": "128081.SZ",
+      "name": "海亮转债",
+      "score": 11.3175
     },
     {
       "rank": 8,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": -0.0
+      "code": "127059.SZ",
+      "name": "永东转2",
+      "score": 8.2603
     },
     {
       "rank": 9,
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "score": -0.0
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "score": 8.0369
     },
     {
       "rank": 10,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "123082.SZ",
+      "name": "北陆转债",
+      "score": 7.7944
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "123130.SZ",
+      "name": "设研转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 116.69999694824219,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "side": "BUY",
+      "quantity": 120,
+      "price": 83.19999694824219,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
 }

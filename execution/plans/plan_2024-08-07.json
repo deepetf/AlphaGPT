@@ -1,68 +1,87 @@
 {
   "date": "2024-08-07",
-  "created_at": "2026-02-03T09:12:15.952163",
+  "created_at": "2026-02-06T11:11:40.642385",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "113687.SH",
-      "name": "振华转债",
-      "score": 447213600.0
+      "code": "113686.SH",
+      "name": "泰瑞转债",
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "123241.SZ",
+      "name": "欧通转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 3,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "113687.SH",
+      "name": "振华转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 4,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": -0.0
+      "code": "123242.SZ",
+      "name": "赛龙转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 5,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "123243.SZ",
+      "name": "严牌转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 6,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": -0.0
+      "code": "123231.SZ",
+      "name": "信测转债",
+      "score": 41.2999
     },
     {
       "rank": 7,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": -0.0
+      "code": "123119.SZ",
+      "name": "康泰转2",
+      "score": 16.962
     },
     {
       "rank": 8,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": -0.0
+      "code": "113067.SH",
+      "name": "燃23转债",
+      "score": 12.6826
     },
     {
       "rank": 9,
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "score": -0.0
+      "code": "110079.SH",
+      "name": "杭银转债",
+      "score": 11.7286
     },
     {
       "rank": 10,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "113049.SH",
+      "name": "长汽转债",
+      "score": 9.5136
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "118048.SH",
+      "name": "利扬转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 112.23999786376953,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113049.SH",
+      "name": "长汽转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 107.41500091552734,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
 }

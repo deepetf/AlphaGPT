@@ -1,141 +1,105 @@
 {
   "date": "2025-02-21",
-  "created_at": "2026-02-01T17:01:43.382086",
+  "created_at": "2026-02-06T11:53:53.941058",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "113070.SH",
       "name": "渝水转债",
-      "score": 6.1962
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 2,
-      "code": "123176.SZ",
-      "name": "精测转2",
-      "score": 4.879
+      "code": "118012.SH",
+      "name": "微芯转债",
+      "score": 74.6934
     },
     {
       "rank": 3,
-      "code": "111021.SH",
-      "name": "奥锐转债",
-      "score": 4.8613
+      "code": "113577.SH",
+      "name": "春秋转债",
+      "score": 58.1497
     },
     {
       "rank": 4,
-      "code": "123190.SZ",
-      "name": "道氏转02",
-      "score": 4.8423
+      "code": "113066.SH",
+      "name": "平煤转债",
+      "score": 46.9835
     },
     {
       "rank": 5,
-      "code": "113589.SH",
-      "name": "天创转债",
-      "score": 4.7019
+      "code": "113667.SH",
+      "name": "春23转债",
+      "score": 42.7724
     },
     {
       "rank": 6,
-      "code": "123049.SZ",
-      "name": "维尔转债",
-      "score": 4.6844
+      "code": "113045.SH",
+      "name": "环旭转债",
+      "score": 28.3748
     },
     {
       "rank": 7,
-      "code": "127090.SZ",
-      "name": "兴瑞转债",
-      "score": 4.6442
+      "code": "113658.SH",
+      "name": "密卫转债",
+      "score": 27.0816
     },
     {
       "rank": 8,
-      "code": "123189.SZ",
-      "name": "晓鸣转债",
-      "score": 4.6427
+      "code": "123114.SZ",
+      "name": "三角转债",
+      "score": 24.1179
     },
     {
       "rank": 9,
-      "code": "128127.SZ",
-      "name": "文科转债",
-      "score": 4.6268
+      "code": "123160.SZ",
+      "name": "泰福转债",
+      "score": 18.8975
     },
     {
       "rank": 10,
-      "code": "123230.SZ",
-      "name": "金钟转债",
-      "score": 4.6193
+      "code": "110059.SH",
+      "name": "浦发转债",
+      "score": 16.7969
     }
   ],
   "orders": [
     {
-      "code": "127088.SZ",
-      "name": "赫达转债",
+      "code": "113639.SH",
+      "name": "华正转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 116.94000244140625,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "123203.SZ",
-      "name": "明电转02",
-      "side": "SELL",
-      "quantity": 70,
-      "price": 143.69500732421875,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "111016.SH",
-      "name": "神通转债",
-      "side": "SELL",
-      "quantity": 80,
-      "price": 124.11799621582031,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "118046.SH",
-      "name": "诺泰转债",
-      "side": "SELL",
-      "quantity": 70,
-      "price": 144.80799865722656,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "128127.SZ",
-      "name": "文科转债",
-      "side": "BUY",
-      "quantity": 80,
-      "price": 112.70999908447266,
-      "reason": "Top-K入选",
-      "rank": 9
-    },
-    {
-      "code": "123189.SZ",
-      "name": "晓鸣转债",
-      "side": "BUY",
       "quantity": 90,
-      "price": 106.73500061035156,
-      "reason": "Top-K入选",
-      "rank": 8
+      "price": 119.69599914550781,
+      "reason": "剔除出Top-K",
+      "rank": 0
     },
     {
-      "code": "123049.SZ",
-      "name": "维尔转债",
-      "side": "BUY",
+      "code": "111004.SH",
+      "name": "明新转债",
+      "side": "SELL",
       "quantity": 90,
-      "price": 107.10199737548828,
-      "reason": "Top-K入选",
-      "rank": 6
+      "price": 112.39700317382812,
+      "reason": "剔除出Top-K",
+      "rank": 0
     },
     {
-      "code": "113589.SH",
-      "name": "天创转债",
+      "code": "113667.SH",
+      "name": "春23转债",
       "side": "BUY",
-      "quantity": 40,
-      "price": 207.8249969482422,
+      "quantity": 60,
+      "price": 146.76400756835938,
       "reason": "Top-K入选",
       "rank": 5
+    },
+    {
+      "code": "113577.SH",
+      "name": "春秋转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 142.67799377441406,
+      "reason": "Top-K入选",
+      "rank": 3
     }
   ]
 }

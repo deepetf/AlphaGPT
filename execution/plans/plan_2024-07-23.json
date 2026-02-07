@@ -1,67 +1,67 @@
 {
   "date": "2024-07-23",
-  "created_at": "2026-02-03T09:12:02.312718",
+  "created_at": "2026-02-06T11:11:31.925263",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "118048.SH",
       "name": "利扬转债",
-      "score": 547722624.0
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "113685.SH",
+      "name": "升24转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 3,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "123171.SZ",
+      "name": "共同转债",
+      "score": 61.5144
     },
     {
       "rank": 4,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": -0.0
+      "code": "123127.SZ",
+      "name": "耐普转债",
+      "score": 29.469
     },
     {
       "rank": 5,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "123099.SZ",
+      "name": "普利转退",
+      "score": 24.8842
     },
     {
       "rank": 6,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": -0.0
+      "code": "123231.SZ",
+      "name": "信测转债",
+      "score": 24.8689
     },
     {
       "rank": 7,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": -0.0
+      "code": "113050.SH",
+      "name": "南银转债",
+      "score": 17.9093
     },
     {
       "rank": 8,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": -0.0
+      "code": "123198.SZ",
+      "name": "金埔转债",
+      "score": 13.8687
     },
     {
       "rank": 9,
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "score": -0.0
+      "code": "123093.SZ",
+      "name": "金陵转债",
+      "score": 7.6695
     },
     {
       "rank": 10,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "score": 6.9063
     }
   ],
   "orders": []

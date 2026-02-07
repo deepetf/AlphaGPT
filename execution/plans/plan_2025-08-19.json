@@ -1,85 +1,103 @@
 {
   "date": "2025-08-19",
-  "created_at": "2026-02-01T17:01:53.499692",
+  "created_at": "2026-02-06T11:56:07.709558",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "123049.SZ",
-      "name": "维尔转债",
-      "score": 6.9435
+      "code": "118016.SH",
+      "name": "京源转债",
+      "score": 85.7662
     },
     {
       "rank": 2,
-      "code": "127033.SZ",
-      "name": "中装转2",
-      "score": 6.3112
+      "code": "113686.SH",
+      "name": "泰瑞转债",
+      "score": 77.191
     },
     {
       "rank": 3,
-      "code": "113565.SH",
-      "name": "宏辉转债",
-      "score": 6.171
+      "code": "113575.SH",
+      "name": "东时转债",
+      "score": 26.1882
     },
     {
       "rank": 4,
-      "code": "128105.SZ",
-      "name": "长集转债",
-      "score": 5.983
+      "code": "123225.SZ",
+      "name": "翔丰转债",
+      "score": 15.1986
     },
     {
       "rank": 5,
-      "code": "128101.SZ",
-      "name": "联创转债",
-      "score": 5.8791
+      "code": "123217.SZ",
+      "name": "富仕转债",
+      "score": 12.7476
     },
     {
       "rank": 6,
-      "code": "113577.SH",
-      "name": "春秋转债",
-      "score": 5.8775
+      "code": "127088.SZ",
+      "name": "赫达转债",
+      "score": 9.5026
     },
     {
       "rank": 7,
-      "code": "110070.SH",
-      "name": "凌钢转债",
-      "score": 5.7079
+      "code": "118022.SH",
+      "name": "锂科转债",
+      "score": 8.3197
     },
     {
       "rank": 8,
-      "code": "127016.SZ",
-      "name": "鲁泰转债",
-      "score": 5.6864
+      "code": "113685.SH",
+      "name": "升24转债",
+      "score": 5.7458
     },
     {
       "rank": 9,
-      "code": "113579.SH",
-      "name": "健友转债",
-      "score": 5.348
+      "code": "123154.SZ",
+      "name": "火星转债",
+      "score": 5.3113
     },
     {
       "rank": 10,
-      "code": "128127.SZ",
-      "name": "文科转债",
-      "score": 5.3452
+      "code": "113643.SH",
+      "name": "风语转债",
+      "score": 5.0048
     }
   ],
   "orders": [
     {
-      "code": "113033.SH",
-      "name": "利群转债",
+      "code": "127093.SZ",
+      "name": "章鼓转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 115.6760025024414,
+      "quantity": 60,
+      "price": 153.1199951171875,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "128127.SZ",
-      "name": "文科转债",
+      "code": "118037.SH",
+      "name": "上声转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 130.5449981689453,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113575.SH",
+      "name": "东时转债",
       "side": "BUY",
       "quantity": 70,
-      "price": 126.0999984741211,
+      "price": 135.53599548339844,
+      "reason": "Top-K入选",
+      "rank": 3
+    },
+    {
+      "code": "113643.SH",
+      "name": "风语转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 130.0709991455078,
       "reason": "Top-K入选",
       "rank": 10
     }

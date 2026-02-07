@@ -1,68 +1,105 @@
 {
   "date": "2024-07-12",
-  "created_at": "2026-02-03T09:11:56.988200",
+  "created_at": "2026-02-06T11:11:25.323486",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "113685.SH",
       "name": "升24转债",
-      "score": 547722624.0
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "110063.SH",
+      "name": "鹰19转债",
+      "score": 119.9271
     },
     {
       "rank": 3,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "127102.SZ",
+      "name": "浙建转债",
+      "score": 56.7649
     },
     {
       "rank": 4,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": 0.0
+      "code": "123196.SZ",
+      "name": "正元转02",
+      "score": 35.0822
     },
     {
       "rank": 5,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "123099.SZ",
+      "name": "普利转退",
+      "score": 20.9626
     },
     {
       "rank": 6,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": 0.0
+      "code": "127090.SZ",
+      "name": "兴瑞转债",
+      "score": 14.8683
     },
     {
       "rank": 7,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": -0.0
+      "code": "128081.SZ",
+      "name": "海亮转债",
+      "score": 11.5738
     },
     {
       "rank": 8,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": -0.0
+      "code": "113050.SH",
+      "name": "南银转债",
+      "score": 11.3506
     },
     {
       "rank": 9,
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "score": -0.0
+      "code": "123093.SZ",
+      "name": "金陵转债",
+      "score": 9.1413
     },
     {
       "rank": 10,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "score": 8.3017
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "127059.SZ",
+      "name": "永东转2",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 105.7979965209961,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123082.SZ",
+      "name": "北陆转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 102.44000244140625,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113050.SH",
+      "name": "南银转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 124.30000305175781,
+      "reason": "Top-K入选",
+      "rank": 8
+    },
+    {
+      "code": "123093.SZ",
+      "name": "金陵转债",
+      "side": "BUY",
+      "quantity": 80,
+      "price": 115.0009994506836,
+      "reason": "Top-K入选",
+      "rank": 9
+    }
+  ]
 }

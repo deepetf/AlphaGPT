@@ -206,7 +206,8 @@ class StrategyVerifier:
         logger.info(f"TOP_K: {RobustConfig.TOP_K}")
         logger.info(f"FEE_RATE: {RobustConfig.FEE_RATE} (single-sided, total={RobustConfig.FEE_RATE*2})")
         logger.info(f"MIN_ACTIVE_RATIO: {RobustConfig.MIN_ACTIVE_RATIO}")
-        logger.info(f"MIN_VALID_COUNT: {RobustConfig.MIN_VALID_COUNT}")
+        min_valid_count = max(30, RobustConfig.TOP_K * 2)
+        logger.info(f"MIN_VALID_COUNT (Computed): {min_valid_count}")
         logger.info(f"TRAIN_TEST_SPLIT_DATE: {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
         logger.info("="*60)
         
@@ -386,14 +387,17 @@ class StrategyVerifier:
     
     def _save_detailed_records(self, daily_trades, daily_holdings_detail):
         """保存详细的交易和持仓记录"""
+        # Generate suffix based on date range
+        suffix = f"_{self.start_date}_{self.end_date}"
+        
         # Save trading records
-        trades_path = os.path.join(self.artifacts_dir, "daily_trades.json")
+        trades_path = os.path.join(self.artifacts_dir, f"daily_trades{suffix}.json")
         with open(trades_path, 'w', encoding='utf-8') as f:
             json.dump(daily_trades, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved trading records to: {trades_path}")
         
         # Save holdings records
-        holdings_path = os.path.join(self.artifacts_dir, "daily_holdings.json")
+        holdings_path = os.path.join(self.artifacts_dir, f"daily_holdings{suffix}.json")
         with open(holdings_path, 'w', encoding='utf-8') as f:
             json.dump(daily_holdings_detail, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved holdings records to: {holdings_path}")
@@ -509,7 +513,8 @@ class StrategyVerifier:
             'Diff': diff,
             'Sim_Equity': [sim_records[i+1].sim_equity for i in range(min_len)]
         })
-        csv_path = os.path.join(self.artifacts_dir, "daily_returns.csv")
+        suffix = f"_{self.start_date}_{self.end_date}"
+        csv_path = os.path.join(self.artifacts_dir, f"daily_returns{suffix}.csv")
         df.to_csv(csv_path, index=False)
         logger.info(f"Saved daily returns to: {csv_path}")
         

@@ -1,68 +1,87 @@
 {
   "date": "2024-11-08",
-  "created_at": "2026-02-03T09:13:03.938270",
+  "created_at": "2026-02-06T11:12:16.551894",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": 0.0
+      "code": "123212.SZ",
+      "name": "立中转债",
+      "score": 434.9119
     },
     {
       "rank": 2,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": 0.0
+      "code": "111010.SH",
+      "name": "立昂转债",
+      "score": 131.5163
     },
     {
       "rank": 3,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": 0.0
+      "code": "118043.SH",
+      "name": "福立转债",
+      "score": 130.8543
     },
     {
       "rank": 4,
-      "code": "110068.SH",
-      "name": "龙净转债",
-      "score": 0.0
+      "code": "123218.SZ",
+      "name": "宏昌转债",
+      "score": 36.4384
     },
     {
       "rank": 5,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": 0.0
+      "code": "110093.SH",
+      "name": "神马转债",
+      "score": 24.6587
     },
     {
       "rank": 6,
-      "code": "110070.SH",
-      "name": "凌钢转债",
-      "score": 0.0
+      "code": "113062.SH",
+      "name": "常银转债",
+      "score": 22.5963
     },
     {
       "rank": 7,
-      "code": "110073.SH",
-      "name": "国投转债",
-      "score": 0.0
+      "code": "123154.SZ",
+      "name": "火星转债",
+      "score": 22.5364
     },
     {
       "rank": 8,
-      "code": "110074.SH",
-      "name": "精达转债",
-      "score": 0.0
+      "code": "123245.SZ",
+      "name": "集智转债",
+      "score": 21.7864
     },
     {
       "rank": 9,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": 0.0
+      "code": "127024.SZ",
+      "name": "盈峰转债",
+      "score": 17.9537
     },
     {
       "rank": 10,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "113624.SH",
+      "name": "正川转债",
+      "score": 15.0902
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "127101.SZ",
+      "name": "豪鹏转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 118.83999633789062,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113624.SH",
+      "name": "正川转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 108.85700225830078,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
 }

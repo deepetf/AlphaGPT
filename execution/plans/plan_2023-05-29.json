@@ -1,78 +1,114 @@
 {
   "date": "2023-05-29",
-  "created_at": "2026-02-01T17:09:42.906465",
+  "created_at": "2026-02-06T12:04:50.725188",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "123197.SZ",
-      "name": "光力转债",
-      "score": 20.9676
+      "code": "123192.SZ",
+      "name": "科思转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 2,
       "code": "127085.SZ",
       "name": "韵达转债",
-      "score": 13.0597
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 3,
-      "code": "128044.SZ",
-      "name": "岭南转债",
-      "score": 6.5121
+      "code": "113670.SH",
+      "name": "金23转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 4,
-      "code": "128039.SZ",
-      "name": "三力转债",
-      "score": 6.4901
+      "code": "118034.SH",
+      "name": "晶能转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 5,
-      "code": "123010.SZ",
-      "name": "博世转债",
-      "score": 6.3578
+      "code": "123196.SZ",
+      "name": "正元转02",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 6,
-      "code": "128025.SZ",
-      "name": "特一转债",
-      "score": 6.2697
+      "code": "123197.SZ",
+      "name": "光力转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 7,
-      "code": "123196.SZ",
-      "name": "正元转02",
-      "score": 6.2068
+      "code": "127078.SZ",
+      "name": "优彩转债",
+      "score": 214.4039
     },
     {
       "rank": 8,
-      "code": "118034.SH",
-      "name": "晶能转债",
-      "score": 6.2049
+      "code": "127029.SZ",
+      "name": "中钢转债",
+      "score": 39.8411
     },
     {
       "rank": 9,
-      "code": "123011.SZ",
-      "name": "德尔转债",
-      "score": 6.1106
+      "code": "123120.SZ",
+      "name": "隆华转债",
+      "score": 27.9756
     },
     {
       "rank": 10,
-      "code": "123012.SZ",
-      "name": "万顺转债",
-      "score": 6.0889
+      "code": "128122.SZ",
+      "name": "兴森转债",
+      "score": 27.238
     }
   ],
   "orders": [
     {
-      "code": "128042.SZ",
-      "name": "凯中转债",
+      "code": "113669.SH",
+      "name": "景23转债",
       "side": "SELL",
       "quantity": 80,
-      "price": 118.69999694824219,
+      "price": 125.72100067138672,
       "reason": "剔除出Top-K",
       "rank": 0
+    },
+    {
+      "code": "111000.SH",
+      "name": "起帆转债",
+      "side": "SELL",
+      "quantity": 70,
+      "price": 133.052001953125,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123193.SZ",
+      "name": "海能转债",
+      "side": "SELL",
+      "quantity": 80,
+      "price": 123.4219970703125,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "123120.SZ",
+      "name": "隆华转债",
+      "side": "BUY",
+      "quantity": 70,
+      "price": 130.8000030517578,
+      "reason": "Top-K入选",
+      "rank": 9
+    },
+    {
+      "code": "128122.SZ",
+      "name": "兴森转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 149.8000030517578,
+      "reason": "Top-K入选",
+      "rank": 10
     },
     {
       "code": "123197.SZ",
@@ -81,7 +117,7 @@
       "quantity": 60,
       "price": 147.0,
       "reason": "Top-K入选",
-      "rank": 1
+      "rank": 6
     }
   ]
 }

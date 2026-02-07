@@ -1,132 +1,96 @@
 {
   "date": "2025-09-08",
-  "created_at": "2026-02-01T17:01:54.632437",
+  "created_at": "2026-02-06T11:56:30.541372",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "127111.SZ",
-      "name": "金威转债",
-      "score": 20.9676
+      "code": "118058.SH",
+      "name": "微导转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 2,
-      "code": "123049.SZ",
-      "name": "维尔转债",
-      "score": 6.0176
+      "code": "127111.SZ",
+      "name": "金威转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 3,
-      "code": "113610.SH",
-      "name": "灵康转债",
-      "score": 5.2661
+      "code": "128105.SZ",
+      "name": "长集转债",
+      "score": 168.2923
     },
     {
       "rank": 4,
-      "code": "111018.SH",
-      "name": "华康转债",
-      "score": 4.9826
+      "code": "128125.SZ",
+      "name": "华阳转债",
+      "score": 109.9319
     },
     {
       "rank": 5,
-      "code": "123230.SZ",
-      "name": "金钟转债",
-      "score": 4.9631
+      "code": "123187.SZ",
+      "name": "超达转债",
+      "score": 34.9439
     },
     {
       "rank": 6,
-      "code": "118035.SH",
-      "name": "国力转债",
-      "score": 4.9203
+      "code": "128127.SZ",
+      "name": "文科转债",
+      "score": 29.6663
     },
     {
       "rank": 7,
-      "code": "123199.SZ",
-      "name": "山河转债",
-      "score": 4.9194
+      "code": "123222.SZ",
+      "name": "博俊转债",
+      "score": 22.5625
     },
     {
       "rank": 8,
-      "code": "123092.SZ",
-      "name": "天壕转债",
-      "score": 4.8629
+      "code": "127098.SZ",
+      "name": "欧晶转债",
+      "score": 22.2752
     },
     {
       "rank": 9,
-      "code": "128105.SZ",
-      "name": "长集转债",
-      "score": 4.8445
+      "code": "118055.SH",
+      "name": "伟测转债",
+      "score": 21.9738
     },
     {
       "rank": 10,
-      "code": "123160.SZ",
-      "name": "泰福转债",
-      "score": 4.8292
+      "code": "113066.SH",
+      "name": "平煤转债",
+      "score": 14.0123
     }
   ],
   "orders": [
     {
-      "code": "123088.SZ",
-      "name": "威唐转债",
-      "side": "SELL",
-      "quantity": 70,
-      "price": 134.7100067138672,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "118027.SH",
-      "name": "宏图转债",
+      "code": "123192.SZ",
+      "name": "科思转债",
       "side": "SELL",
       "quantity": 80,
-      "price": 126.24600219726562,
+      "price": 125.4000015258789,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "123144.SZ",
-      "name": "裕兴转债",
+      "code": "118048.SH",
+      "name": "利扬转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 116.6780014038086,
+      "quantity": 40,
+      "price": 186.99600219726562,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "113033.SH",
-      "name": "利群转债",
-      "side": "SELL",
-      "quantity": 80,
-      "price": 113.65899658203125,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "123080.SZ",
-      "name": "海波转债",
-      "side": "SELL",
-      "quantity": 50,
-      "price": 151.19900512695312,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "123199.SZ",
-      "name": "山河转债",
+      "code": "128125.SZ",
+      "name": "华阳转债",
       "side": "BUY",
       "quantity": 70,
-      "price": 132.2449951171875,
+      "price": 128.6300048828125,
       "reason": "Top-K入选",
-      "rank": 7
-    },
-    {
-      "code": "118035.SH",
-      "name": "国力转债",
-      "side": "BUY",
-      "quantity": 70,
-      "price": 138.6909942626953,
-      "reason": "Top-K入选",
-      "rank": 6
+      "rank": 4
     },
     {
       "code": "127111.SZ",
@@ -135,25 +99,7 @@
       "quantity": 70,
       "price": 138.0,
       "reason": "Top-K入选",
-      "rank": 1
-    },
-    {
-      "code": "123160.SZ",
-      "name": "泰福转债",
-      "side": "BUY",
-      "quantity": 60,
-      "price": 155.5,
-      "reason": "Top-K入选",
-      "rank": 10
-    },
-    {
-      "code": "111018.SH",
-      "name": "华康转债",
-      "side": "BUY",
-      "quantity": 70,
-      "price": 138.468994140625,
-      "reason": "Top-K入选",
-      "rank": 4
+      "rank": 2
     }
   ]
 }

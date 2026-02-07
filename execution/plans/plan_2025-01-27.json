@@ -1,68 +1,87 @@
 {
   "date": "2025-01-27",
-  "created_at": "2026-02-01T17:01:42.260595",
+  "created_at": "2026-02-06T11:53:38.882353",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
       "code": "123252.SZ",
       "name": "银邦转债",
-      "score": 20.4159
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 2,
       "code": "110098.SH",
       "name": "南药转债",
-      "score": 9.2749
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 3,
-      "code": "127033.SZ",
-      "name": "中装转2",
-      "score": 5.2108
+      "code": "123251.SZ",
+      "name": "华医转债",
+      "score": 8.944272829893837e+16
     },
     {
       "rank": 4,
-      "code": "123082.SZ",
-      "name": "北陆转债",
-      "score": 5.1352
+      "code": "110062.SH",
+      "name": "烽火转债",
+      "score": 142.6123
     },
     {
       "rank": 5,
-      "code": "123076.SZ",
-      "name": "强力转债",
-      "score": 5.0736
+      "code": "113657.SH",
+      "name": "再22转债",
+      "score": 91.2164
     },
     {
       "rank": 6,
-      "code": "113608.SH",
-      "name": "威派转债",
-      "score": 5.0114
+      "code": "123149.SZ",
+      "name": "通裕转债",
+      "score": 77.152
     },
     {
       "rank": 7,
-      "code": "123080.SZ",
-      "name": "海波转债",
-      "score": 4.945
+      "code": "123248.SZ",
+      "name": "恒辉转债",
+      "score": 46.9082
     },
     {
       "rank": 8,
-      "code": "128072.SZ",
-      "name": "翔鹭转债",
-      "score": 4.9006
+      "code": "127030.SZ",
+      "name": "盛虹转债",
+      "score": 43.6764
     },
     {
       "rank": 9,
-      "code": "128137.SZ",
-      "name": "洁美转债",
-      "score": 4.8341
+      "code": "123049.SZ",
+      "name": "维尔转债",
+      "score": 22.3144
     },
     {
       "rank": 10,
-      "code": "113606.SH",
-      "name": "荣泰转债",
-      "score": 4.7169
+      "code": "113639.SH",
+      "name": "华正转债",
+      "score": 17.2032
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "110095.SH",
+      "name": "双良转债",
+      "side": "SELL",
+      "quantity": 100,
+      "price": 104.92400360107422,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "113639.SH",
+      "name": "华正转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 110.13200378417969,
+      "reason": "Top-K入选",
+      "rank": 10
+    }
+  ]
 }

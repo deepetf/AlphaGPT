@@ -1,68 +1,105 @@
 {
   "date": "2024-05-24",
-  "created_at": "2026-02-03T09:11:33.868381",
+  "created_at": "2026-02-06T11:10:51.835251",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "110055.SH",
-      "name": "伊力转债",
-      "score": -0.0
+      "code": "111019.SH",
+      "name": "宏柏转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 2,
-      "code": "110059.SH",
-      "name": "浦发转债",
-      "score": 0.0
+      "code": "123152.SZ",
+      "name": "润禾转债",
+      "score": 115.2746
     },
     {
       "rank": 3,
-      "code": "110060.SH",
-      "name": "天路转债",
-      "score": 0.0
+      "code": "113646.SH",
+      "name": "永吉转债",
+      "score": 97.8223
     },
     {
       "rank": 4,
-      "code": "110062.SH",
-      "name": "烽火转债",
-      "score": -0.0
+      "code": "111012.SH",
+      "name": "福新转债",
+      "score": 31.2515
     },
     {
       "rank": 5,
-      "code": "110048.SH",
-      "name": "福能转债",
-      "score": 0.0
+      "code": "110064.SH",
+      "name": "建工转债",
+      "score": 17.2301
     },
     {
       "rank": 6,
-      "code": "110063.SH",
-      "name": "鹰19转债",
-      "score": -0.0
+      "code": "113644.SH",
+      "name": "艾迪转债",
+      "score": 14.0994
     },
     {
       "rank": 7,
-      "code": "110064.SH",
-      "name": "建工转债",
-      "score": -0.0
+      "code": "123107.SZ",
+      "name": "温氏转债",
+      "score": 13.6371
     },
     {
       "rank": 8,
-      "code": "110067.SH",
-      "name": "华安转债",
-      "score": -0.0
+      "code": "118046.SH",
+      "name": "诺泰转债",
+      "score": 12.4567
     },
     {
       "rank": 9,
-      "code": "110058.SH",
-      "name": "永鼎转债",
-      "score": -0.0
+      "code": "123197.SZ",
+      "name": "光力转债",
+      "score": 12.1987
     },
     {
       "rank": 10,
-      "code": "110052.SH",
-      "name": "贵广转债",
-      "score": -0.0
+      "code": "123117.SZ",
+      "name": "健帆转债",
+      "score": 11.8935
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "code": "113624.SH",
+      "name": "正川转债",
+      "side": "SELL",
+      "quantity": 90,
+      "price": 107.8489990234375,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "111017.SH",
+      "name": "蓝天转债",
+      "side": "SELL",
+      "quantity": 60,
+      "price": 150.00799560546875,
+      "reason": "剔除出Top-K",
+      "rank": 0
+    },
+    {
+      "code": "118046.SH",
+      "name": "诺泰转债",
+      "side": "BUY",
+      "quantity": 60,
+      "price": 142.97500610351562,
+      "reason": "Top-K入选",
+      "rank": 8
+    },
+    {
+      "code": "113644.SH",
+      "name": "艾迪转债",
+      "side": "BUY",
+      "quantity": 90,
+      "price": 109.79199981689453,
+      "reason": "Top-K入选",
+      "rank": 6
+    }
+  ]
 }

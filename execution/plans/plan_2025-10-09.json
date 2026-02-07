@@ -1,87 +1,87 @@
 {
   "date": "2025-10-09",
-  "created_at": "2026-02-01T17:01:55.836566",
+  "created_at": "2026-02-06T11:56:52.677930",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "123049.SZ",
-      "name": "维尔转债",
-      "score": 7.3142
+      "code": "118008.SH",
+      "name": "海优转债",
+      "score": 7778.8667
     },
     {
       "rank": 2,
-      "code": "113610.SH",
-      "name": "灵康转债",
-      "score": 6.0417
+      "code": "123249.SZ",
+      "name": "英搏转债",
+      "score": 78.3455
     },
     {
       "rank": 3,
-      "code": "113589.SH",
-      "name": "天创转债",
-      "score": 5.9363
+      "code": "123185.SZ",
+      "name": "能辉转债",
+      "score": 66.7604
     },
     {
       "rank": 4,
       "code": "110070.SH",
       "name": "凌钢转债",
-      "score": 5.7247
+      "score": 46.4374
     },
     {
       "rank": 5,
-      "code": "128108.SZ",
-      "name": "蓝帆转债",
-      "score": 5.4645
+      "code": "123255.SZ",
+      "name": "鼎龙转债",
+      "score": 28.8614
     },
     {
       "rank": 6,
-      "code": "113579.SH",
-      "name": "健友转债",
-      "score": 5.4627
+      "code": "123240.SZ",
+      "name": "楚天转债",
+      "score": 23.7512
     },
     {
       "rank": 7,
-      "code": "123072.SZ",
-      "name": "乐歌转债",
-      "score": 5.4249
+      "code": "127022.SZ",
+      "name": "恒逸转债",
+      "score": 14.6873
     },
     {
       "rank": 8,
-      "code": "123092.SZ",
-      "name": "天壕转债",
-      "score": 5.3762
+      "code": "127067.SZ",
+      "name": "恒逸转2",
+      "score": 14.2419
     },
     {
       "rank": 9,
-      "code": "123080.SZ",
-      "name": "海波转债",
-      "score": 5.2797
+      "code": "127110.SZ",
+      "name": "广核转债",
+      "score": 10.3655
     },
     {
       "rank": 10,
-      "code": "123054.SZ",
-      "name": "思特转债",
-      "score": 5.2461
+      "code": "123182.SZ",
+      "name": "广联转债",
+      "score": 9.6883
     }
   ],
   "orders": [
     {
-      "code": "113577.SH",
-      "name": "春秋转债",
+      "code": "123222.SZ",
+      "name": "博俊转债",
       "side": "SELL",
-      "quantity": 70,
-      "price": 134.89500427246094,
+      "quantity": 40,
+      "price": 214.89999389648438,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "123092.SZ",
-      "name": "天壕转债",
+      "code": "110070.SH",
+      "name": "凌钢转债",
       "side": "BUY",
       "quantity": 70,
-      "price": 138.8000030517578,
+      "price": 127.7030029296875,
       "reason": "Top-K入选",
-      "rank": 8
+      "rank": 4
     }
   ]
 }

@@ -148,7 +148,7 @@ class CBStrategyRunner:
             return
         
         # 熔断条件 2: 有效标的数量低于最小阈值
-        min_required = max(RobustConfig.MIN_VALID_COUNT, self.top_k * 2)
+        min_required = max(30, self.top_k * 2)
         if valid_count < min_required:
             logger.critical(f"⛔ CIRCUIT BREAKER: Too few valid assets ({valid_count} < {min_required}). Trading HALTED.")
             return

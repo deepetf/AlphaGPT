@@ -1,141 +1,105 @@
 {
   "date": "2023-05-10",
-  "created_at": "2026-02-01T17:09:42.467045",
+  "created_at": "2026-02-06T12:04:39.687835",
   "strategy": "AlphaGPT_CB_Top10",
   "assets": [
     {
       "rank": 1,
-      "code": "113669.SH",
-      "name": "景23转债",
-      "score": 20.9676
+      "code": "123186.SZ",
+      "name": "志特转债",
+      "score": 1.2728724851209011e+17
     },
     {
       "rank": 2,
-      "code": "123193.SZ",
-      "name": "海能转债",
-      "score": 20.9676
+      "code": "110093.SH",
+      "name": "神马转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 3,
-      "code": "123195.SZ",
-      "name": "蓝晓转02",
-      "score": 20.4159
+      "code": "123183.SZ",
+      "name": "海顺转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 4,
-      "code": "123194.SZ",
-      "name": "百洋转债",
-      "score": 16.4494
+      "code": "127084.SZ",
+      "name": "柳工转2",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 5,
-      "code": "111013.SH",
-      "name": "新港转债",
-      "score": 16.4493
+      "code": "123195.SZ",
+      "name": "蓝晓转02",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 6,
-      "code": "123191.SZ",
-      "name": "智尚转债",
-      "score": 9.2821
+      "code": "123185.SZ",
+      "name": "能辉转债",
+      "score": 1.2288622129368269e+17
     },
     {
       "rank": 7,
-      "code": "127041.SZ",
-      "name": "弘亚转债",
-      "score": 6.6343
+      "code": "123187.SZ",
+      "name": "超达转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 8,
-      "code": "123052.SZ",
-      "name": "飞鹿转债",
-      "score": 6.5539
+      "code": "123189.SZ",
+      "name": "晓鸣转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 9,
-      "code": "113652.SH",
-      "name": "伟22转债",
-      "score": 6.4987
+      "code": "111013.SH",
+      "name": "新港转债",
+      "score": 1.0200041380852531e+17
     },
     {
       "rank": 10,
-      "code": "113651.SH",
-      "name": "松霖转债",
-      "score": 6.4697
+      "code": "123190.SZ",
+      "name": "道氏转02",
+      "score": 1.0200041380852531e+17
     }
   ],
   "orders": [
     {
-      "code": "113591.SH",
-      "name": "胜达转债",
+      "code": "123188.SZ",
+      "name": "水羊转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 120.09400177001953,
+      "quantity": 70,
+      "price": 137.0500030517578,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "113668.SH",
-      "name": "鹿山转债",
+      "code": "123194.SZ",
+      "name": "百洋转债",
       "side": "SELL",
-      "quantity": 80,
-      "price": 112.76699829101562,
+      "quantity": 70,
+      "price": 124.9000015258789,
       "reason": "剔除出Top-K",
       "rank": 0
     },
     {
-      "code": "127082.SZ",
-      "name": "亚科转债",
-      "side": "SELL",
-      "quantity": 80,
-      "price": 118.19400024414062,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "128119.SZ",
-      "name": "龙大转债",
-      "side": "SELL",
-      "quantity": 80,
-      "price": 115.70899963378906,
-      "reason": "剔除出Top-K",
-      "rank": 0
-    },
-    {
-      "code": "113652.SH",
-      "name": "伟22转债",
+      "code": "123195.SZ",
+      "name": "蓝晓转02",
       "side": "BUY",
-      "quantity": 90,
-      "price": 108.4209976196289,
+      "quantity": 70,
+      "price": 134.8000030517578,
       "reason": "Top-K入选",
-      "rank": 9
+      "rank": 5
     },
     {
-      "code": "113651.SH",
-      "name": "松霖转债",
+      "code": "123186.SZ",
+      "name": "志特转债",
       "side": "BUY",
       "quantity": 80,
-      "price": 117.302001953125,
-      "reason": "Top-K入选",
-      "rank": 10
-    },
-    {
-      "code": "113669.SH",
-      "name": "景23转债",
-      "side": "BUY",
-      "quantity": 80,
-      "price": 120.89299774169922,
+      "price": 117.8290023803711,
       "reason": "Top-K入选",
       "rank": 1
-    },
-    {
-      "code": "123193.SZ",
-      "name": "海能转债",
-      "side": "BUY",
-      "quantity": 80,
-      "price": 118.80000305175781,
-      "reason": "Top-K入选",
-      "rank": 2
     }
   ]
 }
