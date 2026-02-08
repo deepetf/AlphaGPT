@@ -210,6 +210,7 @@ class AlphaEngine:
         config_source = getattr(RobustConfig, '_config_path', 'default_config.yaml')
         print(f"Config source: {config_source}")
         print(f"Using Device: {ModelConfig.DEVICE}")
+        print(f"Take Profit: {RobustConfig.TAKE_PROFIT}")
         
         # 1. 初始化并加载数据
         # 确保 engine 拥有唯一的数据加载器实例
