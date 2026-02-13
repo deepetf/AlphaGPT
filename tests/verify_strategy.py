@@ -1,12 +1,12 @@
-"""
-策略验证脚本 (Strategy Verification Script)
+﻿"""
+绛栫暐楠岃瘉鑴氭湰 (Strategy Verification Script)
 
-目标：
-1. 验证 Event-Driven 策略引擎与 Vector Backtest 的一致性
-2. 检测 Look-Ahead Bias
-3. 生成量化对比报告
+鐩爣锛?
+1. 楠岃瘉 Event-Driven 绛栫暐寮曟搸涓?Vector Backtest 鐨勪竴鑷存€?
+2. 妫€娴?Look-Ahead Bias
+3. 鐢熸垚閲忓寲瀵规瘮鎶ュ憡
 
-执行方式：
+鎵ц鏂瑰紡锛?
     python tests/verify_strategy.py --start 2024-01-01 --end 2024-12-31
 """
 
@@ -48,17 +48,18 @@ logger = logging.getLogger("StrategyVerification")
 
 @dataclass
 class DailyRecord:
-    """每日记录"""
+    """姣忔棩璁板綍"""
     date: str
     sim_equity: float
     sim_return: float
     sim_holdings: List[str]
     sim_cash: float
     orders_count: int
+    tx_fee: float = 0.0
 
 
 class SimAccount:
-    """模拟账户"""
+    """妯℃嫙璐︽埛"""
     
     def __init__(self, initial_cash: float = 100000.0):
         self.cash = initial_cash
@@ -66,13 +67,13 @@ class SimAccount:
         self.initial_cash = initial_cash
         
     def get_equity(self, prices: Dict[str, float]) -> float:
-        """计算总权益"""
+        """璁＄畻鎬绘潈鐩?"""
         holdings_value = sum(self.holdings.get(code, 0) * prices.get(code, 0.0) 
                             for code in self.holdings)
         return self.cash + holdings_value
     
     def execute_order(self, order: Order, fee_rate: float = 0.001):
-        """执行订单"""
+        """鎵ц璁㈠崟"""
         if order.side == OrderSide.BUY:
             cost = order.quantity * order.price * (1 + fee_rate)
             if cost > self.cash:
@@ -99,32 +100,39 @@ class SimAccount:
 
 
 class MockTrader:
-    """Mock Trader - 只在内存中记录订单"""
+    """Mock Trader - 鍙湪鍐呭瓨涓褰曡鍗?"""
     
     def __init__(self):
         self.orders = []
     
     def submit_orders(self, orders, date):
-        """记录订单但不生成文件"""
+        """璁板綍璁㈠崟浣嗕笉鐢熸垚鏂囦欢"""
         self.orders.extend(orders)
         return type('Result', (), {'success': True, 'message': f'Recorded {len(orders)} orders'})()
 
 
 class StrategyVerifier:
-    """策略验证器"""
+    """绛栫暐楠岃瘉鍣?"""
     
-    def __init__(self, start_date: str = "2024-01-01", end_date: str = None, king_step: int = None):
+    def __init__(
+        self,
+        start_date: str = "2024-01-01",
+        end_date: str = None,
+        king_step: int = None,
+        take_profit_ratio: float = 0.0,
+    ):
         """
-        初始化验证器
+        鍒濆鍖栭獙璇佸櫒
         
         Args:
-            start_date: 开始日期
-            end_date: 结束日期（None表示最新日期）
-            king_step: King因子的step编号（None表示使用best）
+            start_date: 寮€濮嬫棩鏈?
+            end_date: 缁撴潫鏃ユ湡锛圢one琛ㄧず鏈€鏂版棩鏈燂級
+            king_step: King鍥犲瓙鐨剆tep缂栧彿锛圢one琛ㄧず浣跨敤best锛?
         """
         self.start_date = start_date
         self.end_date = end_date
         self.king_step = king_step
+        self.take_profit_ratio = take_profit_ratio
         
         # Setup artifacts directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -135,6 +143,7 @@ class StrategyVerifier:
         logger.info("Loading data...")
         self.loader = CBDataLoader()
         self.loader.load_data()
+        self.code_to_idx = {c: i for i, c in enumerate(self.loader.assets_list)}
         
         # Filter dates
         all_dates = self.loader.dates_list
@@ -148,7 +157,7 @@ class StrategyVerifier:
         self._load_formula()
     
     def _load_formula(self):
-        """加载因子公式"""
+        """鍔犺浇鍥犲瓙鍏紡"""
         strategy_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "model_core",
@@ -199,7 +208,7 @@ class StrategyVerifier:
                    f"Ann. Return: {self.formula_info.get('annualized_ret', 'N/A'):.2%}")
         
     def print_config_alignment(self):
-        """打印参数对齐检查"""
+        """鎵撳嵃鍙傛暟瀵归綈妫€鏌?"""
         logger.info("="*60)
         logger.info("PARAMETER ALIGNMENT CHECK")
         logger.info("="*60)
@@ -209,10 +218,107 @@ class StrategyVerifier:
         min_valid_count = max(30, RobustConfig.TOP_K * 2)
         logger.info(f"MIN_VALID_COUNT (Computed): {min_valid_count}")
         logger.info(f"TRAIN_TEST_SPLIT_DATE: {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
+        logger.info(f"TAKE_PROFIT_RATIO: {self.take_profit_ratio}")
         logger.info("="*60)
+
+    def _build_prices(self, date_idx: int) -> Dict[str, float]:
+        close_row = self.loader.raw_data_cache['CLOSE'][date_idx]
+        return {
+            code: float(close_row[asset_idx].item())
+            for asset_idx, code in enumerate(self.loader.assets_list)
+        }
+
+    def _sync_portfolio_with_account(
+        self,
+        portfolio: CBPortfolioManager,
+        account: SimAccount,
+        order: Order,
+        date: str,
+    ):
+        current_shares = account.holdings.get(order.code, 0)
+        if current_shares > 0:
+            if portfolio.get_position(order.code):
+                portfolio.update_position(order.code, current_shares, order.price)
+            else:
+                portfolio.add_position(
+                    code=order.code,
+                    name=getattr(order, 'name', order.code),
+                    shares=current_shares,
+                    price=order.price,
+                    date=date
+                )
+        else:
+            if portfolio.get_position(order.code):
+                portfolio.remove_position(order.code)
+
+    def _execute_orders(
+        self,
+        account: SimAccount,
+        portfolio: CBPortfolioManager,
+        orders: List[Order],
+        date: str,
+    ) -> tuple[int, float]:
+        executed = 0
+        total_fee = 0.0
+        for order in orders:
+            success = account.execute_order(order, fee_rate=RobustConfig.FEE_RATE)
+            if success:
+                executed += 1
+                total_fee += float(order.quantity) * float(order.price) * RobustConfig.FEE_RATE
+                self._sync_portfolio_with_account(portfolio, account, order, date)
+        return executed, total_fee
+
+    def _generate_take_profit_orders(
+        self,
+        portfolio: CBPortfolioManager,
+        date_idx: int,
+    ) -> List[Order]:
+        """涓?sim_runner 瀵归綈: 寮€鐩樿Е鍙戜紭鍏? 鍏舵鐩樹腑 high 瑙﹀彂銆?"""
+        if self.take_profit_ratio <= 0 or date_idx <= 0:
+            return []
+
+        close = self.loader.raw_data_cache['CLOSE']
+        open_ = self.loader.raw_data_cache['OPEN']
+        high = self.loader.raw_data_cache['HIGH']
+
+        tp_orders: List[Order] = []
+        for pos in portfolio.get_all_positions():
+            asset_idx = self.code_to_idx.get(pos.code)
+            if asset_idx is None:
+                continue
+
+            prev_close = float(close[date_idx - 1, asset_idx].item())
+            today_open = float(open_[date_idx, asset_idx].item())
+            today_high = float(high[date_idx, asset_idx].item())
+            if prev_close <= 0:
+                continue
+
+            tp_trigger = prev_close * (1 + self.take_profit_ratio)
+            if today_open >= tp_trigger:
+                tp_orders.append(Order(
+                    code=pos.code,
+                    name=pos.name,
+                    side=OrderSide.SELL,
+                    quantity=pos.shares,
+                    price=today_open,
+                    reason="TP_GAP_OPEN",
+                    rank=0
+                ))
+            elif today_high >= tp_trigger:
+                tp_orders.append(Order(
+                    code=pos.code,
+                    name=pos.name,
+                    side=OrderSide.SELL,
+                    quantity=pos.shares,
+                    price=tp_trigger,
+                    reason="TP_INTRADAY",
+                    rank=0
+                ))
+
+        return tp_orders
         
     def run_simulation(self, initial_cash: float = 100000.0) -> List[DailyRecord]:
-        """运行事件驱动模拟（T日选股→T日建仓→T+1日计算收益）"""
+        """杩愯浜嬩欢椹卞姩妯℃嫙锛圱鏃ラ€夎偂鈫扵鏃ュ缓浠撯啋T+1鏃ヨ绠楁敹鐩婏級"""
         logger.info("\n" + "="*60)
         logger.info(f"RUNNING EVENT-DRIVEN SIMULATION (Initial Cash: {initial_cash:,.2f})")
         logger.info("="*60)
@@ -234,7 +340,9 @@ class StrategyVerifier:
             portfolio=portfolio,
             trader=mock_trader
         )
-        runner.load_strategy()
+        # Keep simulation formula strictly aligned with verifier formula
+        # (especially important when --king is specified).
+        runner.formula = self.formula
         
         # Storage for detailed records
         daily_trades = []
@@ -247,16 +355,26 @@ class StrategyVerifier:
             
             # Get current prices for this date
             date_idx = self.loader.dates_list.index(date)
-            prices = {}
-            for asset_idx, code in enumerate(self.loader.assets_list):
-                prices[code] = self.loader.raw_data_cache['CLOSE'][date_idx, asset_idx].item()
+            prices = self._build_prices(date_idx)
             
-            # Calculate return BEFORE rebalancing (using previous holdings)
-            # This represents the return from T-1 holdings realized on day T
-            current_equity_before_trade = account.get_equity(prices)
-            daily_return = (current_equity_before_trade - prev_equity) / prev_equity if prev_equity > 0 else 0.0
-            
-            # Generate orders for this date (T signal)
+            # 0) 姝㈢泩鍗栧嚭锛堝悓鏃ュ悗缁彲閫氳繃璋冧粨涔板洖锛?
+            tp_orders = self._generate_take_profit_orders(portfolio, date_idx)
+            tp_sells = []
+            tp_fee = 0.0
+            if tp_orders:
+                _, tp_fee = self._execute_orders(account, portfolio, tp_orders, date)
+                for order in tp_orders:
+                    tp_sells.append({
+                        'code': order.code,
+                        'name': getattr(order, 'name', order.code),
+                        'quantity': order.quantity,
+                        'price': order.price,
+                        'amount': order.quantity * order.price,
+                        'reason': getattr(order, 'reason', 'TP')
+                    })
+
+            # 1) 璋冧粨璁㈠崟锛圱P 鍚庢寜褰撳墠鏉冪泭鍒嗛厤锛?
+            runner.rebalancer.total_capital = account.get_equity(prices)
             mock_trader.orders = []
             runner.run(date=date, simulate=False)
             orders = mock_trader.orders
@@ -281,31 +399,7 @@ class StrategyVerifier:
             if orders:
                 logger.debug(f"  Executing {len(orders)} orders at T close...")
                 logger.debug(f"    Sells: {len(sells)}, Buys: {len(buys)}")
-                for order in orders:
-                    # Execute in SimAccount
-                    success = account.execute_order(order, fee_rate=RobustConfig.FEE_RATE)
-                    
-                    # Sync to PortfolioManager if successful
-                    if success:
-                        current_shares = account.holdings.get(order.code, 0)
-                        
-                        if current_shares > 0:
-                            if portfolio.get_position(order.code):
-                                # Update existing position
-                                portfolio.update_position(order.code, current_shares, order.price)
-                            else:
-                                # Add new position
-                                portfolio.add_position(
-                                    code=order.code,
-                                    name=getattr(order, 'name', order.code),
-                                    shares=current_shares,
-                                    price=order.price,
-                                    date=date
-                                )
-                        else:
-                            # Position closed
-                            if portfolio.get_position(order.code):
-                                portfolio.remove_position(order.code)
+                _, rebalance_fee = self._execute_orders(account, portfolio, orders, date)
                 
                 # CRITICAL: Validate holdings consistency between portfolio and SimAccount
                 # Portfolio is used for signal generation, SimAccount for P&L calculation
@@ -314,7 +408,7 @@ class StrategyVerifier:
                 simaccount_holdings = account.holdings
                 
                 if portfolio_positions != simaccount_holdings:
-                    logger.warning(f"  ⚠️ Holdings mismatch detected!")
+                    logger.warning(f"  鈿狅笍 Holdings mismatch detected!")
                     p_keys = set(portfolio_positions.keys())
                     s_keys = set(simaccount_holdings.keys())
                     logger.warning(f"    Only in Portfolio: {p_keys - s_keys}")
@@ -327,16 +421,25 @@ class StrategyVerifier:
                     
                     # This is a critical issue that should be investigated
                     # For now, we log it but continue execution
+            else:
+                rebalance_fee = 0.0
+
+            # Calculate return AFTER trading so TP execution impact and transaction
+            # costs are reflected in the same day simulation return.
+            current_equity_after_trade = account.get_equity(prices)
+            daily_return = (current_equity_after_trade - prev_equity) / prev_equity if prev_equity > 0 else 0.0
+            total_tx_fee = tp_fee + rebalance_fee
             
             # Record trades
             daily_trades.append({
                 'date': date,
+                'tp_sells': tp_sells,
                 'buys': buys,
-                'sells': sells
+                'sells': sells,
+                'tx_fee_tp': tp_fee,
+                'tx_fee_rebalance': rebalance_fee,
+                'tx_fee_total': total_tx_fee,
             })
-            
-            # Calculate equity AFTER trading (this will be used for next day's return calculation)
-            current_equity_after_trade = account.get_equity(prices)
             
             # Record holdings detail
             holdings_snapshot = {}
@@ -372,11 +475,17 @@ class StrategyVerifier:
                 sim_return=daily_return,
                 sim_holdings=list(account.holdings.keys()),
                 sim_cash=account.cash,
-                orders_count=len(orders)
+                orders_count=len(tp_orders) + len(orders),
+                tx_fee=total_tx_fee,
             )
             records.append(record)
             
-            logger.info(f"  Equity: {current_equity_after_trade:,.2f} | Return: {daily_return:+.4%} | Holdings: {len(account.holdings)} | Cash: {account.cash:,.2f}")
+            logger.info(
+                f"  Equity: {current_equity_after_trade:,.2f} | Return: {daily_return:+.4%} | "
+                f"Holdings: {len(account.holdings)} | Cash: {account.cash:,.2f} | "
+                f"TP Sells: {len(tp_orders)} | Rebalance Orders: {len(orders)} | "
+                f"TxFee: {total_tx_fee:,.2f}"
+            )
             
             prev_equity = current_equity_after_trade
         
@@ -386,7 +495,7 @@ class StrategyVerifier:
         return records
     
     def _save_detailed_records(self, daily_trades, daily_holdings_detail):
-        """保存详细的交易和持仓记录"""
+        """淇濆瓨璇︾粏鐨勪氦鏄撳拰鎸佷粨璁板綍"""
         # Generate suffix based on date range
         suffix = f"_{self.start_date}_{self.end_date}"
         
@@ -403,7 +512,7 @@ class StrategyVerifier:
         logger.info(f"Saved holdings records to: {holdings_path}")
     
     def run_backtest(self) -> Dict:
-        """运行向量化回测"""
+        """杩愯鍚戦噺鍖栧洖娴?"""
         logger.info("\n" + "="*60)
         logger.info("RUNNING VECTOR BACKTEST")
         logger.info("="*60)
@@ -413,22 +522,167 @@ class StrategyVerifier:
         feat_tensor = self.loader.feat_tensor.to('cpu')
         factors = vm.execute(self.formula, feat_tensor)
         
-        # Run backtest
-        backtest = CBBacktest(top_k=RobustConfig.TOP_K, fee_rate=RobustConfig.FEE_RATE)
-        result = backtest.evaluate_with_details(
-            factors=factors,
-            target_ret=self.loader.target_ret,
-            valid_mask=self.loader.valid_mask
-        )
+        # Run backtest (if TP enabled, use TP-aware vector simulation)
+        if self.take_profit_ratio > 0:
+            result = self._evaluate_with_details_with_tp(factors)
+        else:
+            backtest = CBBacktest(top_k=RobustConfig.TOP_K, fee_rate=RobustConfig.FEE_RATE)
+            result = backtest.evaluate_with_details(
+                factors=factors,
+                target_ret=self.loader.target_ret,
+                valid_mask=self.loader.valid_mask
+            )
         
         logger.info(f"Backtest Sharpe: {result['sharpe']:.4f}")
         logger.info(f"Backtest Cum Return: {result['cum_ret']:.4%}")
+
+        # Also report metrics on the verification date range for easier comparison.
+        period_returns = []
+        for date in self.dates:
+            date_idx = self.loader.dates_list.index(date)
+            period_returns.append(result['daily_returns'][date_idx])
+        if period_returns:
+            period_arr = np.array(period_returns, dtype=float)
+            period_cum_ret = (1 + period_arr).prod() - 1
+            if len(period_arr) >= 2:
+                period_sharpe = (
+                    period_arr.mean() / (period_arr.std() + 1e-9) * np.sqrt(252)
+                )
+            else:
+                period_sharpe = 0.0
+            logger.info(f"Backtest Period Sharpe ({self.dates[0]}~{self.dates[-1]}): {period_sharpe:.4f}")
+            logger.info(f"Backtest Period Cum Return ({self.dates[0]}~{self.dates[-1]}): {period_cum_ret:.4%}")
         
         return result
+
+    def _evaluate_with_details_with_tp(self, factors: torch.Tensor) -> Dict:
+        """
+        TP 鍚戦噺鍥炴祴鏄庣粏:
+        - t 鏃ユ寔浠撶殑鏀剁泭锛屼娇鐢? t+1 鏃ヤ环鏍艰绠?
+        - 寮€鐩樿Е鍙? 浣跨敤 t+1 open 鏀剁泭
+        - 鐩樹腑瑙﹀彂: 閿佸畾 take_profit_ratio (on t+1 intraday)
+        - 褰撴棩涔板洖: 閫氳繃棰濆鍙岃竟璐圭巼鎵ｅ噺浣撶幇
+        """
+        factors = factors.to('cpu')
+        target_ret = self.loader.target_ret.to('cpu')
+        valid_mask = self.loader.valid_mask.to('cpu')
+        open_prices = self.loader.raw_data_cache['OPEN'].to('cpu')
+        high_prices = self.loader.raw_data_cache['HIGH'].to('cpu')
+        close_prices = self.loader.raw_data_cache['CLOSE'].to('cpu')
+
+        backtest = CBBacktest(
+            top_k=RobustConfig.TOP_K,
+            fee_rate=RobustConfig.FEE_RATE,
+            take_profit=self.take_profit_ratio
+        )
+
+        device = factors.device
+        T, N = factors.shape
+        min_valid_count = max(30, backtest.top_k * 2)
+
+        masked_factors = factors.clone()
+        masked_factors[~valid_mask] = -1e9
+
+        daily_valid_count = valid_mask.sum(dim=1)
+        valid_trading_day = daily_valid_count >= min_valid_count
+        actual_k = torch.clamp(daily_valid_count, max=backtest.top_k)
+
+        weights = torch.zeros(T, N, device=device)
+        daily_holdings = []
+        for t in range(T):
+            if not valid_trading_day[t]:
+                daily_holdings.append([])
+                continue
+
+            k = int(actual_k[t].item())
+            if k == 0:
+                daily_holdings.append([])
+                continue
+
+            _, top_indices = torch.topk(masked_factors[t], k=k, largest=True)
+            weights[t, top_indices] = 1.0 / k
+            daily_holdings.append(top_indices.tolist())
+
+        prev_weights = torch.roll(weights, 1, dims=0)
+        prev_weights[0] = 0
+        turnover = torch.abs(weights - prev_weights).sum(dim=1)
+        tx_cost = turnover * backtest.fee_rate * 2
+
+        effective_ret = target_ret.clone()
+        tp_extra_cost = torch.zeros(T, device=device)
+
+        # Time alignment for t -> t+1 return:
+        # - weights[t] represents holdings decided at t close
+        # - TP should be checked on next day (t+1) open/high against close[t]
+        prev_close = close_prices.clone()
+        next_open = torch.roll(open_prices, -1, dims=0)
+        next_high = torch.roll(high_prices, -1, dims=0)
+        next_open[-1] = 0
+        next_high[-1] = 0
+
+        valid_price_mask = (
+            (prev_close > 0) & (prev_close < 10000) &
+            (next_open > 0) & (next_open < 10000) &
+            (next_high > 0) & (next_high < 10000)
+        )
+        tp_trigger_price = prev_close * (1 + self.take_profit_ratio)
+
+        holding_mask = weights > 0
+        open_gap_up = (next_open >= tp_trigger_price) & valid_price_mask
+        gap_up_mask = open_gap_up & holding_mask
+        intraday_tp = (next_high >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
+        intra_tp_mask = intraday_tp & holding_mask
+
+        open_ret = (next_open / prev_close) - 1.0
+        effective_ret[gap_up_mask] = open_ret[gap_up_mask]
+        effective_ret[intra_tp_mask] = self.take_profit_ratio
+
+        daily_k = holding_mask.sum(dim=1).float()
+        gap_up_count = gap_up_mask.sum(dim=1).float()
+        intra_tp_count = intra_tp_mask.sum(dim=1).float()
+        safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
+        tp_extra_cost += (gap_up_count + intra_tp_count) * 2 * backtest.fee_rate / safe_k
+
+        gross_ret = (weights * effective_ret).sum(dim=1)
+        net_ret = gross_ret - tx_cost - tp_extra_cost
+        valid_net_ret = net_ret[valid_trading_day]
+
+        if len(valid_net_ret) < 10:
+            return {
+                'reward': -10.0,
+                'cum_ret': 0.0,
+                'sharpe': 0.0,
+                'daily_holdings': daily_holdings,
+                'daily_returns': net_ret.tolist()
+            }
+
+        cum_ret = (1 + valid_net_ret).prod() - 1
+        mean_ret = valid_net_ret.mean()
+        std_ret = valid_net_ret.std() + 1e-9
+        sharpe = mean_ret / std_ret * (252 ** 0.5)
+
+        valid_turnover = turnover[valid_trading_day]
+        avg_turnover = valid_turnover.mean()
+        turnover_penalty = torch.clamp(avg_turnover - 0.3, min=0) * 2
+
+        avg_holding = weights.sum(dim=1)[valid_trading_day].mean()
+        activity_penalty = 5.0 if avg_holding < backtest.top_k * 0.5 else 0.0
+
+        reward = sharpe * 10 - turnover_penalty - activity_penalty
+        if torch.isnan(reward) or torch.isinf(reward):
+            reward = torch.tensor(-10.0, device=device)
+
+        return {
+            'reward': reward.item() if hasattr(reward, 'item') else reward,
+            'cum_ret': cum_ret.item() if hasattr(cum_ret, 'item') else float(cum_ret),
+            'sharpe': sharpe.item() if hasattr(sharpe, 'item') else float(sharpe),
+            'daily_holdings': daily_holdings,
+            'daily_returns': net_ret.tolist()
+        }
     
     def compare_results(self, sim_records: List[DailyRecord], backtest_result: Dict):
         """
-        对比结果
+        瀵规瘮缁撴灉
         
         CRITICAL ASSUMPTIONS:
         1. Simulation: Orders executed at T close, returns calculated on T+1
@@ -440,7 +694,7 @@ class StrategyVerifier:
            - Represents return from holdings selected on day t, realized on day t+1
         
         3. Alignment: sim[i+1] should match backtest[i]
-           - sim[1] (day 1 return from day 0 holdings) = backtest[0] (day 0→1 return)
+           - sim[1] (day 1 return from day 0 holdings) = backtest[0] (day 0鈫? return)
         """
         logger.info("\n" + "="*60)
         logger.info("COMPARISON ANALYSIS")
@@ -493,7 +747,10 @@ class StrategyVerifier:
         max_abs_error = np.abs(diff).max()
         
         # 2. Correlation
-        correlation = np.corrcoef(sim_returns_arr, backtest_returns_arr)[0, 1]
+        if len(sim_returns_arr) >= 2:
+            correlation = np.corrcoef(sim_returns_arr, backtest_returns_arr)[0, 1]
+        else:
+            correlation = float("nan")
         
         # 3. Cumulative returns
         sim_cum_ret = (1 + sim_returns_arr).prod() - 1
@@ -524,14 +781,14 @@ class StrategyVerifier:
         # Check pass/fail
         passed = (mae < 1e-4 and correlation > 0.99)
         if passed:
-            logger.info("\n✅ VERIFICATION PASSED")
+            logger.info("\nVERIFICATION PASSED")
         else:
-            logger.warning("\n⚠️ VERIFICATION FAILED - Review metrics above")
+            logger.warning("\nVERIFICATION FAILED - Review metrics above")
         
         return passed
     
     def generate_report(self, mae, max_abs_error, correlation, sim_cum_ret, backtest_cum_ret):
-        """生成验证报告"""
+        """鐢熸垚楠岃瘉鎶ュ憡"""
         report_path = os.path.join(self.artifacts_dir, "verification_report.md")
         
         # Calculate additional performance metrics
@@ -568,38 +825,38 @@ class StrategyVerifier:
             max_dd = 0.0
         
         with open(report_path, 'w', encoding='utf-8') as f:
-            f.write("# 策略验证报告 (Strategy Verification Report)\n\n")
-            f.write(f"**生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            f.write(f"**验证区间**: {self.dates[0]} 至 {self.dates[-1]} ({len(self.dates)} 天)\n\n")
+            f.write("# 绛栫暐楠岃瘉鎶ュ憡 (Strategy Verification Report)\n\n")
+            f.write(f"**鐢熸垚鏃堕棿**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write(f"**楠岃瘉鍖洪棿**: {self.dates[0]} 鑷?{self.dates[-1]} ({len(self.dates)} 澶?\n\n")
             
-            f.write("## 参数对齐检查\n\n")
+            f.write("## 鍙傛暟瀵归綈妫€鏌n\n")
             f.write(f"- TOP_K: {RobustConfig.TOP_K}\n")
-            f.write(f"- FEE_RATE: {RobustConfig.FEE_RATE} (单边)\n")
-            f.write(f"- 公式来源: best_cb_formula.json\n\n")
+            f.write(f"- FEE_RATE: {RobustConfig.FEE_RATE} (鍗曡竟)\n")
+            f.write(f"- 鍏紡鏉ユ簮: best_cb_formula.json\n\n")
             
-            f.write("## 绩效指标 (Performance Metrics)\n\n")
-            f.write("### 模拟账户表现\n\n")
-            f.write(f"- **累计收益率**: {sim_cum_ret:.4%}\n")
-            f.write(f"- **年化收益率**: {ann_ret:.4%}\n")
-            f.write(f"- **夏普比率**: {sharpe:.4f}\n")
-            f.write(f"- **最大回撤**: {max_dd:.4%}\n")
-            f.write(f"- **交易天数**: {len(sim_returns_arr) if len(sim_returns) > 1 else 0}\n\n")
+            f.write("## 缁╂晥鎸囨爣 (Performance Metrics)\n\n")
+            f.write("### 妯℃嫙璐︽埛琛ㄧ幇\n\n")
+            f.write(f"- **绱鏀剁泭鐜?*: {sim_cum_ret:.4%}\n")
+            f.write(f"- **骞村寲鏀剁泭鐜?*: {ann_ret:.4%}\n")
+            f.write(f"- **澶忔櫘姣旂巼**: {sharpe:.4f}\n")
+            f.write(f"- **鏈€澶у洖鎾?*: {max_dd:.4%}\n")
+            f.write(f"- **浜ゆ槗澶╂暟**: {len(sim_returns_arr) if len(sim_returns) > 1 else 0}\n\n")
             
-            f.write("### 回测基准表现\n\n")
-            f.write(f"- **累计收益率**: {backtest_cum_ret:.4%}\n\n")
+            f.write("### 鍥炴祴鍩哄噯琛ㄧ幇\n\n")
+            f.write(f"- **绱鏀剁泭鐜?*: {backtest_cum_ret:.4%}\n\n")
             
-            f.write("## 一致性指标 (Consistency Metrics)\n\n")
-            f.write("| 指标 | 实际值 | 目标值 | 状态 |\n")
+            f.write("## 涓€鑷存€ф寚鏍?(Consistency Metrics)\n\n")
+            f.write("| Metric | Actual | Target | Status |\n")
             f.write("|:---|:---|:---|:---|\n")
-            f.write(f"| Return MAE | {mae:.6f} | < 1e-4 | {'✅' if mae < 1e-4 else '❌'} |\n")
-            f.write(f"| Max Abs Error | {max_abs_error:.6f} | < 1e-3 | {'✅' if max_abs_error < 1e-3 else '❌'} |\n")
-            f.write(f"| Correlation | {correlation:.6f} | > 0.99 | {'✅' if correlation > 0.99 else '❌'} |\n\n")
+            f.write(f"| Return MAE | {mae:.6f} | < 1e-4 | {'PASS' if mae < 1e-4 else 'FAIL'} |\n")
+            f.write(f"| Max Abs Error | {max_abs_error:.6f} | < 1e-3 | {'PASS' if max_abs_error < 1e-3 else 'FAIL'} |\n")
+            f.write(f"| Correlation | {correlation:.6f} | > 0.99 | {'PASS' if correlation > 0.99 else 'FAIL'} |\n\n")
             
-            f.write("## 结论\n\n")
+            f.write("## Conclusion\n\n")
             if mae < 1e-4 and correlation > 0.99:
-                f.write("✅ **验证通过**: Event-Driven 策略引擎与 Vector Backtest 高度一致。\n")
+                f.write("PASS: Event-driven simulation is highly aligned with vector backtest.\n")
             else:
-                f.write("⚠️ **验证通过（附条件）**: 选股一致性100%，收益率高度相关（0.90），差异主要来自整手交易约束。\n")
+                f.write("WARNING: Alignment gap remains. Review TP handling, lot rounding and transaction cost path dependency.\n")
         
         logger.info(f"Saved report to: {report_path}")
 
@@ -607,20 +864,23 @@ class StrategyVerifier:
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description='策略验证脚本')
-    parser.add_argument('--start', type=str, default='2024-01-01', help='开始日期 (YYYY-MM-DD)')
-    parser.add_argument('--end', type=str, default='2024-12-31', help='结束日期 (YYYY-MM-DD)')
-    parser.add_argument('--king', type=int, default=None, 
-                        help='指定King因子的step编号 (如: 18, 20, 25, 30, 33, 49)，默认使用best')
+    parser = argparse.ArgumentParser(description='Strategy verification script')
+    parser.add_argument('--start', type=str, default='2024-01-01', help='start date YYYY-MM-DD')
+    parser.add_argument('--end', type=str, default='2024-12-31', help='end date YYYY-MM-DD')
+    parser.add_argument('--king', type=int, default=None,
+                        help='king step id, default uses best formula')
     parser.add_argument('--initial-cash', type=float, default=100000.0,
-                        help='模拟账户初始资金 (默认: 100000.0)')
+                        help='initial cash for event-driven simulation')
+    parser.add_argument('--take-profit', type=float, default=0.0,
+                        help='take profit ratio, e.g. 0.06 means +6%%')
     
     args = parser.parse_args()
     
     verifier = StrategyVerifier(
         start_date=args.start,
         end_date=args.end,
-        king_step=args.king
+        king_step=args.king,
+        take_profit_ratio=args.take_profit
     )
     verifier.print_config_alignment()
     
@@ -632,4 +892,6 @@ if __name__ == "__main__":
     
     # Compare
     verifier.compare_results(sim_records, backtest_result)
+
+
 

@@ -98,6 +98,25 @@ class CBPortfolioManager:
         """获取持仓数量"""
         return len(self.positions)
     
+    def calculate_nav(self, prices: Dict[str, float]) -> float:
+        """
+        计算持仓总市值
+        
+        Args:
+            prices: 最新价格字典 {code: price}
+        """
+        total_value = 0.0
+        for code, pos in self.positions.items():
+            if code in prices:
+                total_value += pos.shares * prices[code]
+            else:
+                total_value += pos.market_value  # 使用最后一次记录的价格
+        return total_value
+    
+    def get_entry_prices(self) -> Dict[str, float]:
+        """获取所有持仓的入场均价 (用于止盈检测)"""
+        return {code: pos.avg_cost for code, pos in self.positions.items()}
+    
     # ==================== Mutation Methods ====================
     
     def add_position(self, code: str, name: str, shares: int, 

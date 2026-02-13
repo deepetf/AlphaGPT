@@ -1,0 +1,20 @@
+{
+  "strategies": [
+    {
+      "id": "king_factor_v1",
+      "name": "King Factor V1",
+      "formula_path": "model_core/best_cb_formula.json",
+      "enabled": true,
+      "params": {
+        "initial_capital": 1000000,
+        "top_k": 10,
+        "take_profit_ratio": 0.08,
+        "fee_rate": 0.0005
+      }
+    }
+  ],
+  "global": {
+    "data_source": "mini_qmt",
+    "log_level": "INFO"
+  }
+}
