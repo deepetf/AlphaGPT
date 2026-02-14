@@ -2,13 +2,22 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.0: Sim-Verify Alignment (Current)**
+Current Version: **V5.1: SQL Live State & Replay QA (Current)**
 
 ---
 
 ## 馃搮 Version History
 
-### **V5.0: Sim-Verify Alignment (Current)**
+### **V5.1: SQL Live State & Replay QA (Current)**
+*完成 SQL 状态持久化、回放可观测性与一致性验收工具。*
+- **SQL State Backend**: `run_sim` 支持 `--state-backend sql`，将 `nav/holdings/trades` 写入 `sim_nav_history`、`sim_daily_holdings`、`sim_trade_history`。
+- **Strategy Isolation**: 单策略固定 `strategy_id=default`，多策略使用 `strategies_config.json` 的 `id` 对应数据库分区。
+- **Replay Robustness**: 修复区间回放状态重置与运行时异常；完善日志编码与关键日志可读性。
+- **Execution Reliability**: 调仓新增“现金预算裁剪 + 排名优先买入”，避免候选 10 只但落仓 9 只的静默失败。
+- **Diagnostics**: 新增 `tests/verify_sim_sql_replay.py`，自动检查 NAV 恒等式、持仓计数一致性、异常日和候选缺失。
+- **Docs & Migration**: 补充 `simrun_live.md` 与建表脚本 `infra/migrations/20260214_create_simrun_live_tables.sql`。
+
+### **V5.0: Sim-Verify Alignment**
 *SQL EOD 回放、模拟盘执行链路与验证口径对齐。*
 - **SQL EOD Strict Replay**: 新增 `SQLStrictLoader`，`run_sim` 支持 `--replay-strict --replay-source sql_eod`，并支持 `--start-date/--end-date` 连续区间回放。
 - **Simulation Infrastructure**: 新增 `SimulationRunner`、`SimTrader`、`NavTracker`、`StrategyConfig`、`MultiSimRunner` 等模块，完善单策略/多策略模拟盘框架。

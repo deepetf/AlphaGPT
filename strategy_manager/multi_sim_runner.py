@@ -34,7 +34,8 @@ class MultiSimRunner:
     def __init__(
         self,
         data_provider: RealtimeDataProvider,
-        config_path: Optional[str] = None
+        config_path: Optional[str] = None,
+        state_backend: str = "sql",
     ):
         """
         初始化多策略运行器
@@ -54,7 +55,8 @@ class MultiSimRunner:
         for strategy_cfg in self.config.get_enabled_strategies():
             self.runners[strategy_cfg.id] = SimulationRunner(
                 data_provider=data_provider,
-                strategy_config=strategy_cfg
+                strategy_config=strategy_cfg,
+                state_backend=state_backend,
             )
         
         logger.info(f"MultiSimRunner 初始化完成: {len(self.runners)} 个策略已加载")

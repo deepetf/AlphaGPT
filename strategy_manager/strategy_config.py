@@ -23,6 +23,7 @@ class StrategyParams:
     fee_rate: float = 0.0005
     replay_strict: bool = False
     replay_source: str = "sql_eod"
+    state_backend: str = "sql"
 
 
 @dataclass
@@ -114,6 +115,13 @@ def load_strategies_config(config_path: str) -> StrategiesConfig:
                 f"fallback to 'sql_eod'"
             )
             replay_source = 'sql_eod'
+        state_backend = params_raw.get('state_backend', 'sql')
+        if state_backend not in ('sql', 'json'):
+            logger.warning(
+                f"Invalid state_backend '{state_backend}' for strategy '{s_raw.get('id', 'unknown')}', "
+                f"fallback to 'sql'"
+            )
+            state_backend = 'sql'
 
         params = StrategyParams(
             initial_capital=params_raw.get('initial_capital', 1000000.0),
@@ -122,6 +130,7 @@ def load_strategies_config(config_path: str) -> StrategiesConfig:
             fee_rate=params_raw.get('fee_rate', 0.0005),
             replay_strict=params_raw.get('replay_strict', False),
             replay_source=replay_source,
+            state_backend=state_backend,
         )
         
         strategy = StrategyConfig(
