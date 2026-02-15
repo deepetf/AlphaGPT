@@ -12,6 +12,7 @@ SimulationRunner - 妯℃嫙鐩樹富鎺ч€昏緫
 import logging
 import json
 import os
+import time
 from typing import List, Dict, Optional, Tuple, Union
 from datetime import datetime
 
@@ -56,6 +57,10 @@ class SimulationRunner:
         data_provider: RealtimeDataProvider,
         strategy_config=None,
         state_backend: Optional[str] = None,
+        dataset: str = "replay",
+        live_quote_source: str = "dummy",
+        strict_start_date: Optional[str] = None,
+        strict_end_date: Optional[str] = None,
     ):
         """
         初始化模拟盘运行器（仅支持策略配置驱动）。
@@ -69,6 +74,10 @@ class SimulationRunner:
 
         self.data_provider = data_provider
         self.state_backend = state_backend
+        self.dataset = dataset
+        self.live_quote_source = live_quote_source
+        self.strict_start_date = strict_start_date
+        self.strict_end_date = strict_end_date
         self._init_from_strategy_config(strategy_config)
 
         # 初始化公式虚拟机
@@ -84,8 +93,28 @@ class SimulationRunner:
 
         self.sql_state_store = None
         if self.state_backend == "sql":
-            self.sql_state_store = SQLStateStore(sql_engine=self.data_provider.sql_engine)
+            self.sql_state_store = SQLStateStore(
+                sql_engine=self.data_provider.sql_engine,
+                dataset=self.dataset,
+            )
             self._hydrate_state_from_sql()
+
+    def configure_strict_replay_window(
+        self,
+        start_date: Optional[str],
+        end_date: Optional[str],
+    ) -> None:
+        """
+        Configure strict replay loading window.
+        Must be called before strict context initialization.
+        """
+        self.strict_start_date = start_date
+        self.strict_end_date = end_date
+        if self._bt_loader is not None:
+            logger.warning(
+                f"[{self.strategy_id}] strict context already initialized, "
+                "new window will take effect on next process run"
+            )
 
     def _hydrate_state_from_sql(self):
         """Load latest strategy state from SQL into in-memory components."""
@@ -170,7 +199,8 @@ class SimulationRunner:
             f"[{self.strategy_id}] strategy initialized: "
             f"top_k={self.top_k}, tp={self.take_profit_ratio}, "
             f"replay_strict={self.replay_strict}, replay_source={self.replay_source}, "
-            f"state_backend={self.state_backend}"
+            f"state_backend={self.state_backend}, dataset={self.dataset}, "
+            f"live_quote_source={self.live_quote_source}"
         )
 
     def _get_required_window(self) -> int:
@@ -208,117 +238,94 @@ class SimulationRunner:
 
 
     
-    def run_daily(self, date: str) -> Dict:
-        """
-        鎵ц姣忔棩妯℃嫙
-        
-        Args:
-            date: 鏃ユ湡 (YYYY-MM-DD)
-            
-        Returns:
-            杩愯缁撴灉鎽樿
-        """
+    def run_daily(self, date: str, mode: str = "auto") -> Dict:
+        """执行单日模拟。仅支持 `live` 与 `strict_replay` 两种路径。"""
         logger.info(f"=== Simulation Run {date} ===")
-        
-        # 鍒ゆ柇鏄惁涓哄疄鐩樻ā寮?(浠婂ぉ) 鎴栧洖鏀炬ā寮?(鍘嗗彶鏃ユ湡)
-        today_str = datetime.now().strftime('%Y-%m-%d')
-        is_live_mode = (date == today_str)
-        
-        if is_live_mode:
-            logger.info("[live mode] use MiniQMT realtime quotes")
-        else:
-            logger.info("[replay mode] use SQL historical data only")
-        
-        # 1. 鑾峰彇鍩虹鐗瑰緛
-        if self.replay_strict and not is_live_mode:
-            logger.info(
-                f"[{self.strategy_id}] strict replay mode enabled: source={self.replay_source}"
-            )
+
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        resolved_mode = mode
+        if resolved_mode == "auto":
+            resolved_mode = "live" if date == today_str else "strict_replay"
+
+        if resolved_mode == "live":
+            logger.info("[live mode] SQL + realtime quotes")
+            return self._run_daily_live(date)
+
+        if resolved_mode == "strict_replay":
+            logger.info(f"[{self.strategy_id}] strict replay mode enabled: source={self.replay_source}")
             return self._run_daily_replay_strict(date)
-        
+
+        raise ValueError(f"Unsupported run mode: {resolved_mode}")
+
+    def _run_daily_live(self, date: str) -> Dict:
+        """Run live path using SQL features and realtime quotes (dummy by default)."""
         cb_features = self.data_provider.get_cb_features(date)
         if cb_features.empty:
             logger.warning(f"No SQL feature data for date={date}")
             return {"status": "no_data"}
-            
-        code_list = cb_features['code'].tolist()
-        
-        # 2. 鏍规嵁妯″紡鍐冲畾鏄惁鑾峰彇瀹炴椂琛屾儏
-        if is_live_mode:
-            # 寤虹珛瀹炴椂鎺ㄩ€佽繛鎺?(Mini QMT 鎺ㄨ崘鐢ㄦ硶)
+
+        code_list = cb_features["code"].tolist()
+        if self.live_quote_source == "dummy":
+            realtime_quotes = self.data_provider.get_realtime_quotes_dummy(code_list, date=date)
+        elif self.live_quote_source == "qmt":
             self.data_provider.subscribe_quotes(code_list)
-            # 鑾峰彇瀹炴椂蹇収 (浣跨敤 get_full_tick)
             realtime_quotes = self.data_provider.get_realtime_quotes(code_list)
         else:
-            # 鍥炴斁妯″紡: 涓嶈皟鐢?QMT锛屼娇鐢ㄧ┖ DataFrame (璁?build_feat_tensor 瀹屽叏浣跨敤 SQL 鏁版嵁)
-            realtime_quotes = pd.DataFrame()
-        
-        # 3. 鏋勫缓鍥犲瓙寮犻噺 (鏍规嵁鍏紡绫诲瀷閫夋嫨鏋勫缓鏂瑰紡)
+            raise ValueError(f"Unsupported live_quote_source: {self.live_quote_source}")
+
         if self.required_window > 1:
-            # 鏃跺簭鍏紡: 闇€瑕佸巻鍙茬獥鍙?
             feat_tensor, asset_list = self.data_provider.build_feat_tensor_with_history(
                 date=date,
                 realtime_quotes=realtime_quotes,
                 window=self.required_window,
-                strict_date_mode=is_live_mode
+                strict_date_mode=False,
             )
             names_dict = self.data_provider.get_names_dict(cb_features)
         else:
-            # 妯埅闈㈠叕寮? 鍗曟棩鏁版嵁
             feat_tensor = self.data_provider.build_feat_tensor(
-                realtime_quotes, cb_features, strict_date_mode=is_live_mode
+                realtime_quotes,
+                cb_features,
+                strict_date_mode=False,
             )
-            # 闇€瑕佹墿灞曚负 [1, Assets, Features] 渚?VM 浣跨敤
             feat_tensor = feat_tensor.unsqueeze(0)
             asset_list = self.data_provider.get_asset_list(cb_features)
             names_dict = self.data_provider.get_names_dict(cb_features)
 
-        
-        # 3. 鏋勫缓浠锋牸瀛楀吀
         prices = self._build_price_dict(cb_features, realtime_quotes)
-        
-        # 4. 姝㈢泩妫€娴?(浼犲叆 realtime_quotes 浠ヤ究瀹炵洏妯″紡浣跨敤 QMT 鏁版嵁)
-        tp_orders = []
+
+        tp_orders: List[SimOrder] = []
         tp_records: List[TradeRecord] = []
         if self.take_profit_ratio > 0:
             tp_orders = self._check_take_profit(cb_features, realtime_quotes, prices, date)
             if tp_orders:
                 logger.info(f"止盈订单: {len(tp_orders)} 笔")
                 tp_records = self.trader.execute(tp_orders, prices, date)
-        
-        # 5. 璁＄畻鍥犲瓙鍊煎苟閫夎偂
+
         factor_values = self._compute_factor(feat_tensor)
         target_codes = self._select_top_k(
-            factor_values, 
-            asset_list, 
-            prices,
+            factor_values=factor_values,
+            asset_list=asset_list,
+            prices=prices,
             names_dict=names_dict,
-            date=date
+            date=date,
         )
-        
-        # 6. 鐢熸垚璋冧粨璁㈠崟
-        rebalance_orders = self._generate_rebalance_orders(
-            target_codes, prices, names_dict, date
-        )
-        
-        # 7. 鎵ц璋冧粨
+
+        rebalance_orders = self._generate_rebalance_orders(target_codes, prices, names_dict, date)
         rebalance_records: List[TradeRecord] = []
         if rebalance_orders:
             logger.info(f"调仓订单: {len(rebalance_orders)} 笔")
             rebalance_records = self.trader.execute(rebalance_orders, prices, date)
-        
-        # 8. 鏇存柊鎸佷粨浠锋牸
+
         self._update_position_prices(prices)
-        
-        # 9. 璁板綍鍑€鍊?
         holdings_value = self.portfolio.get_holdings_value()
         holdings_count = self.portfolio.get_holdings_count()
         record = self.nav_tracker.record_daily(date, holdings_value, holdings_count)
         self._persist_day_state(date, record, tp_records + rebalance_records)
-        
+
         return {
             "status": "success",
             "date": date,
+            "mode": "live",
             "nav": record.nav,
             "daily_ret": record.daily_ret,
             "holdings_count": holdings_count,
@@ -329,27 +336,56 @@ class SimulationRunner:
     def _ensure_backtest_context(self):
         """Load strict replay context on demand."""
         if self._bt_loader is None:
-            if self.replay_source == "sql_eod":
-                from data_pipeline.sql_strict_loader import SQLStrictLoader
+            if self.replay_source != "sql_eod":
+                raise ValueError(
+                    f"strict_replay currently only supports replay_source='sql_eod', "
+                    f"got '{self.replay_source}'"
+                )
 
-                self._bt_loader = SQLStrictLoader()
-            else:
-                # fallback for compatibility
-                from model_core.data_loader import CBDataLoader
+            from data_pipeline.sql_strict_loader import SQLStrictLoader
 
-                self._bt_loader = CBDataLoader()
+            start_date = self.strict_start_date or "2022-08-01"
+            end_date = self.strict_end_date
+            logger.info(
+                f"[{self.strategy_id}] strict context init: "
+                f"range=[{start_date}, {end_date or 'latest'}]"
+            )
 
+            self._bt_loader = SQLStrictLoader(
+                sql_engine=self.data_provider.sql_engine,
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+            t0 = time.perf_counter()
             self._bt_loader.load_data()
+            elapsed = time.perf_counter() - t0
             self._bt_code_to_idx = {
                 code: i for i, code in enumerate(self._bt_loader.assets_list)
             }
+            logger.info(
+                f"[{self.strategy_id}] strict context loaded: "
+                f"dates={len(self._bt_loader.dates_list)}, "
+                f"assets={len(self._bt_loader.assets_list)}, "
+                f"elapsed={elapsed:.2f}s"
+            )
         
         if self._bt_factors is None:
             feat_tensor_cpu = self._bt_loader.feat_tensor.to("cpu")
+            logger.info(
+                f"[{self.strategy_id}] formula evaluation start: "
+                f"tensor_shape={tuple(feat_tensor_cpu.shape)}"
+            )
+            t0 = time.perf_counter()
             factors = self.vm.execute(self.formula, feat_tensor_cpu)
             if factors is None:
                 raise ValueError("Formula execution failed: VM returned None")
             self._bt_factors = factors.to("cpu")
+            elapsed = time.perf_counter() - t0
+            logger.info(
+                f"[{self.strategy_id}] formula evaluation done: "
+                f"factor_shape={tuple(self._bt_factors.shape)}, elapsed={elapsed:.2f}s"
+            )
     
     def _build_prices_from_loader(self, date_idx: int) -> Dict[str, float]:
         """Build close price dict from strict loader cache."""
@@ -636,12 +672,12 @@ class SimulationRunner:
         # Protect against shape mismatch from external inputs.
         expected_len = min(values.numel(), len(asset_list), mask.numel())
         if expected_len <= 0:
-            return []
             logger.warning(
                 f"[{self.strategy_id}] Top-K input size mismatch: "
                 f"factors={values.numel()}, assets={len(asset_list)}, mask={mask.numel()}, "
                 f"use_first={expected_len}"
             )
+            return []
 
         values = values[:expected_len]
         asset_list = asset_list[:expected_len]

@@ -1,25 +1,21 @@
 """
-MultiSimRunner - 策略集合运行器。
-
-说明：
-- 配置文件可包含单个或多个策略。
-- 每个策略实例化一个 SimulationRunner，并通过 strategy_id 做状态隔离。
+MultiSimRunner - 多策略运行器
 """
 
+import copy
 import logging
 import os
-import copy
 from typing import Dict, List, Optional
 
 from data_pipeline.realtime_provider import RealtimeDataProvider
 from strategy_manager.sim_runner import SimulationRunner
-from strategy_manager.strategy_config import StrategyConfig, load_strategies_config
+from strategy_manager.strategy_config import load_strategies_config
 
 logger = logging.getLogger(__name__)
 
 
 class MultiSimRunner:
-    """统一管理多个策略的运行。"""
+    """统一管理多个策略运行。"""
 
     DEFAULT_CONFIG_PATH = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -32,9 +28,19 @@ class MultiSimRunner:
         config_path: Optional[str] = None,
         strategy_ids: Optional[List[str]] = None,
         state_backend: Optional[str] = None,
+        dataset: str = "replay",
+        live_quote_source: str = "dummy",
+        replay_source_override: Optional[str] = None,
+        strict_start_date: Optional[str] = None,
+        strict_end_date: Optional[str] = None,
     ):
         self.data_provider = data_provider
         self.config_path = config_path or self.DEFAULT_CONFIG_PATH
+        self.dataset = dataset
+        self.live_quote_source = live_quote_source
+        self.replay_source_override = replay_source_override
+        self.strict_start_date = strict_start_date
+        self.strict_end_date = strict_end_date
         self.config = load_strategies_config(self.config_path)
 
         enabled = self.config.get_enabled_strategies()
@@ -53,23 +59,33 @@ class MultiSimRunner:
         for strategy_cfg in enabled:
             cfg = copy.deepcopy(strategy_cfg)
             if state_backend is not None:
-                # CLI 覆盖策略中的 state_backend（仅本次进程有效）
                 cfg.params.state_backend = state_backend
+            if replay_source_override is not None:
+                cfg.params.replay_source = replay_source_override
 
             self.runners[cfg.id] = SimulationRunner(
                 data_provider=self.data_provider,
                 strategy_config=cfg,
+                dataset=self.dataset,
+                live_quote_source=self.live_quote_source,
+                strict_start_date=self.strict_start_date,
+                strict_end_date=self.strict_end_date,
             )
 
-        logger.info(f"MultiSimRunner ready: {len(self.runners)} strategy runner(s)")
+        logger.info(
+            f"MultiSimRunner ready: runners={len(self.runners)}, "
+            f"dataset={self.dataset}, live_quote_source={self.live_quote_source}, "
+            f"replay_source_override={self.replay_source_override or 'None'}, "
+            f"strict_range=[{self.strict_start_date or 'default'}, {self.strict_end_date or 'latest'}]"
+        )
 
-    def run_all_strategies(self, date: str) -> Dict[str, Dict]:
+    def run_all_strategies(self, date: str, mode: str = "auto") -> Dict[str, Dict]:
         """按顺序运行全部策略。"""
         results: Dict[str, Dict] = {}
         for strategy_id, runner in self.runners.items():
             logger.info(f"{'=' * 20} Strategy: {strategy_id} {'=' * 20}")
             try:
-                results[strategy_id] = runner.run_daily(date)
+                results[strategy_id] = runner.run_daily(date, mode=mode)
             except Exception as e:
                 logger.exception(f"[{strategy_id}] run failed: {e}")
                 results[strategy_id] = {"status": "error", "error": str(e)}

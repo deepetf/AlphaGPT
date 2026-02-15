@@ -5,7 +5,7 @@
   },
   "defaults": {
     "initial_capital": 1000000,
-    "top_k": 10,
+    "top_k": 5,
     "take_profit_ratio": 0.04,
     "fee_rate": 0.0005,
     "replay_strict": true,
@@ -14,7 +14,7 @@
   },
   "strategies": [
     {
-      "id": "king_factor_v1",
+      "id": "king_v1",
       "name": "Best Factor Strategy",
       "enabled": true,
       "formula": [
@@ -31,6 +31,31 @@
       ],
       "params": {
       }
+    },
+    {
+      "id": "king_v2",
+      "name": "Second Best Factor Strategy",
+      "enabled": true,
+      "formula": [
+        "IV",
+        "PCT_CHG_5_STK",
+        "TS_DELAY",
+        "TS_MEAN5",
+        "SIGN",
+        "CS_ROBUST_Z",
+        "REMAIN_SIZE",
+        "NEG",
+        "TS_STD5",
+        "CS_ROBUST_Z",
+        "MAX",
+        "CS_DEMEAN",
+        "VOL_STK_60",
+        "MUL",
+        "DIV"
+      ],
+      "params": {
+      }
     }
+
   ]
 }

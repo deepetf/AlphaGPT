@@ -47,10 +47,12 @@ class SQLStrictLoader:
         sql_engine=None,
         table_name: str = "CB_DATA",
         start_date: str = "2022-08-01",
+        end_date: Optional[str] = None,
     ):
         self.sql_engine = sql_engine or create_engine(Config.CB_DB_DSN)
         self.table_name = table_name
         self.start_date = start_date
+        self.end_date = end_date
 
         self.raw_data_cache = None
         self.feat_tensor = None
@@ -119,16 +121,25 @@ class SQLStrictLoader:
             SELECT {cols_sql}
             FROM {self.table_name}
             WHERE {cols.trade_date} >= :start_date
+            AND (:end_date IS NULL OR {cols.trade_date} <= :end_date)
             ORDER BY {cols.trade_date}, {cols.code}
             """
         )
 
         with self.sql_engine.connect() as conn:
-            df = pd.read_sql(query, conn, params={"start_date": self.start_date})
+            df = pd.read_sql(
+                query,
+                conn,
+                params={
+                    "start_date": self.start_date,
+                    "end_date": self.end_date,
+                },
+            )
 
         if df.empty:
             raise RuntimeError(
-                f"SQLStrictLoader got empty data from {self.table_name} since {self.start_date}"
+                "SQLStrictLoader got empty data from "
+                f"{self.table_name} in range [{self.start_date}, {self.end_date or 'latest'}]"
             )
 
         # If SQL table has multiple rows for the same code/date, keep the last row.
@@ -220,4 +231,3 @@ class SQLStrictLoader:
     def close(self):
         if self.sql_engine is not None:
             self.sql_engine.dispose()
-

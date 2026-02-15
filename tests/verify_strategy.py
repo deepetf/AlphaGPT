@@ -16,7 +16,7 @@ import json
 import logging
 from datetime import datetime
 from dataclasses import dataclass, asdict
-from typing import List, Dict
+from typing import List, Dict, Optional
 import pandas as pd
 import numpy as np
 import torch
@@ -30,6 +30,7 @@ from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.vm import StackVM
+from strategy_manager.strategy_config import load_strategies_config
 from strategy_manager.cb_runner import CBStrategyRunner
 from strategy_manager.cb_portfolio import CBPortfolioManager
 from execution.cb_trader import Order, OrderSide
@@ -117,9 +118,14 @@ class StrategyVerifier:
     def __init__(
         self,
         start_date: str = "2024-01-01",
-        end_date: str = None,
-        king_step: int = None,
-        take_profit_ratio: float = 0.0,
+        end_date: Optional[str] = None,
+        king_step: Optional[int] = None,
+        take_profit_ratio: Optional[float] = None,
+        strategies_config: Optional[str] = None,
+        strategy_id: Optional[str] = None,
+        top_k: Optional[int] = None,
+        fee_rate: Optional[float] = None,
+        initial_cash: Optional[float] = None,
     ):
         """
         鍒濆鍖栭獙璇佸櫒
@@ -132,7 +138,14 @@ class StrategyVerifier:
         self.start_date = start_date
         self.end_date = end_date
         self.king_step = king_step
+        self.strategies_config = strategies_config
+        self.strategy_id = strategy_id
+        self.top_k = top_k
+        self.fee_rate = fee_rate
         self.take_profit_ratio = take_profit_ratio
+        self.initial_cash = initial_cash
+        self.formula_source = "unknown"
+        self.strategy_name = ""
         
         # Setup artifacts directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -153,11 +166,79 @@ class StrategyVerifier:
         
         logger.info(f"Verification period: {self.dates[0]} to {self.dates[-1]} ({len(self.dates)} days)")
         
-        # Load formula
-        self._load_formula()
+        # Load formula and strategy params
+        self._load_strategy()
+
+    def _strategy_tag(self) -> str:
+        if self.strategy_id:
+            return self.strategy_id
+        if self.king_step is not None:
+            return f"king_{self.king_step}"
+        return "default"
+
+    def _artifact_suffix(self) -> str:
+        end = self.end_date or (self.dates[-1] if self.dates else "end")
+        return f"_{self._strategy_tag()}_{self.start_date}_{end}"
     
-    def _load_formula(self):
-        """鍔犺浇鍥犲瓙鍏紡"""
+    def _load_strategy(self):
+        """Load formula and parameters from strategy config or legacy king."""
+        if self.king_step is not None:
+            if self.strategy_id:
+                raise ValueError("--king cannot be used together with --strategy-id")
+            self._load_formula_legacy()
+            self.top_k = self.top_k if self.top_k is not None else int(RobustConfig.TOP_K)
+            self.fee_rate = self.fee_rate if self.fee_rate is not None else float(RobustConfig.FEE_RATE)
+            if self.take_profit_ratio is None:
+                self.take_profit_ratio = 0.0
+            if self.initial_cash is None:
+                self.initial_cash = 100000.0
+            self.formula_source = "best_cb_formula.json(legacy)"
+            self.strategy_name = f"king_step_{self.king_step}"
+            return
+
+        # Config-driven mode (default)
+        config_path = self.strategies_config or os.path.join(
+            project_root, "strategy_manager", "strategies_config.json"
+        )
+        cfg = load_strategies_config(config_path)
+        enabled = cfg.get_enabled_strategies()
+        if not enabled:
+            raise ValueError(f"No enabled strategies found in config: {config_path}")
+
+        selected = None
+        if self.strategy_id:
+            for s in enabled:
+                if s.id == self.strategy_id:
+                    selected = s
+                    break
+            if selected is None:
+                available = ", ".join([s.id for s in enabled])
+                raise ValueError(f"strategy_id '{self.strategy_id}' not found. enabled: {available}")
+        else:
+            selected = enabled[0]
+
+        self.strategy_id = selected.id
+        self.strategy_name = selected.name
+        self.formula = selected.get_formula(project_root)
+        self.formula_info = {"id": selected.id, "name": selected.name}
+
+        self.top_k = self.top_k if self.top_k is not None else int(selected.params.top_k)
+        self.fee_rate = self.fee_rate if self.fee_rate is not None else float(selected.params.fee_rate)
+        if self.take_profit_ratio is None:
+            self.take_profit_ratio = float(selected.params.take_profit_ratio)
+        if self.initial_cash is None:
+            self.initial_cash = float(selected.params.initial_capital)
+
+        self.formula_source = config_path
+        logger.info(
+            f"Using strategy config: id={selected.id}, name={selected.name}, "
+            f"top_k={self.top_k}, fee_rate={self.fee_rate}, "
+            f"tp={self.take_profit_ratio}, initial_cash={self.initial_cash}"
+        )
+        logger.info(f"Formula: {' '.join(self.formula)}")
+
+    def _load_formula_legacy(self):
+        """鍔犺浇鍥犲瓙鍏紡 (legacy king mode)"""
         strategy_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "model_core",
@@ -212,10 +293,14 @@ class StrategyVerifier:
         logger.info("="*60)
         logger.info("PARAMETER ALIGNMENT CHECK")
         logger.info("="*60)
-        logger.info(f"TOP_K: {RobustConfig.TOP_K}")
-        logger.info(f"FEE_RATE: {RobustConfig.FEE_RATE} (single-sided, total={RobustConfig.FEE_RATE*2})")
+        logger.info(f"STRATEGY_ID: {self.strategy_id or 'legacy'}")
+        logger.info(f"STRATEGY_NAME: {self.strategy_name or 'legacy'}")
+        logger.info(f"FORMULA_SOURCE: {self.formula_source}")
+        logger.info(f"TOP_K: {self.top_k}")
+        logger.info(f"FEE_RATE: {self.fee_rate} (single-sided, total={self.fee_rate*2})")
+        logger.info(f"INITIAL_CASH: {self.initial_cash}")
         logger.info(f"MIN_ACTIVE_RATIO: {RobustConfig.MIN_ACTIVE_RATIO}")
-        min_valid_count = max(30, RobustConfig.TOP_K * 2)
+        min_valid_count = max(30, int(self.top_k) * 2)
         logger.info(f"MIN_VALID_COUNT (Computed): {min_valid_count}")
         logger.info(f"TRAIN_TEST_SPLIT_DATE: {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
         logger.info(f"TAKE_PROFIT_RATIO: {self.take_profit_ratio}")
@@ -261,10 +346,10 @@ class StrategyVerifier:
         executed = 0
         total_fee = 0.0
         for order in orders:
-            success = account.execute_order(order, fee_rate=RobustConfig.FEE_RATE)
+            success = account.execute_order(order, fee_rate=self.fee_rate)
             if success:
                 executed += 1
-                total_fee += float(order.quantity) * float(order.price) * RobustConfig.FEE_RATE
+                total_fee += float(order.quantity) * float(order.price) * self.fee_rate
                 self._sync_portfolio_with_account(portfolio, account, order, date)
         return executed, total_fee
 
@@ -317,13 +402,14 @@ class StrategyVerifier:
 
         return tp_orders
         
-    def run_simulation(self, initial_cash: float = 100000.0) -> List[DailyRecord]:
+    def run_simulation(self, initial_cash: Optional[float] = None) -> List[DailyRecord]:
         """杩愯浜嬩欢椹卞姩妯℃嫙锛圱鏃ラ€夎偂鈫扵鏃ュ缓浠撯啋T+1鏃ヨ绠楁敹鐩婏級"""
+        resolved_initial_cash = float(initial_cash if initial_cash is not None else self.initial_cash)
         logger.info("\n" + "="*60)
-        logger.info(f"RUNNING EVENT-DRIVEN SIMULATION (Initial Cash: {initial_cash:,.2f})")
+        logger.info(f"RUNNING EVENT-DRIVEN SIMULATION (Initial Cash: {resolved_initial_cash:,.2f})")
         logger.info("="*60)
         
-        account = SimAccount(initial_cash=initial_cash)
+        account = SimAccount(initial_cash=resolved_initial_cash)
         records = []
         
         # Create temporary portfolio for simulation
@@ -343,6 +429,7 @@ class StrategyVerifier:
         # Keep simulation formula strictly aligned with verifier formula
         # (especially important when --king is specified).
         runner.formula = self.formula
+        runner.top_k = int(self.top_k)
         
         # Storage for detailed records
         daily_trades = []
@@ -496,8 +583,7 @@ class StrategyVerifier:
     
     def _save_detailed_records(self, daily_trades, daily_holdings_detail):
         """淇濆瓨璇︾粏鐨勪氦鏄撳拰鎸佷粨璁板綍"""
-        # Generate suffix based on date range
-        suffix = f"_{self.start_date}_{self.end_date}"
+        suffix = self._artifact_suffix()
         
         # Save trading records
         trades_path = os.path.join(self.artifacts_dir, f"daily_trades{suffix}.json")
@@ -526,7 +612,7 @@ class StrategyVerifier:
         if self.take_profit_ratio > 0:
             result = self._evaluate_with_details_with_tp(factors)
         else:
-            backtest = CBBacktest(top_k=RobustConfig.TOP_K, fee_rate=RobustConfig.FEE_RATE)
+            backtest = CBBacktest(top_k=int(self.top_k), fee_rate=float(self.fee_rate))
             result = backtest.evaluate_with_details(
                 factors=factors,
                 target_ret=self.loader.target_ret,
@@ -571,8 +657,8 @@ class StrategyVerifier:
         close_prices = self.loader.raw_data_cache['CLOSE'].to('cpu')
 
         backtest = CBBacktest(
-            top_k=RobustConfig.TOP_K,
-            fee_rate=RobustConfig.FEE_RATE,
+            top_k=int(self.top_k),
+            fee_rate=float(self.fee_rate),
             take_profit=self.take_profit_ratio
         )
 
@@ -770,7 +856,7 @@ class StrategyVerifier:
             'Diff': diff,
             'Sim_Equity': [sim_records[i+1].sim_equity for i in range(min_len)]
         })
-        suffix = f"_{self.start_date}_{self.end_date}"
+        suffix = self._artifact_suffix()
         csv_path = os.path.join(self.artifacts_dir, f"daily_returns{suffix}.csv")
         df.to_csv(csv_path, index=False)
         logger.info(f"Saved daily returns to: {csv_path}")
@@ -788,8 +874,9 @@ class StrategyVerifier:
         return passed
     
     def generate_report(self, mae, max_abs_error, correlation, sim_cum_ret, backtest_cum_ret):
-        """鐢熸垚楠岃瘉鎶ュ憡"""
-        report_path = os.path.join(self.artifacts_dir, "verification_report.md")
+        """Generate verification report markdown."""
+        suffix = self._artifact_suffix()
+        report_path = os.path.join(self.artifacts_dir, f"verification_report{suffix}.md")
         
         # Calculate additional performance metrics
         sim_returns = [r.sim_return for r in self.sim_records] if hasattr(self, 'sim_records') else []
@@ -823,29 +910,37 @@ class StrategyVerifier:
             sharpe = 0.0
             ann_ret = 0.0
             max_dd = 0.0
+            sim_returns_arr = np.array([], dtype=float)
         
         with open(report_path, 'w', encoding='utf-8') as f:
-            f.write("# 绛栫暐楠岃瘉鎶ュ憡 (Strategy Verification Report)\n\n")
-            f.write(f"**鐢熸垚鏃堕棿**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            f.write(f"**楠岃瘉鍖洪棿**: {self.dates[0]} 鑷?{self.dates[-1]} ({len(self.dates)} 澶?\n\n")
-            
-            f.write("## 鍙傛暟瀵归綈妫€鏌n\n")
-            f.write(f"- TOP_K: {RobustConfig.TOP_K}\n")
-            f.write(f"- FEE_RATE: {RobustConfig.FEE_RATE} (鍗曡竟)\n")
-            f.write(f"- 鍏紡鏉ユ簮: best_cb_formula.json\n\n")
-            
-            f.write("## 缁╂晥鎸囨爣 (Performance Metrics)\n\n")
-            f.write("### 妯℃嫙璐︽埛琛ㄧ幇\n\n")
-            f.write(f"- **绱鏀剁泭鐜?*: {sim_cum_ret:.4%}\n")
-            f.write(f"- **骞村寲鏀剁泭鐜?*: {ann_ret:.4%}\n")
-            f.write(f"- **澶忔櫘姣旂巼**: {sharpe:.4f}\n")
-            f.write(f"- **鏈€澶у洖鎾?*: {max_dd:.4%}\n")
-            f.write(f"- **浜ゆ槗澶╂暟**: {len(sim_returns_arr) if len(sim_returns) > 1 else 0}\n\n")
-            
-            f.write("### 鍥炴祴鍩哄噯琛ㄧ幇\n\n")
-            f.write(f"- **绱鏀剁泭鐜?*: {backtest_cum_ret:.4%}\n\n")
-            
-            f.write("## 涓€鑷存€ф寚鏍?(Consistency Metrics)\n\n")
+            f.write("# Strategy Verification Report\n\n")
+            f.write(f"**Generated At**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write(
+                f"**Date Range**: {self.dates[0]} to {self.dates[-1]} "
+                f"({len(self.dates)} trading days)\n\n"
+            )
+
+            f.write("## Parameter Alignment\n")
+            f.write(f"- STRATEGY_ID: {self.strategy_id or 'legacy'}\n")
+            f.write(f"- STRATEGY_NAME: {self.strategy_name or 'legacy'}\n")
+            f.write(f"- TOP_K: {self.top_k}\n")
+            f.write(f"- FEE_RATE: {self.fee_rate} (single-sided)\n")
+            f.write(f"- TAKE_PROFIT_RATIO: {self.take_profit_ratio}\n")
+            f.write(f"- INITIAL_CASH: {self.initial_cash}\n")
+            f.write(f"- FORMULA_SOURCE: {self.formula_source}\n\n")
+
+            f.write("## Performance Metrics\n\n")
+            f.write("### Event-Driven Simulation\n\n")
+            f.write(f"- **Cumulative Return**: {sim_cum_ret:.4%}\n")
+            f.write(f"- **Annualized Return**: {ann_ret:.4%}\n")
+            f.write(f"- **Sharpe Ratio**: {sharpe:.4f}\n")
+            f.write(f"- **Max Drawdown**: {max_dd:.4%}\n")
+            f.write(f"- **Trading Days**: {len(sim_returns_arr)}\n\n")
+
+            f.write("### Vector Backtest Baseline\n\n")
+            f.write(f"- **Cumulative Return**: {backtest_cum_ret:.4%}\n\n")
+
+            f.write("## Consistency Metrics\n\n")
             f.write("| Metric | Actual | Target | Status |\n")
             f.write("|:---|:---|:---|:---|\n")
             f.write(f"| Return MAE | {mae:.6f} | < 1e-4 | {'PASS' if mae < 1e-4 else 'FAIL'} |\n")
@@ -867,31 +962,77 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Strategy verification script')
     parser.add_argument('--start', type=str, default='2024-01-01', help='start date YYYY-MM-DD')
     parser.add_argument('--end', type=str, default='2024-12-31', help='end date YYYY-MM-DD')
+    parser.add_argument(
+        '--strategies-config',
+        type=str,
+        default=None,
+        help='strategy config path, default strategy_manager/strategies_config.json'
+    )
+    parser.add_argument(
+        '--strategy-id',
+        type=str,
+        default=None,
+        help='strategy id from strategy config; if omitted, verify all enabled strategies'
+    )
     parser.add_argument('--king', type=int, default=None,
-                        help='king step id, default uses best formula')
-    parser.add_argument('--initial-cash', type=float, default=100000.0,
-                        help='initial cash for event-driven simulation')
-    parser.add_argument('--take-profit', type=float, default=0.0,
-                        help='take profit ratio, e.g. 0.06 means +6%%')
+                        help='legacy king step id (cannot combine with --strategy-id)')
+    parser.add_argument('--top-k', type=int, default=None,
+                        help='override top_k')
+    parser.add_argument('--fee-rate', type=float, default=None,
+                        help='override fee rate (single-sided)')
+    parser.add_argument('--initial-cash', type=float, default=None,
+                        help='initial cash override; default uses strategy config initial_capital')
+    parser.add_argument('--take-profit', type=float, default=None,
+                        help='take profit ratio override, e.g. 0.06 means +6%%')
     
     args = parser.parse_args()
-    
-    verifier = StrategyVerifier(
-        start_date=args.start,
-        end_date=args.end,
-        king_step=args.king,
-        take_profit_ratio=args.take_profit
-    )
-    verifier.print_config_alignment()
-    
-    # Run simulation
-    sim_records = verifier.run_simulation(initial_cash=args.initial_cash)
-    
-    # Run backtest
-    backtest_result = verifier.run_backtest()
-    
-    # Compare
-    verifier.compare_results(sim_records, backtest_result)
+
+    def _run_one(selected_strategy_id: Optional[str]) -> bool:
+        verifier = StrategyVerifier(
+            start_date=args.start,
+            end_date=args.end,
+            strategies_config=args.strategies_config,
+            strategy_id=selected_strategy_id,
+            king_step=args.king,
+            take_profit_ratio=args.take_profit,
+            top_k=args.top_k,
+            fee_rate=args.fee_rate,
+            initial_cash=args.initial_cash,
+        )
+        verifier.print_config_alignment()
+        sim_records = verifier.run_simulation(initial_cash=args.initial_cash)
+        backtest_result = verifier.run_backtest()
+        return verifier.compare_results(sim_records, backtest_result)
+
+    # Legacy king mode always runs a single strategy.
+    if args.king is not None:
+        _run_one(args.strategy_id)
+    else:
+        if args.strategy_id:
+            strategy_ids = [args.strategy_id]
+        else:
+            config_path = args.strategies_config or os.path.join(
+                project_root, "strategy_manager", "strategies_config.json"
+            )
+            cfg = load_strategies_config(config_path)
+            strategy_ids = [s.id for s in cfg.get_enabled_strategies()]
+            if not strategy_ids:
+                raise ValueError(f"No enabled strategies in config: {config_path}")
+            logger.info(f"No --strategy-id provided, verify all enabled strategies: {strategy_ids}")
+
+        results = {}
+        for sid in strategy_ids:
+            logger.info("\n" + "=" * 80)
+            logger.info(f"VERIFY STRATEGY: {sid}")
+            logger.info("=" * 80)
+            results[sid] = _run_one(sid)
+
+        if len(results) > 1:
+            logger.info("\n" + "=" * 80)
+            logger.info("MULTI-STRATEGY VERIFICATION SUMMARY")
+            logger.info("=" * 80)
+            for sid, ok in results.items():
+                logger.info(f"{sid}: {'PASS' if ok else 'FAIL'}")
 
 
 

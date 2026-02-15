@@ -2,11 +2,21 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.2: Config-Driven SimRun (Current)**
+Current Version: **V5.3: SimRun + Verify Config Alignment (Current)**
 
 ---
 
 ## 馃搮 Version History
+
+### **V5.3: SimRun + Verify Config Alignment (Current)**
+*在 V5.2 基础上完成 sim_run 严格回放链路强化与 verify_strategy 配置驱动对齐。*
+- **Strict Replay Windowing**: `run_sim` 在 `strict_replay` 下按“回放区间 + 预热窗(65交易日)”加载 SQL，避免全历史初始化卡顿，并新增阶段耗时日志。
+- **SQL Strict Loader Range**: `SQLStrictLoader` 支持 `start_date/end_date` 区间查询，strict 回放初始化可控、可观测。
+- **Live/Replay Dataset Isolation**: `SQLStateStore` 新增 `dataset` 维度，`live/replay` 映射到独立 `nav/holdings/trades` 表，避免状态互相污染。
+- **Runner Orchestration Upgrade**: `run_sim`/`multi_sim_runner` 支持统一 `mode`、`live_quote_source`、`replay_source` 覆盖与 strict 区间透传。
+- **Verify Config-Driven**: `verify_strategy` 支持 `strategies_config.json + strategy_id`；`top_k/fee_rate/take_profit/initial_capital` 与配置一致。
+- **Verify Multi-Strategy by Default**: 不指定 `--strategy-id` 时自动验证全部 `enabled` 策略，产物按 `strategy_id` 分文件输出，避免覆盖。
+- **Verify Output Readability**: 修复验证报告模板乱码，产出统一 UTF-8 可读。
 
 ### **V5.2: Config-Driven SimRun (Current)**
 *完成 sim_run 策略配置驱动改造，统一策略入口并简化依赖。*

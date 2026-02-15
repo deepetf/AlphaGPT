@@ -29,12 +29,27 @@ logger = logging.getLogger(__name__)
 class SQLStateStore:
     """Persist sim state into MySQL tables."""
 
-    NAV_TABLE = "sim_nav_history"
-    HOLDING_TABLE = "sim_daily_holdings"
-    TRADE_TABLE = "sim_trade_history"
+    TABLES = {
+        "replay": {
+            "nav": "sim_nav_history",
+            "holding": "sim_daily_holdings",
+            "trade": "sim_trade_history",
+        },
+        "live": {
+            "nav": "sim_live_nav_history",
+            "holding": "sim_live_daily_holdings",
+            "trade": "sim_live_trade_history",
+        },
+    }
 
-    def __init__(self, sql_engine: Optional[Engine] = None):
+    def __init__(self, sql_engine: Optional[Engine] = None, dataset: str = "replay"):
+        if dataset not in self.TABLES:
+            raise ValueError(f"Unsupported dataset '{dataset}', expected one of {list(self.TABLES)}")
         self.sql_engine = sql_engine or create_engine(Config.CB_DB_DSN)
+        self.dataset = dataset
+        self.NAV_TABLE = self.TABLES[dataset]["nav"]
+        self.HOLDING_TABLE = self.TABLES[dataset]["holding"]
+        self.TRADE_TABLE = self.TABLES[dataset]["trade"]
 
     def ensure_tables_exist(self):
         """Check required sim tables exist."""
@@ -43,8 +58,8 @@ class SQLStateStore:
         missing = [t for t in required if not inspector.has_table(t)]
         if missing:
             raise RuntimeError(
-                "Missing SQL tables for sim state: "
-                f"{missing}. Run migration: infra/migrations/20260214_create_simrun_live_tables.sql"
+                f"Missing SQL tables for sim state dataset='{self.dataset}': "
+                f"{missing}. Run migrations under infra/migrations/."
             )
 
     def reset_strategy(self, strategy_id: str):
