@@ -20,7 +20,6 @@ import numpy as np
 import pandas as pd
 
 from model_core.vm import StackVM
-from model_core.config import ModelConfig, RobustConfig
 from data_pipeline.realtime_provider import RealtimeDataProvider
 from strategy_manager.cb_portfolio import CBPortfolioManager
 from strategy_manager.nav_tracker import NavTracker
@@ -29,19 +28,7 @@ from strategy_manager.sql_state_store import SQLStateStore
 from execution.sim_trader import SimTrader, SimOrder, OrderSide, TradeRecord
 from execution.cb_trader import OrderSide as CBOrderSide
 
-# 寤惰繜瀵煎叆閬垮厤寰幆寮曠敤
-StrategyConfig = None
-
 logger = logging.getLogger(__name__)
-
-
-def _get_strategy_config_class():
-    """寤惰繜瀵煎叆 StrategyConfig"""
-    global StrategyConfig
-    if StrategyConfig is None:
-        from strategy_manager.strategy_config import StrategyConfig as SC
-        StrategyConfig = SC
-    return StrategyConfig
 
 
 class SimulationRunner:
@@ -59,12 +46,6 @@ class SimulationRunner:
     2. 绛栫暐妯″紡: 浼犲叆 StrategyConfig锛岃嚜鍔ㄥ垱寤洪殧绂荤殑缁勪欢瀹炰緥
     """
     
-    # 榛樿鍏紡鏂囦欢 (鐜板凡鏀寔 TS_* 鏃跺簭绠楀瓙)
-    DEFAULT_FORMULA_PATH = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "model_core", "best_cb_formula.json"
-    )
-    
     PORTFOLIO_BASE_DIR = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "execution", "portfolio"
@@ -73,49 +54,24 @@ class SimulationRunner:
     def __init__(
         self,
         data_provider: RealtimeDataProvider,
-        portfolio: Optional[CBPortfolioManager] = None,
-        nav_tracker: Optional[NavTracker] = None,
-        formula_path: Optional[str] = None,
-        top_k: int = 10,
-        take_profit_ratio: float = 0.0,
-        strategy_config = None,  # StrategyConfig instance
-        replay_strict: bool = False,  # strict replay alignment mode
-        replay_source: str = "sql_eod",  # strict replay backend
-        state_backend: str = "sql",  # sql/json
+        strategy_config=None,
+        state_backend: Optional[str] = None,
     ):
         """
-        鍒濆鍖栨ā鎷熺洏杩愯鍣?
-        
-        Args:
-            data_provider: 瀹炴椂鏁版嵁鎻愪緵鑰?
-            portfolio: 缁勫悎绠＄悊鍣?(浼犵粺妯″紡)
-            nav_tracker: 鍑€鍊艰拷韪櫒 (浼犵粺妯″紡)
-            formula_path: 鍥犲瓙鍏紡璺緞 (浼犵粺妯″紡)
-            top_k: 姣忔棩鎸佷粨鏁伴噺 (浼犵粺妯″紡)
-            take_profit_ratio: 姝㈢泩姣斾緥 (浼犵粺妯″紡)
-            strategy_config: 绛栫暐閰嶇疆 (绛栫暐妯″紡锛屼紭鍏堢骇楂樹簬浼犵粺鍙傛暟)
-            replay_source: 涓ユ牸鍥炴斁鏁版嵁婧?(sql_eod/parquet)
+        初始化模拟盘运行器（仅支持策略配置驱动）。
+
+        约束：
+        - 必须传入 strategy_config；
+        - strategy_id 只能来自配置文件，不再使用 default 兜底。
         """
+        if strategy_config is None:
+            raise ValueError("SimulationRunner requires strategy_config; legacy mode has been removed.")
+
         self.data_provider = data_provider
         self.state_backend = state_backend
-        
-        if strategy_config is not None:
-            # strategy mode
-            self._init_from_strategy_config(strategy_config)
-        else:
-            # legacy mode
-            self._init_legacy(
-                portfolio,
-                nav_tracker,
-                formula_path,
-                top_k,
-                take_profit_ratio,
-                replay_strict,
-                replay_source,
-                state_backend,
-            )
-        
-        # 鍒濆鍖栬櫄鎷熸満
+        self._init_from_strategy_config(strategy_config)
+
+        # 初始化公式虚拟机
         self.vm = StackVM()
 
         # strict replay caches (used only in historical replay mode)
@@ -207,64 +163,16 @@ class SimulationRunner:
         self.take_profit_ratio = strategy_config.params.take_profit_ratio
         self.replay_strict = getattr(strategy_config.params, "replay_strict", False)
         self.replay_source = getattr(strategy_config.params, "replay_source", "sql_eod")
-        self.state_backend = getattr(strategy_config.params, "state_backend", self.state_backend)
+        if self.state_backend is None:
+            self.state_backend = getattr(strategy_config.params, "state_backend", "sql")
         
         logger.info(
-            f"[{self.strategy_id}] 缁涙牜鏆愰崚婵嗩潗閸栨牕鐣幋? "
+            f"[{self.strategy_id}] strategy initialized: "
             f"top_k={self.top_k}, tp={self.take_profit_ratio}, "
-            f"replay_strict={self.replay_strict}, replay_source={self.replay_source}"
+            f"replay_strict={self.replay_strict}, replay_source={self.replay_source}, "
+            f"state_backend={self.state_backend}"
         )
 
-    
-    def _init_legacy(
-        self,
-        portfolio,
-        nav_tracker,
-        formula_path,
-        top_k,
-        take_profit_ratio,
-        replay_strict: bool,
-        replay_source: str,
-        state_backend: str,
-    ):
-        """Initialize runner in legacy single-strategy mode."""
-        self.strategy_id = "default"
-        self.strategy_name = "Default Strategy"
-        
-        self.portfolio = portfolio
-        self.nav_tracker = nav_tracker
-        self.top_k = top_k
-        self.take_profit_ratio = take_profit_ratio
-        self.replay_strict = replay_strict
-        self.replay_source = replay_source
-        self.state_backend = state_backend
-        
-        # 鍔犺浇鍥犲瓙鍏紡
-        self.formula_path = formula_path or self.DEFAULT_FORMULA_PATH
-        self.formula = self._load_formula()
-        
-        # 鏍￠獙鍏紡 (妫€娴?TS_ 鏃跺簭绠楀瓙)
-        self._validate_formula()
-        
-        # 鍒濆鍖栨ā鎷熶氦鏄撳櫒
-        self.trader = SimTrader(
-            portfolio=portfolio, 
-            nav_tracker=nav_tracker,
-            fee_rate=RobustConfig.FEE_RATE
-        )
-    
-    def _load_formula(self) -> List[str]:
-        """鍔犺浇鍥犲瓙鍏紡 (浼犵粺妯″紡浣跨敤)"""
-        if not os.path.exists(self.formula_path):
-            raise FileNotFoundError(f"鍏紡鏂囦欢涓嶅瓨鍦? {self.formula_path}")
-        
-        with open(self.formula_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        formula = data.get('best', {}).get('formula', [])
-        logger.info(f"Load formula: {' '.join(formula)}")
-        return formula
-    
     def _get_required_window(self) -> int:
         """
         鏍规嵁鍏紡涓殑 TS 绠楀瓙纭畾鎵€闇€鐨勫巻鍙茬獥鍙ｅぇ灏?

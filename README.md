@@ -2,13 +2,21 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.1: SQL Live State & Replay QA (Current)**
+Current Version: **V5.2: Config-Driven SimRun (Current)**
 
 ---
 
 ## 馃搮 Version History
 
-### **V5.1: SQL Live State & Replay QA (Current)**
+### **V5.2: Config-Driven SimRun (Current)**
+*完成 sim_run 策略配置驱动改造，统一策略入口并简化依赖。*
+- **Config-Only Entry**: `run_sim` 移除 `--multi`，统一通过 `strategies_config.json` 加载单/多策略。
+- **Strategy ID Hardening**: `SimulationRunner` 移除 `default` 兜底，`strategy_id` 必须来自配置文件。
+- **Schema Validation**: `strategy_config` 增加严格校验（`id` 唯一、参数只允许在 `params`、公式必填）。
+- **Self-Contained Formula**: 支持策略内嵌 `formula`，`strategies_config.json` 可与外部公式文件解耦。
+- **Runner Refactor**: `MultiSimRunner` 支持按 `strategy_id` 过滤，便于单策略定向运行与验收。
+
+### **V5.1: SQL Live State & Replay QA**
 *完成 SQL 状态持久化、回放可观测性与一致性验收工具。*
 - **SQL State Backend**: `run_sim` 支持 `--state-backend sql`，将 `nav/holdings/trades` 写入 `sim_nav_history`、`sim_daily_holdings`、`sim_trade_history`。
 - **Strategy Isolation**: 单策略固定 `strategy_id=default`，多策略使用 `strategies_config.json` 的 `id` 对应数据库分区。

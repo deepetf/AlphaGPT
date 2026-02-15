@@ -6,7 +6,7 @@
   "defaults": {
     "initial_capital": 1000000,
     "top_k": 10,
-    "take_profit_ratio": 0.04,
+    "take_profit_ratio": 0.06,
     "fee_rate": 0.0005,
     "replay_strict": true,
     "replay_source": "sql_eod",
@@ -14,9 +14,18 @@
   },
   "strategies": [
     {
-      "id": "king_factor_v1",
-      "name": "Best Factor Strategy",
+      "id": "cb_alpha_v5_main",
+      "name": "CB Alpha V5 Main",
       "enabled": true,
+      "formula_path": "model_core/sim_formula.json",
+      "params": {
+        "top_k": 10
+      }
+    },
+    {
+      "id": "cb_alpha_v5_simplified",
+      "name": "CB Alpha V5 Simplified",
+      "enabled": false,
       "formula": [
         "PURE_VALUE",
         "VOLATILITY_STK",
@@ -30,6 +39,8 @@
         "MAX"
       ],
       "params": {
+        "top_k": 8,
+        "take_profit_ratio": 0.05
       }
     }
   ]
