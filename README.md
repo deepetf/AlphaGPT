@@ -7,6 +7,7 @@ Current Version: **V5.4: SimRun Live/Replay State Alignment (Current)**
 ---
 
 ## 🧾 Version History
+> 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
 ### **V5.4: SimRun Live/Replay State Alignment (Current)**
 *在 V5.3 基础上继续强化 live 与 strict replay 的持仓一致性，并修复单日 strict 回放状态续跑。*
@@ -14,6 +15,9 @@ Current Version: **V5.4: SimRun Live/Replay State Alignment (Current)**
 - **Top-K Valid Mask Consistency**: `live` 模式选股显式透传 `valid_mask` 到 `_select_top_k`，避免因可交易样本筛选差异导致持仓漂移。
 - **Single-Day Replay Incremental Resume**: `strict_replay + --date` 改为“仅清理当日 holdings/trades/nav + 按 as_of_date 回灌历史状态”，不再默认全量清空状态。
 - **SQL State Store As-Of Loading**: `SQLStateStore.load_runtime_state` 新增 `as_of_date` 截止加载能力，并支持按策略+日期粒度重置（`reset_strategy_date`）。
+- **示例命令（单日 strict 回放续跑）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2025-02-16 --state-backend sql --replay-source sql_eod`
+- **示例命令（live 单日仿真，运行全部启用策略）**: `python strategy_manager/run_sim.py --mode live --date 2025-02-16 --state-backend sql --live-quote-source dummy`
+- **示例命令（区间 strict 回放，原逻辑不变）**: `python strategy_manager/run_sim.py --mode strict_replay --start-date 2025-01-01 --end-date 2025-02-16 --state-backend sql --replay-source sql_eod`
 
 ### **V5.3: SimRun + Verify Config Alignment**
 *在 V5.2 基础上完成 sim_run 严格回放链路强化与 verify_strategy 配置驱动对齐。*
