@@ -2,13 +2,20 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.3: SimRun + Verify Config Alignment (Current)**
+Current Version: **V5.4: SimRun Live/Replay State Alignment (Current)**
 
 ---
 
-## 馃搮 Version History
+## 🧾 Version History
 
-### **V5.3: SimRun + Verify Config Alignment (Current)**
+### **V5.4: SimRun Live/Replay State Alignment (Current)**
+*在 V5.3 基础上继续强化 live 与 strict replay 的持仓一致性，并修复单日 strict 回放状态续跑。*
+- **Live Selection Strict-Alignment**: `live` 模式选股上下文改为通过 `SQLStrictLoader` 按 65 交易日窗口构建，复用 strict replay 的特征/资产/valid_mask 口径；实时行情仅用于成交与止盈定价。
+- **Top-K Valid Mask Consistency**: `live` 模式选股显式透传 `valid_mask` 到 `_select_top_k`，避免因可交易样本筛选差异导致持仓漂移。
+- **Single-Day Replay Incremental Resume**: `strict_replay + --date` 改为“仅清理当日 holdings/trades/nav + 按 as_of_date 回灌历史状态”，不再默认全量清空状态。
+- **SQL State Store As-Of Loading**: `SQLStateStore.load_runtime_state` 新增 `as_of_date` 截止加载能力，并支持按策略+日期粒度重置（`reset_strategy_date`）。
+
+### **V5.3: SimRun + Verify Config Alignment**
 *在 V5.2 基础上完成 sim_run 严格回放链路强化与 verify_strategy 配置驱动对齐。*
 - **Strict Replay Windowing**: `run_sim` 在 `strict_replay` 下按“回放区间 + 预热窗(65交易日)”加载 SQL，避免全历史初始化卡顿，并新增阶段耗时日志。
 - **SQL Strict Loader Range**: `SQLStrictLoader` 支持 `start_date/end_date` 区间查询，strict 回放初始化可控、可观测。
@@ -47,26 +54,26 @@ Current Version: **V5.3: SimRun + Verify Config Alignment (Current)**
   - 2025 区间：`Corr≈0.999`，`MAE≈4e-4`
 
 ### **V4.2: Alpha Efficiency (Current)**
-*姝㈢泩閫昏緫涓庤瘎浠蜂綋绯讳紭鍖栥€?
-- **Vectorized Take-Profit**: 鍏ㄩ潰鍚戦噺鍖栨鐩堥€昏緫锛屽ぇ骞呮彁鍗囪缁冮€熷害锛涙敮鎸佸紑鐩樿烦绌轰笌鐩樹腑姝㈢泩銆?
-- **Simplified Buy-Back**: 閿佸畾姝㈢泩褰撴棩鏀剁泭锛屼粎瀵逛粛鍦?Top-K 鐨勬爣鐨勮绠楅澶栦拱鍥炴垚鏈紝骞宠　鏀剁泭涓庢崲鎵嬨€?
-- **Strict Price Filter**: 寮曞叆浠锋牸鏈夋晥鎬ф鏌?(0 < Price < 10000)锛屽交搴曟秷闄よ剰鏁版嵁寮曡捣鐨勬敹鐩婄巼姹℃煋銆?
-- **IC/IR Alignment**: 淇鍥犲瓙璇勪环瀵归綈鍙ｅ緞锛屽鏃犳晥鏍锋湰杩斿洖 None 浠ラ槻姝?RL 鎸囨爣鍋忕疆銆?
+*止盈逻辑与评价体系优化。*
+- **Vectorized Take-Profit**: 全面向量化止盈逻辑，大幅提升训练速度；支持开盘跳空与盘中止盈。
+- **Simplified Buy-Back**: 锁定止盈当日收益，仅对仍在 `Top-K` 的标的计算额外买回成本，平衡收益与换手。
+- **Strict Price Filter**: 引入价格有效性检查（`0 < Price < 10000`），彻底消除脏数据引起的收益率污染。
+- **IC/IR Alignment**: 修正因子评价对齐口径，对无效样本返回 `None`，防止 RL 指标偏置。
 
 ### **V4.1: Engineering Hardening**
-*宸ョ▼鍔犲浐涓庡彛寰勭湡瀹炴€э細纭繚姣忎竴鍒?Alpha 閮界粡寰楄捣鎺ㄦ暡銆?
-- **Hierarchy of Failure**: 寤虹珛 (`EXEC` < `STRUCT` < `LOWVAR` < `METRIC` < `SIM`) 鎯╃綒闃舵锛屾彁渚涙竻鏅扮殑寮哄寲瀛︿範姊害銆?
-- **Grammar-Guided Decoding**: 鍒╃敤 Action Masking 鎶€鏈皢鏃犳晥璇硶鐢熸垚鐜囦粠 99% 闄嶈嚦 **0%**銆?
-- **Rolling Window Controller**: 寮曞叆 10姝ユ粦鍔ㄧ獥鍙ｇ喌鎺у埗锛屽苟缁撳悎 **3-Level Success (Hard/Metric/Sim)** 鍙ｅ緞锛屽交搴曟秷闄よ缁冮渿鑽°€?
-- **SimPass 2.0**: 閲嶆柊瀹氫箟澶氭牱鎬ф垚鍔熸爣鍑嗭紝璁ゅ彲鈥滀紭鑳滃姡姹扳€濈殑鏇挎崲琛屼负 (`SIM_REPLACE`)銆?
+*工程加固与口径真实性：确保每一条 Alpha 都经得起推敲。*
+- **Hierarchy of Failure**: 建立（`EXEC` < `STRUCT` < `LOWVAR` < `METRIC` < `SIM`）惩罚阶梯，提供清晰的强化学习梯度。
+- **Grammar-Guided Decoding**: 利用 Action Masking 技术将无效语法生成率从 99% 降至 **0%**。
+- **Rolling Window Controller**: 引入 10 步滑动窗口熵控制，并结合 **3-Level Success (Hard/Metric/Sim)** 口径，减少训练震荡。
+- **SimPass 2.0**: 重新定义多样性成功标准，认可“优胜劣汰”的替换行为（`SIM_REPLACE`）。
 
 ### **V3.5: Efficiency**
-*鏁堢巼闈╁懡锛氳В鍐崇浉浼兼€у啑浣欍€?
-- **Safe LRU Cache**: 100k涓婇檺纭畾鎬х紦瀛橈紝娑堥櫎鍐椾綑鍥炴祴銆?
-- **Adaptive Entropy 1.0**: 鍒濇寮曞叆鑷€傚簲鐔垫帶鍒躲€?
+*效率革命：解决相似性冗余。*
+- **Safe LRU Cache**: 100k 上限确定性缓存，消除冗余回测。
+- **Adaptive Entropy 1.0**: 初步引入自适应熵控制。
 
 ### **V3.4: Grammar-Guided Decoding**
-*寮曞叆绠楀瓙璇硶绾︽潫锛屽交搴曡В鍐虫棤鏁堝叕寮忕敓鎴愰棶棰樸€?
+*引入算子语法约束，彻底解决无效公式生成问题。*
 
 ### **V3.3: Long-Run Optimization**
 *Optimized for long-duration training stability and diversity.*
@@ -77,132 +84,132 @@ Current Version: **V5.3: SimRun + Verify Config Alignment (Current)**
 ### **V3.2: Dynamic Configuration**
 *Refactored configuration architecture for flexibility and ease of use.*
 - **Dynamic Loading**:
-    - 灏?`INPUT_FEATURES` 鍜?`RobustConfig` 绉昏嚦澶栭儴 YAML 閰嶇疆鏂囦欢 (`default_config.yaml`)銆?
-    - 鏀寔閫氳繃鍛戒护琛屽弬鏁?`--config` 鍔犺浇鑷畾涔夐厤缃枃浠讹紝鏃犻渶淇敼浠ｇ爜銆?
-- **CLI Support**: `engine.py` 鏀寔 `--config` 鍙傛暟銆?
-- **Backward Compatibility**: `config.py` 浣跨敤 Metaclass 淇濇寔 API 鍏煎鎬э紝纭繚鏃т唬鐮佹棤缂濊繍琛屻€?
+    - 将 `INPUT_FEATURES` 和 `RobustConfig` 移至外部 YAML 配置文件（`default_config.yaml`）。
+    - 支持通过命令行参数 `--config` 加载自定义配置文件，无需修改代码。
+- **CLI Support**: `engine.py` 支持 `--config` 参数。
+- **Backward Compatibility**: `config.py` 使用 Metaclass 保持 API 兼容性，确保旧代码无缝运行。
 
 ### **V3.1: Diversity & Anti-Stacking**
 *Implemented advanced mechanisms to prevent "Formula Stacking" and boost diversity.*
 - **Local Density Check**:
-    - 鍦?`Formula Validator` 涓紩鍏ユ粦鍔ㄧ獥鍙ｅ瘑搴︽娴?(`Window=6, MaxTS=3`)銆?
-    - 鏈夋晥鎵撳嚮鍒╃敤 `TS_MEAN` 鍫嗗彔鍒烽珮 Sharpe 鐨勮涓猴紝鍚屾椂淇濇姢浜嗗悎娉曠殑澶氬洜瀛愰€昏緫銆?
+    - 在 `Formula Validator` 中引入滑动窗口密度检查（`Window=6, MaxTS=3`）。
+    - 有效打击利用 `TS_MEAN` 堆叠刷高 Sharpe 的行为，同时保护合法的多因子逻辑。
 - **Enhanced Exploration**:
-    - **Entropy Regularization**: 寮曞叆绾挎€ц“鍑忕殑鐔垫鍒欓」 (`Beta: 0.04 -> 0.005`)锛屽湪璁粌鍒濇湡寮哄埗妯″瀷鎺㈢储鏈煡棰嗗煙銆?
-    - **Diversity Pool**: 缁存姢涓€涓?Top-50 澶氭牱鎬ф睜锛屽熀浜?**Jaccard Similarity** (闃堝€?0.8) 杩囨护鍚岃川鍖栧叕寮忋€?
-- **Outcome**: 鎴愬姛鎸栨帢鍑?`DBLOW` (鍙屼綆), `VOL_STK` (姝ｈ偂娉㈠姩), `PREM` (婧环鐜? 绛夊绉嶄笉鍚岄€昏緫鐨勯珮鎬ц兘鍥犲瓙銆?
+    - **Entropy Regularization**: 引入线性衰减的熵正则项（`Beta: 0.04 -> 0.005`），在训练初期强制模型探索未知领域。
+    - **Diversity Pool**: 维护一个 Top-50 多样性池，基于 **Jaccard Similarity**（阈值 `0.8`）过滤同质化公式。
+- **Outcome**: 成功挖掘出 `DBLOW`（双低）、`VOL_STK`（正股波动）、`PREM`（溢价率）等多种不同逻辑的高性能因子。
 
 ### **V3.0: CB Migration & Perfect Simulation**
 *Completed migration from Crypto to Convertible Bonds and achieved pixel-perfect simulation alignment.*
 - **System Migration**:
-    - 鍏ㄩ潰閫傞厤鍙浆鍊?(CB) 甯傚満鐗规€э紙T+0, 娑ㄨ穼骞? 鏁存墜浜ゆ槗, 鍊哄埜灞炴€э級銆?
-    - 鍥犲瓙宸ュ巶涓庣壒寰佸伐绋嬮拡瀵?CB 缁撴瀯杩涜浜嗛噸鏋勩€?
+    - 全面适配可转债（CB）市场特性（T+0、涨跌停、整手交易、债券属性）。
+    - 因子工厂与特征工程针对 CB 结构进行了重构。
 - **Perfect Verification**:
-    - **Event-Driven Simulation** 涓?**Vector Backtest** 杈惧埌 >99% 鐩稿叧鎬?(Correlation)銆?
-    - 淇浜嗘寔浠撶郴缁?鍙岃建鍒? Bug锛屽交搴曟秷闄や簡妯℃嫙璇樊銆?
-    - 楠岃瘉浜嗙瓥鐣ュ湪 2023-2026 鍥涘勾闂寸殑绋冲仴琛ㄧ幇 (骞村寲 30%~60%)銆?
+    - **Event-Driven Simulation** 与 **Vector Backtest** 达到 >99% 相关性（Correlation）。
+    - 修复持仓系统双轨制 Bug，彻底消除模拟误差。
+    - 验证策略在 2023-2026 四年间的稳健表现（年化 30%~60%）。
 - **Simulation Suite**:
-    - 鍗囩骇 `verify_strategy.py` 鏀寔鍛戒护琛屽弬鏁伴厤缃紙鍒濆璧勯噾銆佹椂闂村尯闂达級銆?
-    - 澧炲己浜ゆ槗鏃ュ織锛屾敮鎸佸悕绉版樉绀轰笌璇︾粏涓€鑷存€ф鏌?(Return MAE, Jaccard)銆?
+    - 升级 `verify_strategy.py`，支持命令行参数配置（初始资金、时间区间）。
+    - 增强交易日志，支持名称显示与详细一致性检查（Return MAE、Jaccard）。
 - **Configuration**:
-    - 璐圭巼涓嬭皟鑷冲疄鐩樻按骞?(涓囦簲, 0.0005)锛岄噴鏀句簡楂橀绛栫暐娼滃姏銆?
+    - 费率下调至实盘水平（万五，`0.0005`），释放高频策略潜力。
 
 ### **V2.3: Formula Structure Validator**
-*闃叉杩涘寲鎼滅储浜х敓"鍒嗘暟鍧嶇缉"鐨勫叕寮忕粨鏋勶紝骞跺寮烘敹鐩?椋庨櫓骞宠　銆?
-- **Hard Filters**: 鐩存帴鎷掔粷宸茬煡鏈夊搴忓垪 (濡?`SIGN 鈫?LOG`)锛岄伩鍏嶆墍鏈夎祫浜у緱鍒嗙浉鍚屻€?
-- **Soft Penalties**: 瀵瑰彲鐤戠粨鏋勶紙濡傝繛缁?LOG銆乀S_* 杩囧锛夎繘琛屾墸鍒嗚€岄潪鐩存帴鎷掔粷銆?
-- **Documentation**: 鏂板 `docs/dangerous_structures.md` 璁板綍鎵€鏈夎鍒欍€?
-- **Integration**: 鍦?`_worker_eval` 鍥炴祴鍓嶈繘琛岄獙璇侊紝鍑忓皯鏃犳晥璁＄畻銆?
-- **Fee Rate Management**: 浜ゆ槗璐圭巼缁熶竴鐢?`RobustConfig.FEE_RATE` 绠＄悊 (0.001锛屽崈鍒嗕箣涓€)銆?
-- **Return Reward**: 璇勫垎浣撶郴鏂板**骞村寲鏀剁泭鐜囧鍔?* (`RET_W = 5.0`)锛岄紦鍔辨寲鎺橀珮鍥炴姤绛栫暐銆?
+*防止进化搜索产生“分数坍缩”的公式结构，并增强收益风险平衡。*
+- **Hard Filters**: 直接拒绝已知有害序列（如 `SIGN -> LOG`），避免所有资产得分相同。
+- **Soft Penalties**: 对可疑结构（如连续 `LOG`、`TS_*` 过多）进行扣分而非直接拒绝。
+- **Documentation**: 新增 `docs/dangerous_structures.md` 记录所有规则。
+- **Integration**: 在 `_worker_eval` 回测前进行验证，减少无效计算。
+- **Fee Rate Management**: 交易费率统一由 `RobustConfig.FEE_RATE` 管理（`0.001`，千分之一）。
+- **Return Reward**: 评分体系新增**年化收益率奖励**（`RET_W = 5.0`），鼓励挖掘高回报策略。
 
 ### **V2.2: Performance & Operators**
-*淇闅忕潃璁粌杩涜瀵艰嚧鐨勬€ц兘琛板噺锛屽苟鎵╁厖绠楀瓙搴撱€?
-- **CPU Thread Fix**: 寮哄埗鍗曡繘绋嬫ā寮忎笅 Worker 浣跨敤鍗曠嚎绋?(`torch.set_num_threads(1)`)锛岃В鍐?CPU Oversubscription 闂銆?
-- **I/O Optimization**: 寮曞叆 `MIN_SCORE_IMPROVEMENT` 闃堝€硷紝鍑忓皯鏃犳晥 I/O銆?
-- **New Operator**: 鏂板 `TS_BIAS5` (5鏃ヤ箹绂荤巼) 绠楀瓙銆?
+*修复训练过程中的性能衰减，并扩充算子库。*
+- **CPU Thread Fix**: 强制单进程模式下 Worker 使用单线程（`torch.set_num_threads(1)`），解决 CPU Oversubscription 问题。
+- **I/O Optimization**: 引入 `MIN_SCORE_IMPROVEMENT` 阈值，减少无效 I/O。
+- **New Operator**: 新增 `TS_BIAS5`（5 日乖离率）算子。
 
 ### **V2.1: Robustness Enhanced**
-*涓撴敞浜庢寲鎺?绋冲仴銆佸彲瀹炵洏"鐨勫洜瀛愶紝鑰岄潪鍗曠函鐨勯珮澶忔櫘銆?
-- **Split Validation**: 寮哄埗杩涜 **Train/Test 鍒嗘楠岃瘉**銆傝嫢 Valid 娈佃〃鐜板樊锛岀洿鎺ユ窐姹般€?
-- **Rolling Stability**: 寮曞叆 **Mean - k*Std** 璇勫垎鏈哄埗锛屾儵缃氭敹鐩婃洸绾垮墽鐑堟尝鍔ㄧ殑鍥犲瓙銆?
-- **Drawdown Control**: 鏄惧紡鎯╃綒鏈€澶у洖鎾?(MDD)銆?
+*专注于挖掘“稳健、可实盘”的因子，而非单纯追求高夏普。*
+- **Split Validation**: 强制进行 **Train/Test 分段验证**；若 Valid 段表现差，直接淘汰。
+- **Rolling Stability**: 引入 **Mean - k*Std** 评分机制，惩罚收益曲线剧烈波动的因子。
+- **Drawdown Control**: 显式惩罚最大回撤（MDD）。
 - **Tradability Constraints**:
-    - **Active Ratio**: 鍓旈櫎鍥犲仠鐗屾垨鏁版嵁缂哄け瀵艰嚧鏃犳硶婊′粨鐨勫洜瀛愩€?
-    - **Valid Days**: 鍓旈櫎鏍锋湰閲忎笉瓒崇殑鍋剁劧楂樺垎鍥犲瓙銆?
-- **Composite Score**: 缁煎悎 `(Train+Val) * Stability - MDD` 鐨勫缁磋瘎鍒嗕綋绯汇€?
+    - **Active Ratio**: 剔除因停牌或数据缺失导致无法满仓的因子。
+    - **Valid Days**: 剔除样本量不足的偶然高分因子。
+- **Composite Score**: 综合 `(Train+Val) * Stability - MDD` 的多维评分体系。
 
 ### **V1.0: Foundation (No Lookahead)**
-*涓撴敞浜庢秷闄?鏈潵鍑芥暟"涓?鏁版嵁娉勯湶"銆?
-- **Strict Causality**: 鎵€鏈夌畻瀛?(`TS_DELAY`, `TS_MEAN`) 缁忎弗鏍煎璁★紝鏉滅粷 `torch.roll` 閫犳垚鐨勫惊鐜硠闇层€?
-- **Robust Normalization**: 浣跨敤 `Rolling(60)` 杩涜鐗瑰緛鏍囧噯鍖栵紝鑰岄潪鍏ㄥ眬 Z-Score锛屽交搴曟秷闄ゅ叏鏍锋湰鍋忓樊銆?
-- **Aligned Data Pipeline**: 缁熶竴 `CBDataLoader`锛岀‘淇濊缁冦€侀獙璇併€佸洖娴嬩娇鐢ㄥ畬鍏ㄤ竴鑷寸殑鏁版嵁娴?(`[Time, Assets]`)銆?
+*专注于消除“未来函数”和“数据泄露”。*
+- **Strict Causality**: 所有算子（`TS_DELAY`、`TS_MEAN`）经严格审计，杜绝 `torch.roll` 造成的循环泄露。
+- **Robust Normalization**: 使用 `Rolling(60)` 做特征标准化，而非全局 Z-Score，避免全样本偏差。
+- **Aligned Data Pipeline**: 统一 `CBDataLoader`，确保训练、验证、回测使用一致的数据流（`[Time, Assets]`）。
 
 ---
 
-## 馃搳 Key Metrics Explained
+## 📊 Key Metrics Explained
 
 | Metric | Definition | Good | Bad |
 |--------|------------|------|-----|
-| **Split Sharpe** | 璁粌闆嗕笌楠岃瘉闆嗙殑澶忔櫘姣旂巼 | Train涓嶸al鎺ヨ繎涓?1.5 | Val < 0 鎴?Train >> Val (Overfitting) |
-| **Stability** | 婊氬姩澶忔櫘鍧囧€?- 1.5 * 鏍囧噯宸?| > 0.5 | < 0 (涓嶇ǔ瀹? |
-| **Max Drawdown** | 鍘嗗彶鏈€澶у洖鎾?| < 20% | > 40% |
-| **Active Ratio** | 瀹為檯鎸佷粨鏁?/ 鐩爣TopK | > 90% | < 50% (涓嶅彲浜ゆ槗) |
+| **Split Sharpe** | 训练集与验证集的夏普比率对比 | Train 与 Val 接近，且均 > 1.5 | Val < 0 或 Train >> Val（过拟合） |
+| **Stability** | 滚动夏普均值 - 1.5 × 标准差 | > 0.5 | < 0（不稳定） |
+| **Max Drawdown** | 历史最大回撤 | < 20% | > 40% |
+| **Active Ratio** | 实际持仓数 / 目标 Top-K | > 90% | < 50%（不可交易） |
 
 ---
 
-## 馃洜锔?Core Modules
+## 🧠 Core Modules
 
 ### 1. AlphaGPT Model
-- 涓€涓交閲忕骇 Transformer Decoder銆?
-- 瀛︿範绠楀瓙璇硶 (`ADD`, `SUB`, `TS_DELAY`...) 鍜岀壒寰佺粍鍚堛€?
-- 閫氳繃 RL (Policy Gradient) 浼樺寲锛屾牴鎹洖娴?Reward 璋冩暣鐢熸垚姒傜巼銆?
+- 轻量级 Transformer Decoder。
+- 学习算子语法（`ADD`、`SUB`、`TS_DELAY`...）与特征组合。
+- 通过 RL（Policy Gradient）优化，根据回测 Reward 调整生成概率。
 
 ### 2. StackVM (Vectorized)
-- 楂樻€ц兘 PyTorch 鍚戦噺鍖栨爤铏氭嫙鏈恒€?
-- 鏀寔鏃跺簭绠楀瓙 (`TS_*`)銆佹í鎴潰绠楀瓙 (`CS_*`) 鍜岄€昏緫绠楀瓙 (`IF_POS`...)銆?
-- **闆舵湭鏉ュ嚱鏁拌璁?*銆?
+- 高性能 PyTorch 向量化栈虚拟机。
+- 支持时序算子（`TS_*`）、截面算子（`CS_*`）和逻辑算子（`IF_POS`...）。
+- **零未来函数设计**。
 
 ### 3. CBBacktest (Robust)
-- Top-K 杞姩绛栫暐鍥炴祴鍣ㄣ€?
-- 鏀寔 `Transaction Fee` 鍜?`Turnover` 鎯╃綒銆?
-- 鍐呯疆 V2.1 绋冲仴鎬ц瘎浼版寚鏍?(`Split Sharpe`, `Stability`, `Active Ratio`)銆?
+- Top-K 轮动策略回测器。
+- 支持 `Transaction Fee` 与 `Turnover` 惩罚。
+- 内置 V2.1 稳健性评估指标（`Split Sharpe`、`Stability`、`Active Ratio`）。
 
 ---
 
-## 鈿?Usage
+## 🔧 Usage
 
 ### 1. Training (Mining)
-鍚姩澶氳繘绋嬫寲鎺橈細
+启动多进程挖掘：
 ```bash
 python -m model_core.engine
 ```
-*鑷姩淇濆瓨琛ㄧ幇鏈€濂界殑 "Kings" 鍒?`model_core/verified_trades/` 鍜?`best_cb_formula.json`銆?
+*自动保存表现最好的 “Kings” 到 `model_core/verified_trades/` 和 `best_cb_formula.json`。*
 
 ### 2. Verification
-楠岃瘉鐗瑰畾鍥犲瓙锛堝 King #8锛夌殑绋冲仴鎬э細
+验证特定因子（如 King #8）的稳健性：
 ```bash
 python verify_kings.py --king 8
 ```
-杈撳嚭绀轰緥锛?
+输出示例：
 ```text
-鉁?Backtest Result:
+✅ Backtest Result:
    Composite Score: 10.76
-   Sharpe (Train/Val): 1.27 / 1.98  <-- 鍏抽敭鎸囨爣
+   Sharpe (Train/Val): 1.27 / 1.98  <-- 关键指标
    Max Drawdown: 14.9%
    Stability: -0.86
    Active Ratio: 100.0%
 ```
 
 ### 3. Real-time Simulation
-妯℃嫙瀹炵洏閫夎偂锛堜娇鐢ㄦ渶杩?70 澶╂暟鎹級锛?
+模拟实盘选股（使用最近 70 天数据）：
 ```bash
 python verify_king8_realtime.py
 ```
 
 ---
 
-## 馃摑 Configuration
+## ⚙️ Configuration
 
 Configuration is now managed via `model_core/default_config.yaml`.
 

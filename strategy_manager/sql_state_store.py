@@ -78,13 +78,51 @@ class SQLStateStore:
                 {"strategy_id": strategy_id},
             )
 
+    def reset_strategy_date(self, strategy_id: str, trade_date: str):
+        """Delete one-day state rows for one strategy."""
+        date_value = self._normalize_date(trade_date)
+        with self.sql_engine.begin() as conn:
+            conn.execute(
+                text(
+                    f"""
+                    DELETE FROM {self.TRADE_TABLE}
+                    WHERE strategy_id = :strategy_id AND trade_date = :trade_date
+                    """
+                ),
+                {"strategy_id": strategy_id, "trade_date": date_value},
+            )
+            conn.execute(
+                text(
+                    f"""
+                    DELETE FROM {self.HOLDING_TABLE}
+                    WHERE strategy_id = :strategy_id AND trade_date = :trade_date
+                    """
+                ),
+                {"strategy_id": strategy_id, "trade_date": date_value},
+            )
+            conn.execute(
+                text(
+                    f"""
+                    DELETE FROM {self.NAV_TABLE}
+                    WHERE strategy_id = :strategy_id AND trade_date = :trade_date
+                    """
+                ),
+                {"strategy_id": strategy_id, "trade_date": date_value},
+            )
+
     def load_runtime_state(
         self,
         strategy_id: str,
         initial_capital: float,
+        as_of_date: Optional[str] = None,
     ) -> Dict:
         """Load latest runtime state for strategy."""
         self.ensure_tables_exist()
+        as_of_date_value = self._normalize_date(as_of_date) if as_of_date else None
+        as_of_sql = " AND trade_date <= :as_of_date" if as_of_date_value is not None else ""
+        base_params = {"strategy_id": strategy_id}
+        if as_of_date_value is not None:
+            base_params["as_of_date"] = as_of_date_value
 
         with self.sql_engine.connect() as conn:
             nav_rows = conn.execute(
@@ -93,10 +131,11 @@ class SQLStateStore:
                     SELECT trade_date, nav, cash, holdings_value, holdings_count, daily_ret, cum_ret, mdd
                     FROM {self.NAV_TABLE}
                     WHERE strategy_id = :strategy_id
+                    {as_of_sql}
                     ORDER BY trade_date
                     """
                 ),
-                {"strategy_id": strategy_id},
+                base_params,
             ).mappings().all()
 
             peak_nav_row = conn.execute(
@@ -105,9 +144,10 @@ class SQLStateStore:
                     SELECT MAX(nav) AS peak_nav
                     FROM {self.NAV_TABLE}
                     WHERE strategy_id = :strategy_id
+                    {as_of_sql}
                     """
                 ),
-                {"strategy_id": strategy_id},
+                base_params,
             ).mappings().first()
 
             latest_holding_date_row = conn.execute(
@@ -116,9 +156,10 @@ class SQLStateStore:
                     SELECT MAX(trade_date) AS trade_date
                     FROM {self.HOLDING_TABLE}
                     WHERE strategy_id = :strategy_id
+                    {as_of_sql}
                     """
                 ),
-                {"strategy_id": strategy_id},
+                base_params,
             ).mappings().first()
 
             positions: List[CBPosition] = []
@@ -135,7 +176,7 @@ class SQLStateStore:
                         FROM {self.HOLDING_TABLE}
                         WHERE strategy_id = :strategy_id
                           AND trade_date = :trade_date
-                        ORDER BY code
+                    ORDER BY code
                         """
                     ),
                     {"strategy_id": strategy_id, "trade_date": latest_holding_date},
@@ -158,10 +199,11 @@ class SQLStateStore:
                     SELECT trade_date, trade_time, code, name, side, shares, price, amount
                     FROM {self.TRADE_TABLE}
                     WHERE strategy_id = :strategy_id
+                    {as_of_sql}
                     ORDER BY trade_date, trade_time, id
                     """
                 ),
-                {"strategy_id": strategy_id},
+                base_params,
             ).mappings().all()
 
         records: List[DailyRecord] = [

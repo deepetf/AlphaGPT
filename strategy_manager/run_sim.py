@@ -97,6 +97,28 @@ def _reset_runner_state(runner: SimulationRunner) -> None:
     logger.info(f"[state reset] strategy={runner.strategy_id}")
 
 
+def _prepare_runner_state_for_single_day_replay(
+    runner: SimulationRunner,
+    trade_date: str,
+) -> None:
+    """Prepare one-day strict_replay state: clear only this date and hydrate from history."""
+    logger = logging.getLogger(__name__)
+
+    if getattr(runner, "sql_state_store", None) is None:
+        logger.info(
+            f"[state prepare] strategy={runner.strategy_id}, date={trade_date}, "
+            "sql state backend not enabled, keep in-memory state as-is"
+        )
+        return
+
+    runner.sql_state_store.reset_strategy_date(runner.strategy_id, trade_date)
+    runner._hydrate_state_from_sql(as_of_date=trade_date)
+    logger.info(
+        f"[state prepare] strategy={runner.strategy_id}, date={trade_date}, "
+        "reset current date rows and hydrate as-of date"
+    )
+
+
 def _build_runner(
     data_provider: RealtimeDataProvider,
     config_path: Optional[str],
@@ -159,10 +181,10 @@ def run_once(
             strict_end_date=strict_end_date,
         )
 
-        # strict_replay single-day run defaults to empty initial state
+        # strict_replay single-day run: clear only the target date and continue from historical SQL state.
         if mode == "strict_replay":
             for r in runner.runners.values():
-                _reset_runner_state(r)
+                _prepare_runner_state_for_single_day_replay(r, trade_date)
 
         results = runner.run_all_strategies(trade_date, mode=mode)
         runner.print_summary()

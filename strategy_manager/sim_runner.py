@@ -116,7 +116,7 @@ class SimulationRunner:
                 "new window will take effect on next process run"
             )
 
-    def _hydrate_state_from_sql(self):
+    def _hydrate_state_from_sql(self, as_of_date: Optional[str] = None):
         """Load latest strategy state from SQL into in-memory components."""
         if self.sql_state_store is None:
             return
@@ -124,6 +124,7 @@ class SimulationRunner:
         state = self.sql_state_store.load_runtime_state(
             strategy_id=self.strategy_id,
             initial_capital=self.nav_tracker.initial_capital,
+            as_of_date=as_of_date,
         )
 
         self.portfolio.positions = {p.code: p for p in state["positions"]}
@@ -136,7 +137,8 @@ class SimulationRunner:
             f"[{self.strategy_id}] SQL state loaded: "
             f"positions={len(self.portfolio.positions)}, "
             f"nav_records={len(self.nav_tracker.records)}, "
-            f"trades={len(self.trader.trade_history)}"
+            f"trades={len(self.trader.trade_history)}, "
+            f"as_of={as_of_date or 'latest'}"
         )
 
     def _persist_day_state(self, date: str, record, trade_records: List[TradeRecord]):
@@ -258,7 +260,7 @@ class SimulationRunner:
         raise ValueError(f"Unsupported run mode: {resolved_mode}")
 
     def _run_daily_live(self, date: str) -> Dict:
-        """Run live path using SQL features and realtime quotes (dummy by default)."""
+        """Run live path with strict-aligned decision pipeline."""
         cb_features = self.data_provider.get_cb_features(date)
         if cb_features.empty:
             logger.warning(f"No SQL feature data for date={date}")
@@ -273,23 +275,15 @@ class SimulationRunner:
         else:
             raise ValueError(f"Unsupported live_quote_source: {self.live_quote_source}")
 
-        if self.required_window > 1:
-            feat_tensor, asset_list = self.data_provider.build_feat_tensor_with_history(
-                date=date,
-                realtime_quotes=realtime_quotes,
-                window=self.required_window,
-                strict_date_mode=False,
-            )
-            names_dict = self.data_provider.get_names_dict(cb_features)
-        else:
-            feat_tensor = self.data_provider.build_feat_tensor(
-                realtime_quotes,
-                cb_features,
-                strict_date_mode=False,
-            )
-            feat_tensor = feat_tensor.unsqueeze(0)
-            asset_list = self.data_provider.get_asset_list(cb_features)
-            names_dict = self.data_provider.get_names_dict(cb_features)
+        selection_ctx = self._build_live_selection_context(date)
+        if selection_ctx is None:
+            logger.warning(f"[{self.strategy_id}] live decision context unavailable: {date}")
+            return {"status": "no_data"}
+
+        factor_values = selection_ctx["factor_values"]
+        asset_list = selection_ctx["asset_list"]
+        names_dict = selection_ctx["names_dict"]
+        valid_mask = selection_ctx["valid_mask"]
 
         prices = self._build_price_dict(cb_features, realtime_quotes)
 
@@ -301,13 +295,13 @@ class SimulationRunner:
                 logger.info(f"止盈订单: {len(tp_orders)} 笔")
                 tp_records = self.trader.execute(tp_orders, prices, date)
 
-        factor_values = self._compute_factor(feat_tensor)
         target_codes = self._select_top_k(
             factor_values=factor_values,
             asset_list=asset_list,
             prices=prices,
             names_dict=names_dict,
             date=date,
+            valid_mask=valid_mask,
         )
 
         rebalance_orders = self._generate_rebalance_orders(target_codes, prices, names_dict, date)
@@ -332,6 +326,60 @@ class SimulationRunner:
             "tp_orders": len(tp_orders),
             "rebalance_orders": len(rebalance_orders),
         }
+
+    def _build_live_selection_context(self, date: str) -> Optional[Dict]:
+        """
+        Build strict-aligned live decision context.
+
+        Notes:
+        - Selection logic in live should follow strict_replay as much as possible.
+        - Price/quote differences are handled later by execution path, not by selector input.
+        """
+        try:
+            warmup_days = 65
+            trading_days = self.data_provider.get_trading_days_before(date, warmup_days)
+            if not trading_days:
+                logger.warning(f"[{self.strategy_id}] no trading days found before {date}")
+                return None
+
+            if trading_days[-1] != date:
+                logger.warning(
+                    f"[{self.strategy_id}] target date not in trading days list: "
+                    f"target={date}, last={trading_days[-1]}"
+                )
+                return None
+
+            from data_pipeline.sql_strict_loader import SQLStrictLoader
+
+            loader = SQLStrictLoader(
+                sql_engine=self.data_provider.sql_engine,
+                start_date=trading_days[0],
+                end_date=date,
+            )
+            loader.load_data()
+
+            if date not in loader.dates_list:
+                logger.warning(f"[{self.strategy_id}] date not found in strict-aligned loader: {date}")
+                return None
+
+            feat_tensor_cpu = loader.feat_tensor.to("cpu")
+            factors = self.vm.execute(self.formula, feat_tensor_cpu)
+            if factors is None:
+                raise ValueError("Formula execution failed: VM returned None")
+
+            date_idx = loader.dates_list.index(date)
+            factor_row = factors[date_idx] if factors.dim() == 2 else factors
+            valid_mask = loader.valid_mask[date_idx].to("cpu")
+
+            return {
+                "factor_values": factor_row,
+                "asset_list": loader.assets_list,
+                "names_dict": loader.names_dict,
+                "valid_mask": valid_mask,
+            }
+        except Exception as e:
+            logger.exception(f"[{self.strategy_id}] build live selection context failed: {e}")
+            return None
     
     def _ensure_backtest_context(self):
         """Load strict replay context on demand."""

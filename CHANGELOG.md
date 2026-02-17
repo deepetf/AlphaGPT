@@ -1,5 +1,18 @@
 # AlphaGPT Changelog
 
+## [V5.4] - 2026-02-17
+
+### Changed
+- **Live Selection Pipeline Alignment**: `sim_runner` 在 `live` 模式下改为构建 strict-aligned 选股上下文（`SQLStrictLoader` + 65 交易日窗口），将实时行情与选股特征口径解耦。
+- **Top-K Selection Consistency**: `live` 模式选股调用显式传入 `valid_mask`，对齐 strict replay 的可交易样本过滤规则，降低持仓偏移。
+
+### Added
+- **As-Of SQL State Hydration**: `SimulationRunner._hydrate_state_from_sql` 新增 `as_of_date`，可按回放日期截止加载历史持仓/交易/NAV 状态。
+- **Date-Scoped SQL Reset**: `SQLStateStore` 新增 `reset_strategy_date(strategy_id, trade_date)`，支持只清理单日状态数据。
+
+### Fixed
+- **Single-Day Strict Replay Resume**: `run_sim` 在 `strict_replay + --date` 场景下不再全量重置状态，改为“仅清理当日记录 + 续接历史状态”后再调仓与记账；区间回放（`--start-date/--end-date`）逻辑保持不变。
+
 ## [V4.1.2] - 2026-02-05
 
 ### Added
