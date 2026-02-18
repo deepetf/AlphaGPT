@@ -2,22 +2,38 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.4: SimRun Live/Replay State Alignment (Current)**
+Current Version: **V5.5: Verify Visualization & Multi-Strategy Combo (Current)**
 
 ---
 
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.4: SimRun Live/Replay State Alignment (Current)**
+### **V5.5: Verify Visualization & Multi-Strategy Combo (Current)**
+*在 V5.4 基础上继续强化 verify 诊断能力，新增基准对齐可视化与多策略组合产物，便于直接评估“降回撤、提夏普”。*
+- **Verify Cash-Aware Rebalance (Verify-only)**: 在 `verify_strategy` 内新增“现金约束买单裁剪”，先卖后买、按预算与 10 张粒度裁剪买单；不修改 `sim run` 调仓逻辑。
+- **Cash Trim Audit Traceability**: `daily_trades` 新增 `requested/submitted` 买卖单统计、`trimmed/skipped` 计数与 `buy_trim_events` 事件明细，便于定位持仓数不足原因。
+- **Benchmark Integration (index_jsl)**: 基准改为读取 `data/index.pq` 的 `index_jsl`（日涨跌幅），按交易日 `t -> t+1` 对齐到 verify 收益序列；收益图与汇总表同时展示策略/基准/超额。
+- **Return & Drawdown Visualization Upgrade**: 总收益图新增基准累计收益与“策略-基准累计超额曲线”；汇总表补充并统一展示最大回撤等核心 KPI。
+- **Year/Month Switch + Heatmap Labels**: 分期收益图支持“按年/按月”切换，年/月均展示策略 vs 基准，并单独展示超额柱状图；月度热力图在矩形内直接标注当月收益率。
+- **Turnover Definition Alignment**: 换手率口径统一为“日换手 = max(去重买入数, 去重卖出数)/Top-K（不含 TP 卖出）”；汇总换手 = 总调仓数/(Top-K*交易天数)。
+- **Multi-Strategy Combined Artifacts**: 当 verify 全策略运行后，自动生成组合产物（`daily_returns/daily_trades/daily_holdings/verification_report`）与可视化报告，口径与单策略一致。
+- **Combo-Specific Summary Metrics**: 组合汇总表新增子策略两两收益相关系数、两两持仓重合度（按日 Jaccard 均值）、各子策略独立年化收益与 Sharpe。
+- **示例命令（单策略 verify + 可视化）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2026-02-13 --strategy-id king_v1`
+- **示例命令（全启用策略 verify + 自动生成组合产物）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2026-02-13`
+- **示例命令（关闭 verify 现金裁剪，做口径对比）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2026-02-13 --strategy-id momen_supply --verify-no-cash-aware`
+
+### **V5.4: SimRun Live/Replay State Alignment**
 *在 V5.3 基础上继续强化 live 与 strict replay 的持仓一致性，并修复单日 strict 回放状态续跑。*
 - **Live Selection Strict-Alignment**: `live` 模式选股上下文改为通过 `SQLStrictLoader` 按 65 交易日窗口构建，复用 strict replay 的特征/资产/valid_mask 口径；实时行情仅用于成交与止盈定价。
 - **Top-K Valid Mask Consistency**: `live` 模式选股显式透传 `valid_mask` 到 `_select_top_k`，避免因可交易样本筛选差异导致持仓漂移。
 - **Single-Day Replay Incremental Resume**: `strict_replay + --date` 改为“仅清理当日 holdings/trades/nav + 按 as_of_date 回灌历史状态”，不再默认全量清空状态。
 - **SQL State Store As-Of Loading**: `SQLStateStore.load_runtime_state` 新增 `as_of_date` 截止加载能力，并支持按策略+日期粒度重置（`reset_strategy_date`）。
+- **Verify Warmup Alignment**: `verify_strategy` 在 `--start` 验证区间前自动回补 65 个交易日预热窗口，并在该窗口内重算特征与收益标签，和 `run_sim strict_replay` 口径对齐。
 - **示例命令（单日 strict 回放续跑）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2025-02-16 --state-backend sql --replay-source sql_eod`
 - **示例命令（live 单日仿真，运行全部启用策略）**: `python strategy_manager/run_sim.py --mode live --date 2025-02-16 --state-backend sql --live-quote-source dummy`
 - **示例命令（区间 strict 回放，原逻辑不变）**: `python strategy_manager/run_sim.py --mode strict_replay --start-date 2025-01-01 --end-date 2025-02-16 --state-backend sql --replay-source sql_eod`
+- **示例命令（verify 预热窗对齐 strict replay）**: `python tests/verify_strategy.py --start 2025-02-10 --end 2025-02-16 --strategy-id king_v1`
 
 ### **V5.3: SimRun + Verify Config Alignment**
 *在 V5.2 基础上完成 sim_run 严格回放链路强化与 verify_strategy 配置驱动对齐。*

@@ -14,9 +14,10 @@ import os
 import sys
 import json
 import logging
+from itertools import combinations
 from datetime import datetime
 from dataclasses import dataclass, asdict
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import pandas as pd
 import numpy as np
 import torch
@@ -29,11 +30,13 @@ sys.path.insert(0, project_root)
 from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
+from model_core.factors import FeatureEngineer
 from model_core.vm import StackVM
 from strategy_manager.strategy_config import load_strategies_config
 from strategy_manager.cb_runner import CBStrategyRunner
 from strategy_manager.cb_portfolio import CBPortfolioManager
 from execution.cb_trader import Order, OrderSide
+from tests.perf_visualizer import generate_verification_visuals
 
 # Setup logging
 logging.basicConfig(
@@ -114,6 +117,7 @@ class MockTrader:
 
 class StrategyVerifier:
     """绛栫暐楠岃瘉鍣?"""
+    WARMUP_DAYS = 65
     
     def __init__(
         self,
@@ -126,6 +130,7 @@ class StrategyVerifier:
         top_k: Optional[int] = None,
         fee_rate: Optional[float] = None,
         initial_cash: Optional[float] = None,
+        verify_cash_aware: bool = True,
     ):
         """
         鍒濆鍖栭獙璇佸櫒
@@ -144,8 +149,11 @@ class StrategyVerifier:
         self.fee_rate = fee_rate
         self.take_profit_ratio = take_profit_ratio
         self.initial_cash = initial_cash
+        self.verify_cash_aware = bool(verify_cash_aware)
         self.formula_source = "unknown"
         self.strategy_name = ""
+        self.visual_outputs: Dict[str, str] = {}
+        self.daily_trades: List[Dict] = []
         
         # Setup artifacts directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -156,18 +164,105 @@ class StrategyVerifier:
         logger.info("Loading data...")
         self.loader = CBDataLoader()
         self.loader.load_data()
-        self.code_to_idx = {c: i for i, c in enumerate(self.loader.assets_list)}
         
         # Filter dates
         all_dates = self.loader.dates_list
         self.dates = [d for d in all_dates if d >= start_date]
         if end_date:
             self.dates = [d for d in self.dates if d <= end_date]
+        if not self.dates:
+            raise ValueError(
+                f"No trading dates found in verification range: "
+                f"start={start_date}, end={end_date or 'latest'}"
+            )
+
+        actual_start_date = self.dates[0]
+        actual_end_date = self.dates[-1]
+        warmup_start_date = self._resolve_warmup_start_date(
+            all_dates=all_dates,
+            anchor_date=actual_start_date,
+            warmup_days=self.WARMUP_DAYS,
+        )
+        self._trim_loader_and_recompute(
+            load_start_date=warmup_start_date,
+            load_end_date=actual_end_date,
+        )
+
+        # Rebuild verification dates on trimmed loader.
+        self.dates = [d for d in self.loader.dates_list if d >= start_date]
+        if end_date:
+            self.dates = [d for d in self.dates if d <= end_date]
+        if not self.dates:
+            raise ValueError(
+                f"No trading dates left after warmup trim: "
+                f"start={start_date}, end={end_date or 'latest'}"
+            )
+
+        self.code_to_idx = {c: i for i, c in enumerate(self.loader.assets_list)}
+        logger.info(
+            f"Loader window (aligned): {self.loader.dates_list[0]} to "
+            f"{self.loader.dates_list[-1]} ({len(self.loader.dates_list)} days, "
+            f"warmup_days={self.WARMUP_DAYS})"
+        )
         
         logger.info(f"Verification period: {self.dates[0]} to {self.dates[-1]} ({len(self.dates)} days)")
         
         # Load formula and strategy params
         self._load_strategy()
+
+    def _resolve_warmup_start_date(
+        self,
+        all_dates: List[str],
+        anchor_date: str,
+        warmup_days: int = 65,
+    ) -> str:
+        """Return warmup start date using latest warmup_days up to anchor_date (inclusive)."""
+        if anchor_date not in all_dates:
+            raise ValueError(f"anchor_date not found in trading dates: {anchor_date}")
+        anchor_idx = all_dates.index(anchor_date)
+        start_idx = max(0, anchor_idx - max(1, int(warmup_days)) + 1)
+        return all_dates[start_idx]
+
+    def _trim_loader_and_recompute(self, load_start_date: str, load_end_date: str) -> None:
+        """Trim loader tensors by date range and recompute feature/target tensors for alignment."""
+        dates = self.loader.dates_list
+        if load_start_date not in dates or load_end_date not in dates:
+            raise ValueError(
+                f"Trim dates not found in loader range: "
+                f"start={load_start_date}, end={load_end_date}"
+            )
+        start_idx = dates.index(load_start_date)
+        end_idx = dates.index(load_end_date)
+        if start_idx > end_idx:
+            raise ValueError(
+                f"Invalid trim range: start={load_start_date} > end={load_end_date}"
+            )
+        time_slice = slice(start_idx, end_idx + 1)
+
+        # 1) Trim raw market tensors first.
+        trimmed_raw = {}
+        for key, tensor in self.loader.raw_data_cache.items():
+            trimmed_raw[key] = tensor[time_slice]
+        self.loader.raw_data_cache = trimmed_raw
+
+        # 2) Trim valid mask and date list.
+        self.loader.valid_mask = self.loader.valid_mask[time_slice]
+        self.loader.dates_list = dates[time_slice]
+
+        # 3) Recompute features on trimmed window to align warmup context with run_sim strict replay.
+        self.loader.feat_tensor = FeatureEngineer.compute_features(self.loader.raw_data_cache)
+
+        # 4) Recompute target return on trimmed window (last day should be zero).
+        close = self.loader.raw_data_cache["CLOSE"]
+        ret_1d = (torch.roll(close, -1, dims=0) / (close + 1e-9)) - 1.0
+        ret_1d[~self.loader.valid_mask] = 0.0
+        ret_1d[-1] = 0.0
+        self.loader.target_ret = ret_1d
+
+        # Keep split index inside trimmed range for compatibility.
+        if getattr(self.loader, "split_idx", None) is not None:
+            new_split = self.loader.split_idx - start_idx
+            self.loader.split_idx = max(0, min(len(self.loader.dates_list) - 1, new_split))
 
     def _strategy_tag(self) -> str:
         if self.strategy_id:
@@ -304,6 +399,7 @@ class StrategyVerifier:
         logger.info(f"MIN_VALID_COUNT (Computed): {min_valid_count}")
         logger.info(f"TRAIN_TEST_SPLIT_DATE: {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
         logger.info(f"TAKE_PROFIT_RATIO: {self.take_profit_ratio}")
+        logger.info(f"VERIFY_CASH_AWARE: {self.verify_cash_aware}")
         logger.info("="*60)
 
     def _build_prices(self, date_idx: int) -> Dict[str, float]:
@@ -352,6 +448,145 @@ class StrategyVerifier:
                 total_fee += float(order.quantity) * float(order.price) * self.fee_rate
                 self._sync_portfolio_with_account(portfolio, account, order, date)
         return executed, total_fee
+
+    def _is_buy_order(self, order: Order) -> bool:
+        side = str(getattr(order, "side", "")).upper()
+        return side == "ORDERside.BUY".upper() or side.endswith("BUY")
+
+    def _is_sell_order(self, order: Order) -> bool:
+        side = str(getattr(order, "side", "")).upper()
+        return side == "ORDERside.SELL".upper() or side.endswith("SELL")
+
+    def _cash_aware_trim_rebalance_orders(
+        self,
+        orders: List[Order],
+        account_cash: float,
+    ) -> Tuple[List[Order], Dict[str, object]]:
+        """
+        Cash-aware buy trimming for verify only.
+        Keep sell orders unchanged; trim BUY quantities by projected cash budget.
+        """
+        if not orders:
+            return [], {
+                "enabled": self.verify_cash_aware,
+                "requested_orders": 0,
+                "requested_buys": 0,
+                "requested_sells": 0,
+                "submitted_orders": 0,
+                "submitted_buys": 0,
+                "submitted_sells": 0,
+                "trimmed_buy_count": 0,
+                "skipped_buy_count": 0,
+                "trim_events": [],
+            }
+
+        clean_orders: List[Order] = []
+        sell_orders: List[Order] = []
+        buy_orders: List[Order] = []
+        for o in orders:
+            qty = int(getattr(o, "quantity", 0) or 0)
+            price = float(getattr(o, "price", 0.0) or 0.0)
+            if qty <= 0 or price <= 0:
+                continue
+            clean_orders.append(o)
+            if self._is_sell_order(o):
+                sell_orders.append(o)
+            elif self._is_buy_order(o):
+                buy_orders.append(o)
+
+        if not self.verify_cash_aware:
+            submitted_buys = len([o for o in clean_orders if self._is_buy_order(o)])
+            submitted_sells = len([o for o in clean_orders if self._is_sell_order(o)])
+            return clean_orders, {
+                "enabled": False,
+                "requested_orders": len(clean_orders),
+                "requested_buys": submitted_buys,
+                "requested_sells": submitted_sells,
+                "submitted_orders": len(clean_orders),
+                "submitted_buys": submitted_buys,
+                "submitted_sells": submitted_sells,
+                "trimmed_buy_count": 0,
+                "skipped_buy_count": 0,
+                "trim_events": [],
+            }
+
+        projected_cash = float(account_cash)
+        fee_rate = float(self.fee_rate)
+        for s in sell_orders:
+            projected_cash += float(s.quantity) * float(s.price) * (1.0 - fee_rate)
+
+        buy_orders = sorted(buy_orders, key=lambda x: int(getattr(x, "rank", 999999) or 999999))
+        remaining_buys = len(buy_orders)
+        lot_size = 10
+        trimmed_buy_count = 0
+        skipped_buy_count = 0
+        trim_events: List[Dict] = []
+        trimmed_buys: List[Order] = []
+
+        for b in buy_orders:
+            if remaining_buys <= 0:
+                break
+
+            budget_per_order = projected_cash / float(max(remaining_buys, 1))
+            per_share_cost = float(b.price) * (1.0 + fee_rate)
+
+            max_shares_by_budget = int((budget_per_order / per_share_cost) / lot_size) * lot_size
+            max_shares_by_cash = int((projected_cash / per_share_cost) / lot_size) * lot_size
+            requested = int(b.quantity)
+            allowed = min(requested, max_shares_by_budget, max_shares_by_cash)
+
+            if allowed <= 0:
+                skipped_buy_count += 1
+                trim_events.append({
+                    "code": b.code,
+                    "rank": int(getattr(b, "rank", 0) or 0),
+                    "requested_qty": requested,
+                    "submitted_qty": 0,
+                    "status": "skipped_due_cash",
+                })
+                remaining_buys -= 1
+                continue
+
+            if allowed < requested:
+                trimmed_buy_count += 1
+                trim_events.append({
+                    "code": b.code,
+                    "rank": int(getattr(b, "rank", 0) or 0),
+                    "requested_qty": requested,
+                    "submitted_qty": allowed,
+                    "status": "trimmed_due_cash",
+                })
+
+            trimmed_buys.append(
+                Order(
+                    code=b.code,
+                    name=b.name,
+                    side=b.side,
+                    quantity=allowed,
+                    price=b.price,
+                    reason=b.reason,
+                    rank=int(getattr(b, "rank", 0) or 0),
+                )
+            )
+            projected_cash -= float(allowed) * per_share_cost
+            remaining_buys -= 1
+
+        final_orders = sell_orders + trimmed_buys
+        submitted_buys = len(trimmed_buys)
+        submitted_sells = len(sell_orders)
+        audit = {
+            "enabled": True,
+            "requested_orders": len(clean_orders),
+            "requested_buys": len(buy_orders),
+            "requested_sells": len(sell_orders),
+            "submitted_orders": len(final_orders),
+            "submitted_buys": submitted_buys,
+            "submitted_sells": submitted_sells,
+            "trimmed_buy_count": trimmed_buy_count,
+            "skipped_buy_count": skipped_buy_count,
+            "trim_events": trim_events,
+        }
+        return final_orders, audit
 
     def _generate_take_profit_orders(
         self,
@@ -464,9 +699,28 @@ class StrategyVerifier:
             runner.rebalancer.total_capital = account.get_equity(prices)
             mock_trader.orders = []
             runner.run(date=date, simulate=False)
-            orders = mock_trader.orders
+            raw_orders = list(mock_trader.orders)
+            orders, cash_audit = self._cash_aware_trim_rebalance_orders(
+                raw_orders,
+                account_cash=account.cash,
+            )
             
             # Categorize orders
+            requested_buys = []
+            requested_sells = []
+            for order in raw_orders:
+                order_info = {
+                    'code': order.code,
+                    'name': getattr(order, 'name', order.code),
+                    'quantity': order.quantity,
+                    'price': order.price,
+                    'amount': order.quantity * order.price
+                }
+                if self._is_buy_order(order):
+                    requested_buys.append(order_info)
+                elif self._is_sell_order(order):
+                    requested_sells.append(order_info)
+
             buys = []
             sells = []
             for order in orders:
@@ -477,9 +731,9 @@ class StrategyVerifier:
                     'price': order.price,
                     'amount': order.quantity * order.price
                 }
-                if str(order.side).upper() == "BUY" or "BUY" in str(order.side).upper():
+                if self._is_buy_order(order):
                     buys.append(order_info)
-                else:
+                elif self._is_sell_order(order):
                     sells.append(order_info)
             
             # Execute orders at T close
@@ -523,9 +777,21 @@ class StrategyVerifier:
                 'tp_sells': tp_sells,
                 'buys': buys,
                 'sells': sells,
+                'requested_buys': requested_buys,
+                'requested_sells': requested_sells,
                 'tx_fee_tp': tp_fee,
                 'tx_fee_rebalance': rebalance_fee,
                 'tx_fee_total': total_tx_fee,
+                'cash_aware_enabled': bool(cash_audit.get('enabled', False)),
+                'requested_orders_count': int(cash_audit.get('requested_orders', len(raw_orders))),
+                'requested_buy_count': int(cash_audit.get('requested_buys', len(requested_buys))),
+                'requested_sell_count': int(cash_audit.get('requested_sells', len(requested_sells))),
+                'submitted_orders_count': int(cash_audit.get('submitted_orders', len(orders))),
+                'submitted_buy_count': int(cash_audit.get('submitted_buys', len(buys))),
+                'submitted_sell_count': int(cash_audit.get('submitted_sells', len(sells))),
+                'trimmed_buy_count': int(cash_audit.get('trimmed_buy_count', 0)),
+                'skipped_buy_count': int(cash_audit.get('skipped_buy_count', 0)),
+                'buy_trim_events': list(cash_audit.get('trim_events', [])),
             })
             
             # Record holdings detail
@@ -578,6 +844,7 @@ class StrategyVerifier:
         
         # Save detailed records
         self._save_detailed_records(daily_trades, daily_holdings_detail)
+        self.daily_trades = daily_trades
         
         return records
     
@@ -847,12 +1114,15 @@ class StrategyVerifier:
         logger.info(f"Correlation: {correlation:.6f} (target: > 0.99)")
         logger.info(f"Sim Cum Return: {sim_cum_ret:.4%}")
         logger.info(f"Backtest Cum Return: {backtest_cum_ret:.4%}")
+
+        benchmark_returns_aligned = self._load_benchmark_returns(aligned_dates)
         
         # Save to CSV
         df = pd.DataFrame({
             'Date': aligned_dates,
             'Sim_Return': sim_returns_aligned,
             'Backtest_Return': backtest_returns_aligned,
+            'Benchmark_Return': benchmark_returns_aligned,
             'Diff': diff,
             'Sim_Equity': [sim_records[i+1].sim_equity for i in range(min_len)]
         })
@@ -860,6 +1130,10 @@ class StrategyVerifier:
         csv_path = os.path.join(self.artifacts_dir, f"daily_returns{suffix}.csv")
         df.to_csv(csv_path, index=False)
         logger.info(f"Saved daily returns to: {csv_path}")
+
+        # Generate visualization artifacts from existing comparison outputs.
+        aligned_rebalance_counts = self._extract_aligned_rebalance_counts(min_len)
+        self._generate_visual_outputs(df, aligned_rebalance_counts)
         
         # Generate report
         self.generate_report(mae, max_abs_error, correlation, sim_cum_ret, backtest_cum_ret)
@@ -872,6 +1146,148 @@ class StrategyVerifier:
             logger.warning("\nVERIFICATION FAILED - Review metrics above")
         
         return passed
+
+    def _generate_visual_outputs(
+        self,
+        compare_df: pd.DataFrame,
+        aligned_rebalance_counts: Optional[List[int]] = None,
+    ) -> None:
+        """Generate post-backtest visualization artifacts without changing verify logic."""
+        suffix = self._artifact_suffix()
+        try:
+            strategy_label = self.strategy_name or (self.strategy_id or "legacy")
+            self.visual_outputs = generate_verification_visuals(
+                compare_df=compare_df,
+                output_dir=self.artifacts_dir,
+                suffix=suffix,
+                strategy_name=strategy_label,
+                top_k=int(self.top_k),
+                rebalance_counts=aligned_rebalance_counts,
+            )
+            logger.info(
+                "Saved visualization artifacts: %s",
+                ", ".join(self.visual_outputs.values()),
+            )
+        except Exception as exc:
+            logger.exception("Failed to generate visualization artifacts: %s", exc)
+
+    def _extract_aligned_rebalance_counts(self, min_len: int) -> List[int]:
+        """Build aligned daily rebalance counts from simulation trade records."""
+        if min_len <= 0:
+            return []
+        if not self.daily_trades:
+            return [0] * min_len
+
+        aligned = self.daily_trades[1 : 1 + min_len]
+        counts: List[int] = []
+        for day_trade in aligned:
+            buys = day_trade.get("buys", []) if isinstance(day_trade, dict) else []
+            sells = day_trade.get("sells", []) if isinstance(day_trade, dict) else []
+            buy_codes = {
+                item.get("code")
+                for item in buys
+                if isinstance(item, dict) and item.get("code")
+            }
+            sell_codes = {
+                item.get("code")
+                for item in sells
+                if isinstance(item, dict) and item.get("code")
+            }
+            counts.append(max(len(buy_codes), len(sell_codes)))
+
+        if len(counts) < min_len:
+            counts.extend([0] * (min_len - len(counts)))
+        return counts[:min_len]
+
+    def _load_benchmark_returns(self, aligned_dates: List[str]) -> List[float]:
+        """Load benchmark daily returns aligned to next trading day (t -> t+1)."""
+        if not aligned_dates:
+            return []
+
+        default_returns = [0.0] * len(aligned_dates)
+        index_path = os.path.join(project_root, "data", "index.pq")
+        if not os.path.exists(index_path):
+            logger.warning("Benchmark file not found: %s", index_path)
+            return default_returns
+
+        try:
+            idx_df = pd.read_parquet(index_path)
+        except Exception as exc:
+            logger.warning("Failed to read benchmark file %s: %s", index_path, exc)
+            return default_returns
+
+        try:
+            if "trade_date" in idx_df.columns:
+                idx_df["trade_date"] = pd.to_datetime(idx_df["trade_date"], errors="coerce")
+                idx_df = idx_df.dropna(subset=["trade_date"]).set_index("trade_date")
+            else:
+                idx_df.index = pd.to_datetime(idx_df.index, errors="coerce")
+                idx_df = idx_df[~idx_df.index.isna()]
+
+            idx_df = idx_df.sort_index()
+
+            if "index_jsl" in idx_df.columns:
+                bench_ret = pd.to_numeric(idx_df["index_jsl"], errors="coerce")
+            elif "equity_jsl" in idx_df.columns:
+                bench_equity = pd.to_numeric(idx_df["equity_jsl"], errors="coerce")
+                bench_ret = bench_equity.pct_change()
+                logger.warning("index_jsl not found, fallback to equity_jsl pct_change().")
+            else:
+                logger.warning("Neither index_jsl nor equity_jsl found in %s", index_path)
+                return default_returns
+
+            bench_ret = bench_ret.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+            bench_ret.index = pd.to_datetime(bench_ret.index, errors="coerce")
+            bench_ret = bench_ret[~bench_ret.index.isna()]
+            bench_ret = bench_ret.groupby(bench_ret.index.normalize()).last()
+
+            aligned_idx = pd.to_datetime(aligned_dates, errors="coerce")
+            strategy_dates = pd.to_datetime(getattr(self, "dates", []), errors="coerce")
+            next_trade_map: Dict[pd.Timestamp, pd.Timestamp] = {}
+            for i in range(len(strategy_dates) - 1):
+                cur = strategy_dates[i]
+                nxt = strategy_dates[i + 1]
+                if pd.isna(cur) or pd.isna(nxt):
+                    continue
+                next_trade_map[cur.normalize()] = nxt.normalize()
+
+            bench_index = bench_ret.index
+            aligned_returns: List[float] = []
+            missing_count = 0
+            for dt in aligned_idx:
+                if pd.isna(dt):
+                    aligned_returns.append(0.0)
+                    missing_count += 1
+                    continue
+
+                d0 = dt.normalize()
+                target_dt = next_trade_map.get(d0)
+                if target_dt is None:
+                    pos = bench_index.searchsorted(d0, side="right")
+                    if pos < len(bench_index):
+                        target_dt = bench_index[pos]
+
+                if target_dt is None:
+                    aligned_returns.append(0.0)
+                    missing_count += 1
+                    continue
+
+                v = bench_ret.get(target_dt, np.nan)
+                if pd.isna(v):
+                    aligned_returns.append(0.0)
+                    missing_count += 1
+                else:
+                    aligned_returns.append(float(v))
+
+            if missing_count > 0:
+                logger.warning(
+                    "Benchmark alignment has %d missing dates (filled with 0.0).",
+                    missing_count,
+                )
+            return aligned_returns
+        except Exception as exc:
+            logger.warning("Failed to align benchmark returns: %s", exc)
+            return default_returns
     
     def generate_report(self, mae, max_abs_error, correlation, sim_cum_ret, backtest_cum_ret):
         """Generate verification report markdown."""
@@ -926,6 +1342,7 @@ class StrategyVerifier:
             f.write(f"- TOP_K: {self.top_k}\n")
             f.write(f"- FEE_RATE: {self.fee_rate} (single-sided)\n")
             f.write(f"- TAKE_PROFIT_RATIO: {self.take_profit_ratio}\n")
+            f.write(f"- VERIFY_CASH_AWARE: {self.verify_cash_aware}\n")
             f.write(f"- INITIAL_CASH: {self.initial_cash}\n")
             f.write(f"- FORMULA_SOURCE: {self.formula_source}\n\n")
 
@@ -946,6 +1363,13 @@ class StrategyVerifier:
             f.write(f"| Return MAE | {mae:.6f} | < 1e-4 | {'PASS' if mae < 1e-4 else 'FAIL'} |\n")
             f.write(f"| Max Abs Error | {max_abs_error:.6f} | < 1e-3 | {'PASS' if max_abs_error < 1e-3 else 'FAIL'} |\n")
             f.write(f"| Correlation | {correlation:.6f} | > 0.99 | {'PASS' if correlation > 0.99 else 'FAIL'} |\n\n")
+
+            if self.visual_outputs:
+                f.write("## Visualization Outputs\n\n")
+                for name, path in self.visual_outputs.items():
+                    rel_path = os.path.relpath(path, project_root)
+                    f.write(f"- **{name}**: `{rel_path}`\n")
+                f.write("\n")
             
             f.write("## Conclusion\n\n")
             if mae < 1e-4 and correlation > 0.99:
@@ -954,6 +1378,425 @@ class StrategyVerifier:
                 f.write("WARNING: Alignment gap remains. Review TP handling, lot rounding and transaction cost path dependency.\n")
         
         logger.info(f"Saved report to: {report_path}")
+
+
+def _compute_return_metrics(daily_returns: List[float]) -> Dict[str, float]:
+    """Compute cumulative/annualized/sharpe/max-drawdown metrics."""
+    arr = np.array(daily_returns, dtype=float)
+    if arr.size == 0:
+        return {
+            "cum_return": 0.0,
+            "annualized_return": 0.0,
+            "sharpe": 0.0,
+            "max_drawdown": 0.0,
+            "trading_days": 0.0,
+        }
+
+    nav = np.cumprod(1.0 + arr)
+    cum_return = float(nav[-1] - 1.0)
+    annualized_return = float((1.0 + cum_return) ** (252.0 / arr.size) - 1.0)
+    sharpe = float(arr.mean() / (arr.std() + 1e-9) * np.sqrt(252.0))
+    peak = np.maximum.accumulate(nav)
+    drawdown = nav / (peak + 1e-12) - 1.0
+    max_drawdown = float(abs(drawdown.min()))
+    return {
+        "cum_return": cum_return,
+        "annualized_return": annualized_return,
+        "sharpe": sharpe,
+        "max_drawdown": max_drawdown,
+        "trading_days": float(arr.size),
+    }
+
+
+def _combine_strategy_trades(trades_by_strategy: Dict[str, List[Dict]]) -> Dict[str, List[Dict]]:
+    """Merge per-strategy daily trades by date (simple concatenation)."""
+    date_map: Dict[str, Dict] = {}
+    rebalance_count_map: Dict[str, int] = {}
+
+    for sid, daily_trades in trades_by_strategy.items():
+        for rec in daily_trades:
+            date = rec.get("date")
+            if not date:
+                continue
+            if date not in date_map:
+                date_map[date] = {
+                    "date": date,
+                    "tp_sells": [],
+                    "buys": [],
+                    "sells": [],
+                    "tx_fee_tp": 0.0,
+                    "tx_fee_rebalance": 0.0,
+                    "tx_fee_total": 0.0,
+                }
+
+            buy_codes = set()
+            sell_codes = set()
+            for b in rec.get("buys", []):
+                b2 = dict(b)
+                b2["strategy_id"] = sid
+                date_map[date]["buys"].append(b2)
+                code = b2.get("code")
+                if code:
+                    buy_codes.add(code)
+            for s in rec.get("sells", []):
+                s2 = dict(s)
+                s2["strategy_id"] = sid
+                date_map[date]["sells"].append(s2)
+                code = s2.get("code")
+                if code:
+                    sell_codes.add(code)
+            for t in rec.get("tp_sells", []):
+                t2 = dict(t)
+                t2["strategy_id"] = sid
+                date_map[date]["tp_sells"].append(t2)
+
+            date_map[date]["tx_fee_tp"] += float(rec.get("tx_fee_tp", 0.0) or 0.0)
+            date_map[date]["tx_fee_rebalance"] += float(rec.get("tx_fee_rebalance", 0.0) or 0.0)
+            date_map[date]["tx_fee_total"] += float(rec.get("tx_fee_total", 0.0) or 0.0)
+
+            rebalance_count_map[date] = rebalance_count_map.get(date, 0) + max(
+                len(buy_codes), len(sell_codes)
+            )
+
+    merged = [date_map[d] for d in sorted(date_map.keys())]
+    return {"daily_trades": merged, "rebalance_count_map": rebalance_count_map}
+
+
+def _combine_strategy_holdings(holdings_by_strategy: Dict[str, List[Dict]]) -> List[Dict]:
+    """Merge per-strategy daily holdings by date (simple additive merge)."""
+    date_map: Dict[str, Dict] = {}
+    for sid, daily_holdings in holdings_by_strategy.items():
+        for rec in daily_holdings:
+            date = rec.get("date")
+            if not date:
+                continue
+            if date not in date_map:
+                date_map[date] = {
+                    "date": date,
+                    "holdings": {},
+                    "cash": 0.0,
+                    "equity": 0.0,
+                }
+
+            date_map[date]["cash"] += float(rec.get("cash", 0.0) or 0.0)
+            date_map[date]["equity"] += float(rec.get("equity", 0.0) or 0.0)
+
+            for code, item in (rec.get("holdings", {}) or {}).items():
+                if code not in date_map[date]["holdings"]:
+                    base = dict(item) if isinstance(item, dict) else {}
+                    base["strategy_ids"] = [sid]
+                    date_map[date]["holdings"][code] = base
+                else:
+                    existing = date_map[date]["holdings"][code]
+                    existing["shares"] = float(existing.get("shares", 0.0) or 0.0) + float(
+                        (item or {}).get("shares", 0.0) or 0.0
+                    )
+                    existing["market_value"] = float(
+                        existing.get("market_value", 0.0) or 0.0
+                    ) + float((item or {}).get("market_value", 0.0) or 0.0)
+                    existing.setdefault("strategy_ids", []).append(sid)
+
+    return [date_map[d] for d in sorted(date_map.keys())]
+
+
+def _build_daily_holding_code_map(daily_holdings: List[Dict]) -> Dict[str, set]:
+    """Build date -> holding code set map from daily holdings artifact."""
+    code_map: Dict[str, set] = {}
+    for rec in daily_holdings:
+        date = rec.get("date")
+        if not date:
+            continue
+        holdings = rec.get("holdings", {}) or {}
+        if isinstance(holdings, dict):
+            codes = {str(code) for code in holdings.keys() if code}
+        else:
+            codes = set()
+        code_map[str(date)] = codes
+    return code_map
+
+
+def _build_multi_strategy_summary_rows(
+    merged_returns_df: pd.DataFrame,
+    valid_runs: List[Dict],
+    holdings_by_strategy: Dict[str, List[Dict]],
+) -> List[Tuple[str, float]]:
+    """Build extra summary metrics for multi-strategy combined portfolio."""
+    extra_rows: List[Tuple[str, float]] = []
+    if merged_returns_df.empty or len(valid_runs) < 2:
+        return extra_rows
+
+    sid_to_col: Dict[str, str] = {}
+    for run in valid_runs:
+        sid = str(run.get("strategy_id"))
+        sid_key = sid.replace("-", "_")
+        col = f"Sim_Return__{sid_key}"
+        if col in merged_returns_df.columns:
+            sid_to_col[sid] = col
+
+    strategy_ids = [str(r.get("strategy_id")) for r in valid_runs if str(r.get("strategy_id")) in sid_to_col]
+    if len(strategy_ids) < 2:
+        return extra_rows
+
+    n_days = len(merged_returns_df)
+    for sid in strategy_ids:
+        arr = (
+            pd.to_numeric(merged_returns_df[sid_to_col[sid]], errors="coerce")
+            .fillna(0.0)
+            .to_numpy(dtype=float)
+        )
+        if arr.size == 0:
+            ann = 0.0
+            sharpe = 0.0
+        else:
+            total_ret = float(np.prod(1.0 + arr) - 1.0)
+            ann = float((1.0 + total_ret) ** (252.0 / max(n_days, 1)) - 1.0)
+            sharpe = float(arr.mean() / (arr.std() + 1e-9) * np.sqrt(252.0))
+        extra_rows.append((f"Component {sid} Annualized Return", ann))
+        extra_rows.append((f"Component {sid} Sharpe Ratio", sharpe))
+
+    corr_values: List[float] = []
+    for sid_a, sid_b in combinations(strategy_ids, 2):
+        a = (
+            pd.to_numeric(merged_returns_df[sid_to_col[sid_a]], errors="coerce")
+            .fillna(0.0)
+            .to_numpy(dtype=float)
+        )
+        b = (
+            pd.to_numeric(merged_returns_df[sid_to_col[sid_b]], errors="coerce")
+            .fillna(0.0)
+            .to_numpy(dtype=float)
+        )
+        if a.size >= 2 and b.size >= 2:
+            corr = float(np.corrcoef(a, b)[0, 1])
+        else:
+            corr = float("nan")
+        extra_rows.append((f"Pair Return Corr [{sid_a} vs {sid_b}]", corr))
+        if np.isfinite(corr):
+            corr_values.append(corr)
+    if corr_values:
+        extra_rows.append(("Avg Pair Return Corr", float(np.mean(corr_values))))
+
+    holding_map_by_sid = {
+        sid: _build_daily_holding_code_map(holdings_by_strategy.get(sid, []))
+        for sid in strategy_ids
+    }
+    overlap_values: List[float] = []
+    for sid_a, sid_b in combinations(strategy_ids, 2):
+        map_a = holding_map_by_sid.get(sid_a, {})
+        map_b = holding_map_by_sid.get(sid_b, {})
+        all_dates = sorted(set(map_a.keys()) | set(map_b.keys()))
+        pair_daily_overlap: List[float] = []
+        for d in all_dates:
+            a_set = map_a.get(d, set())
+            b_set = map_b.get(d, set())
+            union = a_set | b_set
+            if not union:
+                continue
+            pair_daily_overlap.append(len(a_set & b_set) / float(len(union)))
+        overlap = float(np.mean(pair_daily_overlap)) if pair_daily_overlap else float("nan")
+        extra_rows.append((f"Pair Holding Overlap [{sid_a} vs {sid_b}]", overlap))
+        if np.isfinite(overlap):
+            overlap_values.append(overlap)
+    if overlap_values:
+        extra_rows.append(("Avg Pair Holding Overlap", float(np.mean(overlap_values))))
+
+    return extra_rows
+
+
+def generate_multi_strategy_artifacts(
+    run_infos: List[Dict],
+    artifacts_dir: str,
+    start_date: str,
+    end_date: Optional[str],
+) -> Dict[str, str]:
+    """Build merged portfolio artifacts from multiple single-strategy outputs."""
+    suffix_end = end_date or "end"
+    combo_suffix = f"_multi_combo_{start_date}_{suffix_end}"
+
+    valid_runs: List[Dict] = []
+    return_frames: List[pd.DataFrame] = []
+    trades_by_strategy: Dict[str, List[Dict]] = {}
+    holdings_by_strategy: Dict[str, List[Dict]] = {}
+
+    for info in run_infos:
+        sid = info.get("strategy_id")
+        suffix = info.get("suffix")
+        if not sid or not suffix:
+            continue
+        returns_path = os.path.join(artifacts_dir, f"daily_returns{suffix}.csv")
+        trades_path = os.path.join(artifacts_dir, f"daily_trades{suffix}.json")
+        holdings_path = os.path.join(artifacts_dir, f"daily_holdings{suffix}.json")
+        if not os.path.exists(returns_path):
+            logger.warning("Skip strategy %s: missing returns artifact %s", sid, returns_path)
+            continue
+        if not os.path.exists(trades_path):
+            logger.warning("Skip strategy %s: missing trades artifact %s", sid, trades_path)
+            continue
+        if not os.path.exists(holdings_path):
+            logger.warning("Skip strategy %s: missing holdings artifact %s", sid, holdings_path)
+            continue
+
+        df = pd.read_csv(returns_path)
+        required = {"Date", "Sim_Return", "Backtest_Return"}
+        if not required.issubset(set(df.columns)):
+            logger.warning("Skip strategy %s: returns columns missing in %s", sid, returns_path)
+            continue
+
+        sid_key = str(sid).replace("-", "_")
+        keep_cols = ["Date", "Sim_Return", "Backtest_Return"]
+        if "Benchmark_Return" in df.columns:
+            keep_cols.append("Benchmark_Return")
+        sdf = df[keep_cols].copy()
+        rename_map = {
+            "Sim_Return": f"Sim_Return__{sid_key}",
+            "Backtest_Return": f"Backtest_Return__{sid_key}",
+        }
+        if "Benchmark_Return" in sdf.columns:
+            rename_map["Benchmark_Return"] = f"Benchmark_Return__{sid_key}"
+        sdf = sdf.rename(columns=rename_map)
+        return_frames.append(sdf)
+
+        with open(trades_path, "r", encoding="utf-8") as f:
+            trades_by_strategy[str(sid)] = json.load(f)
+        with open(holdings_path, "r", encoding="utf-8") as f:
+            holdings_by_strategy[str(sid)] = json.load(f)
+        valid_runs.append(info)
+
+    if len(valid_runs) < 2:
+        raise ValueError("Need at least two valid strategy outputs for multi-strategy combine.")
+
+    merged = return_frames[0]
+    for frame in return_frames[1:]:
+        merged = merged.merge(frame, on="Date", how="inner")
+    merged = merged.sort_values("Date").reset_index(drop=True)
+    if merged.empty:
+        raise ValueError("No overlapping dates across strategy return artifacts.")
+
+    sim_cols = [c for c in merged.columns if c.startswith("Sim_Return__")]
+    backtest_cols = [c for c in merged.columns if c.startswith("Backtest_Return__")]
+    benchmark_cols = [c for c in merged.columns if c.startswith("Benchmark_Return__")]
+    if not sim_cols or not backtest_cols:
+        raise ValueError("Missing merged return columns for multi-strategy combine.")
+
+    combined_df = pd.DataFrame({"Date": merged["Date"]})
+    combined_df["Sim_Return"] = merged[sim_cols].mean(axis=1)
+    combined_df["Backtest_Return"] = merged[backtest_cols].mean(axis=1)
+    if benchmark_cols:
+        combined_df["Benchmark_Return"] = merged[benchmark_cols].mean(axis=1)
+    else:
+        combined_df["Benchmark_Return"] = 0.0
+    combined_df["Diff"] = combined_df["Sim_Return"] - combined_df["Backtest_Return"]
+
+    total_initial_cash = sum(float(r.get("initial_cash", 0.0) or 0.0) for r in valid_runs)
+    if total_initial_cash <= 0:
+        total_initial_cash = 100000.0 * len(valid_runs)
+    combined_df["Sim_Equity"] = total_initial_cash * (1.0 + combined_df["Sim_Return"]).cumprod()
+
+    combine_trades_result = _combine_strategy_trades(trades_by_strategy)
+    combined_trades = combine_trades_result["daily_trades"]
+    rebalance_count_map = combine_trades_result["rebalance_count_map"]
+    combined_holdings = _combine_strategy_holdings(holdings_by_strategy)
+    aligned_rebalance_counts = [
+        int(rebalance_count_map.get(d, 0)) for d in combined_df["Date"].tolist()
+    ]
+
+    combo_ids = [str(r.get("strategy_id")) for r in valid_runs]
+    combo_top_k = sum(int(r.get("top_k", 0) or 0) for r in valid_runs)
+    combo_name = "multi_combo(" + ",".join(combo_ids) + ")"
+    extra_summary_rows = _build_multi_strategy_summary_rows(
+        merged_returns_df=merged,
+        valid_runs=valid_runs,
+        holdings_by_strategy=holdings_by_strategy,
+    )
+    visual_outputs = generate_verification_visuals(
+        compare_df=combined_df,
+        output_dir=artifacts_dir,
+        suffix=combo_suffix,
+        strategy_name=combo_name,
+        top_k=combo_top_k if combo_top_k > 0 else None,
+        rebalance_counts=aligned_rebalance_counts,
+        extra_summary_rows=extra_summary_rows,
+    )
+
+    returns_path = os.path.join(artifacts_dir, f"daily_returns{combo_suffix}.csv")
+    trades_path = os.path.join(artifacts_dir, f"daily_trades{combo_suffix}.json")
+    holdings_path = os.path.join(artifacts_dir, f"daily_holdings{combo_suffix}.json")
+    report_path = os.path.join(artifacts_dir, f"verification_report{combo_suffix}.md")
+
+    combined_df.to_csv(returns_path, index=False)
+    with open(trades_path, "w", encoding="utf-8") as f:
+        json.dump(combined_trades, f, indent=2, ensure_ascii=False)
+    with open(holdings_path, "w", encoding="utf-8") as f:
+        json.dump(combined_holdings, f, indent=2, ensure_ascii=False)
+
+    sim_metrics = _compute_return_metrics(combined_df["Sim_Return"].tolist())
+    backtest_metrics = _compute_return_metrics(combined_df["Backtest_Return"].tolist())
+    benchmark_metrics = _compute_return_metrics(combined_df["Benchmark_Return"].tolist())
+    mae = float(np.abs(combined_df["Diff"].to_numpy(dtype=float)).mean())
+    max_abs_error = float(np.abs(combined_df["Diff"].to_numpy(dtype=float)).max())
+    if len(combined_df) >= 2:
+        correlation = float(
+            np.corrcoef(
+                combined_df["Sim_Return"].to_numpy(dtype=float),
+                combined_df["Backtest_Return"].to_numpy(dtype=float),
+            )[0, 1]
+        )
+    else:
+        correlation = float("nan")
+
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("# Multi-Strategy Verification Report\n\n")
+        f.write(f"**Generated At**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"**Date Range**: {start_date} to {suffix_end}\n\n")
+        f.write("## Combined Strategies\n\n")
+        for r in valid_runs:
+            f.write(
+                f"- `{r.get('strategy_id')}` | "
+                f"top_k={r.get('top_k')} | initial_cash={r.get('initial_cash')}\n"
+            )
+        f.write("\n")
+
+        f.write("## Combined Performance\n\n")
+        f.write(f"- **Cumulative Return**: {sim_metrics['cum_return']:.4%}\n")
+        f.write(f"- **Annualized Return**: {sim_metrics['annualized_return']:.4%}\n")
+        f.write(f"- **Sharpe Ratio**: {sim_metrics['sharpe']:.4f}\n")
+        f.write(f"- **Max Drawdown**: {sim_metrics['max_drawdown']:.4%}\n")
+        f.write(f"- **Benchmark Cumulative Return**: {benchmark_metrics['cum_return']:.4%}\n")
+        f.write(
+            f"- **Excess Return vs Benchmark**: "
+            f"{(sim_metrics['cum_return'] - benchmark_metrics['cum_return']):.4%}\n"
+        )
+        f.write("\n")
+
+        f.write("## Consistency Metrics (Combined Sim vs Combined Backtest)\n\n")
+        f.write("| Metric | Value |\n")
+        f.write("|:---|:---|\n")
+        f.write(f"| Return MAE | {mae:.6f} |\n")
+        f.write(f"| Max Abs Error | {max_abs_error:.6f} |\n")
+        f.write(f"| Correlation | {correlation:.6f} |\n\n")
+
+        f.write("## Objective Check (Drawdown / Sharpe)\n\n")
+        f.write(
+            "Use this combined report and visualization to compare whether "
+            "portfolio combination lowers drawdown and improves Sharpe.\n\n"
+        )
+
+        f.write("## Artifacts\n\n")
+        f.write(f"- `daily_returns`: `{os.path.relpath(returns_path, project_root)}`\n")
+        f.write(f"- `daily_trades`: `{os.path.relpath(trades_path, project_root)}`\n")
+        f.write(f"- `daily_holdings`: `{os.path.relpath(holdings_path, project_root)}`\n")
+        f.write(f"- `verification_report`: `{os.path.relpath(report_path, project_root)}`\n")
+        for k, v in visual_outputs.items():
+            f.write(f"- `{k}`: `{os.path.relpath(v, project_root)}`\n")
+        f.write("\n")
+
+    return {
+        "daily_returns_csv": returns_path,
+        "daily_trades_json": trades_path,
+        "daily_holdings_json": holdings_path,
+        "verification_report_md": report_path,
+        **visual_outputs,
+    }
 
 
 if __name__ == "__main__":
@@ -984,10 +1827,23 @@ if __name__ == "__main__":
                         help='initial cash override; default uses strategy config initial_capital')
     parser.add_argument('--take-profit', type=float, default=None,
                         help='take profit ratio override, e.g. 0.06 means +6%%')
+    parser.add_argument(
+        '--verify-cash-aware',
+        dest='verify_cash_aware',
+        action='store_true',
+        default=True,
+        help='enable cash-aware buy trimming in verify simulation (default: enabled)'
+    )
+    parser.add_argument(
+        '--verify-no-cash-aware',
+        dest='verify_cash_aware',
+        action='store_false',
+        help='disable cash-aware buy trimming in verify simulation'
+    )
     
     args = parser.parse_args()
 
-    def _run_one(selected_strategy_id: Optional[str]) -> bool:
+    def _run_one(selected_strategy_id: Optional[str]) -> Dict:
         verifier = StrategyVerifier(
             start_date=args.start,
             end_date=args.end,
@@ -998,11 +1854,20 @@ if __name__ == "__main__":
             top_k=args.top_k,
             fee_rate=args.fee_rate,
             initial_cash=args.initial_cash,
+            verify_cash_aware=args.verify_cash_aware,
         )
         verifier.print_config_alignment()
         sim_records = verifier.run_simulation(initial_cash=args.initial_cash)
         backtest_result = verifier.run_backtest()
-        return verifier.compare_results(sim_records, backtest_result)
+        passed = verifier.compare_results(sim_records, backtest_result)
+        return {
+            "strategy_id": verifier.strategy_id or selected_strategy_id or "legacy",
+            "strategy_name": verifier.strategy_name or (selected_strategy_id or "legacy"),
+            "passed": passed,
+            "suffix": verifier._artifact_suffix(),
+            "top_k": int(verifier.top_k) if verifier.top_k is not None else 0,
+            "initial_cash": float(verifier.initial_cash) if verifier.initial_cash is not None else 0.0,
+        }
 
     # Legacy king mode always runs a single strategy.
     if args.king is not None:
@@ -1020,12 +1885,15 @@ if __name__ == "__main__":
                 raise ValueError(f"No enabled strategies in config: {config_path}")
             logger.info(f"No --strategy-id provided, verify all enabled strategies: {strategy_ids}")
 
+        run_infos: Dict[str, Dict] = {}
         results = {}
         for sid in strategy_ids:
             logger.info("\n" + "=" * 80)
             logger.info(f"VERIFY STRATEGY: {sid}")
             logger.info("=" * 80)
-            results[sid] = _run_one(sid)
+            run_info = _run_one(sid)
+            run_infos[sid] = run_info
+            results[sid] = bool(run_info.get("passed", False))
 
         if len(results) > 1:
             logger.info("\n" + "=" * 80)
@@ -1033,6 +1901,21 @@ if __name__ == "__main__":
             logger.info("=" * 80)
             for sid, ok in results.items():
                 logger.info(f"{sid}: {'PASS' if ok else 'FAIL'}")
+
+            try:
+                combo_outputs = generate_multi_strategy_artifacts(
+                    run_infos=list(run_infos.values()),
+                    artifacts_dir=os.path.join(current_dir, "artifacts"),
+                    start_date=args.start,
+                    end_date=args.end,
+                )
+                logger.info("\n" + "=" * 80)
+                logger.info("MULTI-STRATEGY COMBINED ARTIFACTS")
+                logger.info("=" * 80)
+                for key, path in combo_outputs.items():
+                    logger.info(f"{key}: {path}")
+            except Exception as exc:
+                logger.exception("Failed to build multi-strategy combined artifacts: %s", exc)
 
 
 
