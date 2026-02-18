@@ -61,4 +61,8 @@ nul
 
 # Runtime Artifacts
 execution/orders/
+execution/plans/
+execution/portfolio/
 tests/artifacts/
+ConsoleLog.txt
+model_core/ConsoleLog.txt
