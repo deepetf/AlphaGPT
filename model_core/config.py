@@ -202,6 +202,11 @@ class ModelConfig:
     def FEE_RATE(cls):
         return cls._get_conf().get('fee_rate', 0.0003)
 
+    @classproperty
+    def WARMUP_DAYS(cls):
+        """预热天数（自然日），加载训练起始日前的额外数据用于特征标准化预热"""
+        return cls._get_conf().get('warmup_days', 85)
+
     # 训练/评估比例
     TRAIN_RATIO = 0.7     # 70% 训练, 30% 验证
     
@@ -231,6 +236,8 @@ class ModelConfig:
         ('VOLATILITY_STK', 'volatility_stk', 'ffill'),
         ('PCT_CHG_STK', 'pct_chg_stk', 'zero'),
         ('PCT_CHG_5_STK', 'pct_chg_5_stk', 'zero'),
+        ('CLOSE_STK', 'close_stk', 'ffill'),
+        ('CONV_PRICE', 'conv_price', 'ffill'),
         ('PURE_VALUE', 'pure_value', 'ffill'),
         ('ALPHA_PCT_CHG_5', 'alpha_pct_chg_5', 'zero'),
         ('CAP_MV_RATE', 'cap_mv_rate', 'ffill'),

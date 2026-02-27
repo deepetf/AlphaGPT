@@ -221,6 +221,22 @@ class TestRealtimeDataProviderXtdata:
         mock_xtdata = MagicMock()
         mock_xtdata.download_history_data = MagicMock()
         mock_xtdata.subscribe_quote = MagicMock()
+        # Mock get_full_tick (新实现使用的接口)
+        mock_xtdata.get_full_tick = MagicMock(return_value={
+            '123001.SZ': {
+                'timetag': '2026-02-08 14:50:00',
+                'lastPrice': 101.5,
+                'open': 100.0,
+                'high': 102.0,
+                'low': 99.0,
+                'lastClose': 100.5,
+                'volume': 1000,
+                'amount': 100000,
+                'bidPrice': [101.4, 101.3],
+                'askPrice': [101.6, 101.7],
+            },
+        })
+        # Mock get_market_data_ex (备用 K 线接口)
         mock_xtdata.get_market_data_ex = MagicMock(return_value={
             '123001.SZ': pd.DataFrame({
                 'open': [100.0],
@@ -255,15 +271,26 @@ class TestRealtimeDataProviderXtdata:
         provider._xtdata.subscribe_quote.assert_called_once()
     
     def test_get_realtime_quotes(self, provider_with_mock_xtdata):
-        """测试实时行情获取"""
+        """测试实时行情获取 (基于 get_full_tick)"""
         provider = provider_with_mock_xtdata
         code_list = ['123001.SZ']
         
         result = provider.get_realtime_quotes(code_list)
         
+        # 验证调用了 get_full_tick 而非 get_market_data_ex
+        provider._xtdata.get_full_tick.assert_called_once_with(code_list)
+        
         assert len(result) == 1
         assert result.iloc[0]['code'] == '123001.SZ'
-        assert result.iloc[0]['close'] == 101.0
+        # lastPrice 映射为 close
+        assert result.iloc[0]['close'] == 101.5
+        assert result.iloc[0]['open'] == 100.0
+        assert result.iloc[0]['high'] == 102.0
+        # 验证 trade_date 从 timetag 正确解析
+        assert result.iloc[0]['trade_date'] == '2026-02-08'
+        # 验证下游所需的全部列都存在
+        for col in ['code', 'trade_date', 'open', 'high', 'low', 'close', 'vol', 'amount']:
+            assert col in result.columns, f"Missing column: {col}"
 
 
 if __name__ == "__main__":

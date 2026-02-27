@@ -204,7 +204,7 @@ def _worker_eval(formula):
 
 
 class AlphaEngine:
-    def __init__(self):
+    def __init__(self, data_start_date=None):
         print("Initializing AlphaEngine...")
         # 打印配置来源
         config_source = getattr(RobustConfig, '_config_path', 'default_config.yaml')
@@ -215,7 +215,9 @@ class AlphaEngine:
         # 1. 初始化并加载数据
         # 确保 engine 拥有唯一的数据加载器实例
         self.loader = CBDataLoader()
-        self.loader.load_data()
+        effective_data_start_date = data_start_date or "2022-08-01"
+        print(f"Data start date: {effective_data_start_date}")
+        self.loader.load_data(start_date=effective_data_start_date)
         
         # 2. 初始化模型
         self.model = AlphaGPT().to(ModelConfig.DEVICE)
@@ -874,6 +876,12 @@ if __name__ == "__main__":
         default=None,
         help='配置文件路径 (YAML 格式)，不指定则使用 default_config.yaml'
     )
+    parser.add_argument(
+        '--data-start-date',
+        type=str,
+        default=None,
+        help='data start date (YYYY-MM-DD), default=2022-08-01'
+    )
     args = parser.parse_args()
     
     # 加载配置 (必须在创建 AlphaEngine 之前)
@@ -890,5 +898,5 @@ if __name__ == "__main__":
         print("Using default config: default_config.yaml")
     
     # Windows 为了支持 ProcessPool，必须要有这个 protect
-    eng = AlphaEngine()
+    eng = AlphaEngine(data_start_date=args.data_start_date)
     eng.train()

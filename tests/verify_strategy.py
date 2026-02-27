@@ -163,7 +163,24 @@ class StrategyVerifier:
         # Load data
         logger.info("Loading data...")
         self.loader = CBDataLoader()
-        self.loader.load_data()
+        loader_start_date = start_date
+        try:
+            # Keep enough history before verify start for rolling features and warmup alignment.
+            loader_start_date = (
+                pd.to_datetime(start_date) - pd.Timedelta(days=200)
+            ).strftime("%Y-%m-%d")
+        except Exception:
+            logger.warning(
+                "Failed to derive loader start date from start=%s, fallback to start date.",
+                start_date,
+            )
+        logger.info(
+            "Verify loader start_date=%s (requested_start=%s, warmup_days=%d)",
+            loader_start_date,
+            start_date,
+            self.WARMUP_DAYS,
+        )
+        self.loader.load_data(start_date=loader_start_date)
         
         # Filter dates
         all_dates = self.loader.dates_list

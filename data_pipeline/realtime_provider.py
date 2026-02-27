@@ -90,24 +90,131 @@ class RealtimeDataProvider:
     
     def get_realtime_quotes(self, code_list: List[str], period: str = '1d') -> pd.DataFrame:
         """
-        浠?Mini QMT 鑾峰彇瀹炴椂琛屾儏 (open, high, close, vol)
-        
+        从 Mini QMT 获取实时行情快照 (盘中 Tick 级数据)
+
+        使用 xtdata.get_full_tick() 获取全推数据，字段映射:
+        - lastPrice → close  (最新成交价，盘中实时更新)
+        - open/high/low      (当日 OHLC)
+        - volume → vol       (当日成交量)
+        - amount             (当日成交额)
+        - lastClose → pre_close (昨收价)
+        - timetag → trade_date  (交易所时间戳)
+
         Args:
-            code_list: 鏍囩殑浠ｇ爜鍒楄〃
-            period: 鍛ㄦ湡
-            
+            code_list: 标的代码列表
+            period: 保留参数以兼容旧签名，实际不使用
+
         Returns:
-            DataFrame with columns: [code, open, high, low, close, vol, amount]
+            DataFrame 列: [code, trade_date, open, high, low, close, vol, amount]
+            与旧接口完全兼容，下游无需修改。
         """
         if self.xtdata is None:
             logger.warning("xtdata unavailable, returning empty DataFrame")
             return pd.DataFrame()
-        
-        # 鑾峰彇蹇収
+
+        if not code_list:
+            return pd.DataFrame()
+
+        # 获取全推 Tick 快照
+        data = self.xtdata.get_full_tick(code_list)
+
+        rows = []
+        for code in code_list:
+            tick = data.get(code, {})
+            if not tick:
+                continue
+
+            last_price = tick.get('lastPrice', 0)
+            # 跳过无有效价格的标的（可能未上市或已退市）
+            if last_price <= 0:
+                continue
+
+            # 解析交易所时间戳为日期
+            timetag = tick.get('timetag', '')
+            if isinstance(timetag, (int, float)) and timetag > 0:
+                # QMT timetag 通常是毫秒级时间戳
+                try:
+                    trade_date = pd.Timestamp(timetag, unit='ms').strftime('%Y-%m-%d')
+                except Exception:
+                    trade_date = datetime.now().strftime('%Y-%m-%d')
+            elif isinstance(timetag, str) and len(timetag) >= 10:
+                trade_date = datetime.strptime(timetag, "%Y%m%d %H:%M:%S").strftime("%Y-%m-%d")
+            else:
+                trade_date = datetime.now().strftime('%Y-%m-%d')
+
+            rows.append({
+                'code': code,
+                'trade_date': trade_date,
+                'open': float(tick.get('open', 0)),
+                'high': float(tick.get('high', 0)),
+                'low': float(tick.get('low', 0)),
+                'close': float(last_price),           # lastPrice → close
+                'vol': float(tick.get('volume', 0)),
+                'amount': float(tick.get('amount', 0)),
+            })
+
+        if not rows:
+            logger.warning("get_full_tick returned no valid ticks")
+            return pd.DataFrame()
+
+        df = pd.DataFrame(rows)
+        logger.info(
+            f"Realtime tick snapshot: {len(df)} symbols, "
+            f"trade_date={df['trade_date'].iloc[0]}"
+        )
+        return df
+
+    def get_realtime_quotes_kline(self, code_list: List[str], period: str = '1d') -> pd.DataFrame:
+        """
+        [备用] 基于 K 线的行情获取（旧实现，盘中返回的是上一交易日数据）。
+        仅在非交易时段或 get_full_tick 不可用时使用。
+
+        Args:
+            code_list: 标的代码列表
+            period: 周期
+
+        Returns:
+            DataFrame with columns: [code, trade_date, open, high, low, close, vol, amount]
+        """
+        if self.xtdata is None:
+            logger.warning("xtdata unavailable, returning empty DataFrame")
+            return pd.DataFrame()
+
         data = self.xtdata.get_market_data_ex([], code_list, period=period)
-        
-        # 杞崲涓虹粺涓€鏍煎紡
         return self._format_qmt_data(data, code_list)
+
+    def _format_qmt_data(self, data: Dict, code_list: List[str]) -> pd.DataFrame:
+        """
+        将 QMT get_market_data_ex 返回的数据格式化为统一 DataFrame
+
+        Args:
+            data: xtdata.get_market_data_ex 返回的字典
+            code_list: 标的代码列表
+
+        Returns:
+            DataFrame with columns: [code, trade_date, open, high, low, close, vol, amount]
+        """
+        rows = []
+        for code in code_list:
+            if code not in data:
+                continue
+            df = data[code]
+            if df is None or df.empty:
+                continue
+            # 取最后一行 (最新数据)
+            last_row = df.iloc[-1]
+            rows.append({
+                'code': code,
+                'trade_date': df.index[-1] if hasattr(df.index[-1], 'strftime') else str(df.index[-1]),
+                'open': float(last_row.get('open', 0)),
+                'high': float(last_row.get('high', 0)),
+                'low': float(last_row.get('low', 0)),
+                'close': float(last_row.get('close', 0)),
+                'vol': float(last_row.get('volume', 0)),
+                'amount': float(last_row.get('amount', 0)),
+            })
+        return pd.DataFrame(rows)
+
     def get_realtime_quotes_dummy(self, code_list: List[str], date: Optional[str] = None) -> pd.DataFrame:
         """
         Dummy 实时行情实现（联调占位）：
@@ -140,38 +247,6 @@ class RealtimeDataProvider:
 
         logger.info(f"Dummy realtime quotes loaded: trade_date={trade_date}, rows={len(df)}")
         return df
-    
-    def _format_qmt_data(self, data: Dict, code_list: List[str]) -> pd.DataFrame:
-        """
-        灏?QMT 杩斿洖鐨勬暟鎹牸寮忓寲涓虹粺涓€鐨?DataFrame
-        
-        Args:
-            data: xtdata.get_market_data_ex 杩斿洖鐨勫瓧鍏?
-            code_list: 鏍囩殑浠ｇ爜鍒楄〃
-            
-        Returns:
-            DataFrame with columns: [code, trade_date, open, high, low, close, vol, amount]
-        """
-        rows = []
-        for code in code_list:
-            if code not in data:
-                continue
-            df = data[code]
-            if df is None or df.empty:
-                continue
-            # 鍙栨渶鍚庝竴琛?(鏈€鏂版暟鎹?
-            last_row = df.iloc[-1]
-            rows.append({
-                'code': code,
-                'trade_date': df.index[-1] if hasattr(df.index[-1], 'strftime') else str(df.index[-1]),
-                'open': float(last_row.get('open', 0)),
-                'high': float(last_row.get('high', 0)),
-                'low': float(last_row.get('low', 0)),
-                'close': float(last_row.get('close', 0)),
-                'vol': float(last_row.get('volume', 0)),
-                'amount': float(last_row.get('amount', 0)),
-            })
-        return pd.DataFrame(rows)
     
     # =========================================================================
     # 鏈湴 SQL 鏁版嵁搴撴帴鍙?
@@ -232,6 +307,67 @@ class RealtimeDataProvider:
         
         logger.info(f"Loaded {len(df)} CB feature rows from SQL")
         return df
+
+    def merge_live_ohlc_into_cb_features(
+        self,
+        cb_features: pd.DataFrame,
+        realtime_quotes: pd.DataFrame,
+        target_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Merge realtime OHLC into SQL cb_features for live mode.
+
+        Rules:
+        - Merge by `code`, keep SQL universe unchanged.
+        - Only positive numeric realtime values override SQL values.
+        - If realtime date mismatches target/sql date, log warning but continue.
+        """
+        if cb_features is None or cb_features.empty:
+            return cb_features
+
+        merged = cb_features.copy()
+        if realtime_quotes is None or realtime_quotes.empty:
+            return merged
+
+        needed_cols = {"code", "open", "high", "low", "close"}
+        if not needed_cols.issubset(set(realtime_quotes.columns)):
+            missing = sorted(list(needed_cols.difference(set(realtime_quotes.columns))))
+            logger.warning(f"Realtime quotes missing required columns, skip OHLC override: {missing}")
+            return merged
+
+        if target_date and "trade_date" in realtime_quotes.columns and not realtime_quotes.empty:
+            raw_trade_date = str(realtime_quotes.iloc[0].get("trade_date", ""))
+            qmt_date = pd.to_datetime(raw_trade_date, errors="coerce")
+            qmt_date_str = qmt_date.strftime("%Y-%m-%d") if pd.notna(qmt_date) else raw_trade_date[:10]
+            if qmt_date_str != target_date:
+                logger.warning(
+                    f"Realtime date mismatch: target={target_date}, realtime={qmt_date_str}"
+                )
+
+        realtime = realtime_quotes[["code", "open", "high", "low", "close"]].copy()
+        for col in ["open", "high", "low", "close"]:
+            realtime[col] = pd.to_numeric(realtime[col], errors="coerce")
+
+        merged = merged.merge(realtime, on="code", how="left", suffixes=("_sql", "_rt"))
+
+        stats = []
+        for col in ["open", "high", "low", "close"]:
+            rt_col = f"{col}_rt"
+            sql_col = f"{col}_sql"
+            if rt_col not in merged.columns:
+                continue
+
+            valid_rt = merged[rt_col].notna() & (merged[rt_col] > 0)
+            override_count = int(valid_rt.sum())
+            merged[col] = np.where(valid_rt, merged[rt_col], merged.get(sql_col))
+            merged.drop(columns=[rt_col, sql_col], inplace=True, errors="ignore")
+            stats.append(f"{col}={override_count}")
+
+        if stats:
+            logger.info(
+                f"Live OHLC override done: rows={len(merged)}, " + ", ".join(stats)
+            )
+        return merged
     
     def get_prev_close(self, date: str) -> Dict[str, float]:
         """

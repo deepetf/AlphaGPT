@@ -1752,3 +1752,803 @@
 {"step": 27, "stats": {"PASS": 792, "SIM_REJECT": 12, "METRIC_SHARPE": 142, "METRIC_FLIP": 60, "STRUCT_INVALID": 8, "LOW_VARIANCE": 10}, "reward_std": 5.361265659332275, "metric_fail_std": 3.0599048137664795, "timestamp": 1770440587.2977593}
 {"step": 28, "stats": {"PASS": 786, "METRIC_SHARPE": 146, "METRIC_FLIP": 64, "SIM_REJECT": 20, "LOW_VARIANCE": 6, "STRUCT_INVALID": 2}, "reward_std": 5.322784423828125, "metric_fail_std": 2.8130431175231934, "timestamp": 1770440728.1546156}
 {"step": 29, "stats": {"PASS": 814, "METRIC_SHARPE": 92, "LOW_VARIANCE": 12, "METRIC_FLIP": 74, "SIM_REJECT": 30, "STRUCT_INVALID": 2}, "reward_std": 5.220986843109131, "metric_fail_std": 3.8242135047912598, "timestamp": 1770440875.924882}
+{"step": 0, "stats": {"METRIC_SHARPE": 438, "PASS": 210, "METRIC_FLIP": 326, "STRUCT_INVALID": 50}, "reward_std": 6.49683141708374, "metric_fail_std": 5.765507698059082, "timestamp": 1770527141.040679}
+{"step": 1, "stats": {"METRIC_SHARPE": 418, "METRIC_FLIP": 306, "PASS": 228, "STRUCT_INVALID": 70, "LOW_VARIANCE": 2}, "reward_std": 7.266334056854248, "metric_fail_std": 6.314745903015137, "timestamp": 1770527166.25687}
+{"step": 2, "stats": {"METRIC_FLIP": 324, "PASS": 244, "METRIC_SHARPE": 402, "STRUCT_INVALID": 52, "LOW_VARIANCE": 2}, "reward_std": 7.058076858520508, "metric_fail_std": 5.6889777183532715, "timestamp": 1770527192.4364023}
+{"step": 3, "stats": {"METRIC_SHARPE": 334, "METRIC_FLIP": 340, "PASS": 314, "STRUCT_INVALID": 34, "LOW_VARIANCE": 2}, "reward_std": 7.9764556884765625, "metric_fail_std": 6.225730895996094, "timestamp": 1770527227.8790162}
+{"step": 4, "stats": {"METRIC_SHARPE": 334, "PASS": 346, "METRIC_FLIP": 324, "STRUCT_INVALID": 20}, "reward_std": 7.9817352294921875, "metric_fail_std": 5.984872341156006, "timestamp": 1770527253.4977074}
+{"step": 5, "stats": {"PASS": 372, "STRUCT_INVALID": 38, "METRIC_FLIP": 310, "METRIC_SHARPE": 302, "LOW_VARIANCE": 2}, "reward_std": 7.8563408851623535, "metric_fail_std": 5.591468811035156, "timestamp": 1770527277.6633596}
+{"step": 6, "stats": {"METRIC_SHARPE": 286, "PASS": 394, "METRIC_FLIP": 302, "STRUCT_INVALID": 40, "LOW_VARIANCE": 2}, "reward_std": 8.287432670593262, "metric_fail_std": 5.999058723449707, "timestamp": 1770527302.2189684}
+{"step": 7, "stats": {"PASS": 440, "METRIC_FLIP": 338, "METRIC_SHARPE": 220, "STRUCT_INVALID": 26}, "reward_std": 8.937272071838379, "metric_fail_std": 5.759918689727783, "timestamp": 1770527327.23707}
+{"step": 8, "stats": {"METRIC_FLIP": 308, "PASS": 470, "METRIC_SHARPE": 226, "STRUCT_INVALID": 20}, "reward_std": 9.23562240600586, "metric_fail_std": 6.082014560699463, "timestamp": 1770527352.2115989}
+{"step": 9, "stats": {"PASS": 526, "METRIC_FLIP": 282, "METRIC_SHARPE": 190, "STRUCT_INVALID": 24, "LOW_VARIANCE": 2}, "reward_std": 8.967854499816895, "metric_fail_std": 5.653381824493408, "timestamp": 1770527376.9852161}
+{"step": 10, "stats": {"PASS": 576, "METRIC_FLIP": 272, "METRIC_SHARPE": 152, "STRUCT_INVALID": 24}, "reward_std": 9.493281364440918, "metric_fail_std": 5.580891132354736, "timestamp": 1770527402.2016685}
+{"step": 11, "stats": {"METRIC_FLIP": 262, "PASS": 614, "METRIC_SHARPE": 136, "STRUCT_INVALID": 12}, "reward_std": 10.24692440032959, "metric_fail_std": 6.457705497741699, "timestamp": 1770527428.3556533}
+{"step": 12, "stats": {"METRIC_FLIP": 194, "PASS": 716, "METRIC_SHARPE": 92, "STRUCT_INVALID": 20, "LOW_VARIANCE": 2}, "reward_std": 9.996400833129883, "metric_fail_std": 6.116833209991455, "timestamp": 1770527454.3854136}
+{"step": 13, "stats": {"PASS": 699, "METRIC_FLIP": 206, "METRIC_SHARPE": 88, "STRUCT_INVALID": 30, "SIM_REPLACE": 1}, "reward_std": 9.957786560058594, "metric_fail_std": 5.392415523529053, "timestamp": 1770527480.6279192}
+{"step": 14, "stats": {"METRIC_SHARPE": 86, "PASS": 735, "METRIC_FLIP": 184, "STRUCT_INVALID": 18, "SIM_REJECT": 1}, "reward_std": 9.711241722106934, "metric_fail_std": 5.26846981048584, "timestamp": 1770527508.7166378}
+{"step": 15, "stats": {"METRIC_SHARPE": 80, "PASS": 756, "STRUCT_INVALID": 14, "METRIC_FLIP": 174}, "reward_std": 10.294893264770508, "metric_fail_std": 6.062277793884277, "timestamp": 1770527535.1666706}
+{"step": 16, "stats": {"PASS": 810, "METRIC_SHARPE": 64, "STRUCT_INVALID": 4, "METRIC_FLIP": 146}, "reward_std": 9.662442207336426, "metric_fail_std": 4.996896266937256, "timestamp": 1770527561.6811497}
+{"step": 17, "stats": {"PASS": 849, "METRIC_SHARPE": 32, "METRIC_FLIP": 134, "STRUCT_INVALID": 8, "SIM_REJECT": 1}, "reward_std": 9.400031089782715, "metric_fail_std": 5.206548690795898, "timestamp": 1770527587.91394}
+{"step": 18, "stats": {"PASS": 899, "METRIC_FLIP": 92, "METRIC_SHARPE": 32, "SIM_REJECT": 1}, "reward_std": 8.721796035766602, "metric_fail_std": 5.395388126373291, "timestamp": 1770527614.6390245}
+{"step": 19, "stats": {"PASS": 876, "METRIC_FLIP": 102, "STRUCT_INVALID": 10, "SIM_REJECT": 6, "METRIC_SHARPE": 28, "LOW_VARIANCE": 2}, "reward_std": 9.220096588134766, "metric_fail_std": 6.176904678344727, "timestamp": 1770527640.816712}
+{"step": 20, "stats": {"PASS": 907, "METRIC_FLIP": 76, "SIM_REJECT": 9, "METRIC_SHARPE": 24, "STRUCT_INVALID": 8}, "reward_std": 8.51291275024414, "metric_fail_std": 5.759500026702881, "timestamp": 1770527666.3003438}
+{"step": 21, "stats": {"PASS": 921, "METRIC_FLIP": 74, "METRIC_SHARPE": 16, "SIM_REJECT": 5, "STRUCT_INVALID": 6, "LOW_VARIANCE": 2}, "reward_std": 8.470537185668945, "metric_fail_std": 5.302804470062256, "timestamp": 1770527691.5025158}
+{"step": 22, "stats": {"LOW_VARIANCE": 2, "PASS": 920, "METRIC_SHARPE": 18, "METRIC_FLIP": 78, "STRUCT_INVALID": 2, "SIM_REJECT": 4}, "reward_std": 8.403044700622559, "metric_fail_std": 6.2307891845703125, "timestamp": 1770527716.6908257}
+{"step": 23, "stats": {"PASS": 944, "SIM_REJECT": 12, "METRIC_FLIP": 60, "METRIC_SHARPE": 8}, "reward_std": 7.75490140914917, "metric_fail_std": 5.340898036956787, "timestamp": 1770527741.7948167}
+{"step": 24, "stats": {"PASS": 917, "METRIC_FLIP": 64, "SIM_REJECT": 23, "LOW_VARIANCE": 6, "METRIC_SHARPE": 14}, "reward_std": 7.975969314575195, "metric_fail_std": 5.982936382293701, "timestamp": 1770527766.7492368}
+{"step": 25, "stats": {"PASS": 939, "METRIC_FLIP": 64, "SIM_REJECT": 7, "METRIC_SHARPE": 10, "STRUCT_INVALID": 4}, "reward_std": 7.817390441894531, "metric_fail_std": 5.302327632904053, "timestamp": 1770527791.3710358}
+{"step": 26, "stats": {"PASS": 971, "METRIC_SHARPE": 8, "METRIC_FLIP": 36, "SIM_REJECT": 7, "STRUCT_INVALID": 2}, "reward_std": 6.660006999969482, "metric_fail_std": 5.9707350730896, "timestamp": 1770527816.3843212}
+{"step": 27, "stats": {"PASS": 972, "METRIC_FLIP": 34, "METRIC_SHARPE": 10, "SIM_REJECT": 4, "LOW_VARIANCE": 4}, "reward_std": 6.199401378631592, "metric_fail_std": 5.391533374786377, "timestamp": 1770527840.9681299}
+{"step": 28, "stats": {"PASS": 954, "STRUCT_INVALID": 4, "METRIC_FLIP": 56, "SIM_REJECT": 8, "METRIC_SHARPE": 2}, "reward_std": 7.101800441741943, "metric_fail_std": 5.095846652984619, "timestamp": 1770527865.214854}
+{"step": 29, "stats": {"PASS": 961, "SIM_REJECT": 13, "METRIC_FLIP": 42, "LOW_VARIANCE": 4, "STRUCT_INVALID": 2, "METRIC_SHARPE": 2}, "reward_std": 6.751064777374268, "metric_fail_std": 5.319707870483398, "timestamp": 1770527888.9258265}
+{"step": 30, "stats": {"PASS": 988, "METRIC_FLIP": 26, "SIM_REJECT": 4, "LOW_VARIANCE": 2, "METRIC_SHARPE": 2, "STRUCT_INVALID": 2}, "reward_std": 5.33898401260376, "metric_fail_std": 3.6712424755096436, "timestamp": 1770527912.1374524}
+{"step": 31, "stats": {"PASS": 972, "METRIC_FLIP": 36, "SIM_REJECT": 6, "LOW_VARIANCE": 4, "METRIC_SHARPE": 2, "STRUCT_INVALID": 4}, "reward_std": 6.109274387359619, "metric_fail_std": 4.782082557678223, "timestamp": 1770527934.8123014}
+{"step": 32, "stats": {"PASS": 997, "METRIC_FLIP": 18, "SIM_REJECT": 5, "METRIC_SHARPE": 4}, "reward_std": 4.814092636108398, "metric_fail_std": 6.229288578033447, "timestamp": 1770527956.964121}
+{"step": 33, "stats": {"PASS": 993, "METRIC_SHARPE": 4, "METRIC_FLIP": 24, "SIM_REJECT": 3}, "reward_std": 5.246208190917969, "metric_fail_std": 4.858261585235596, "timestamp": 1770527979.2599099}
+{"step": 34, "stats": {"PASS": 973, "LOW_VARIANCE": 2, "SIM_REJECT": 5, "METRIC_FLIP": 34, "METRIC_SHARPE": 8, "STRUCT_INVALID": 2}, "reward_std": 5.915327548980713, "metric_fail_std": 4.796119213104248, "timestamp": 1770528001.2635686}
+{"step": 35, "stats": {"PASS": 985, "SIM_REJECT": 9, "METRIC_FLIP": 26, "STRUCT_INVALID": 2, "METRIC_SHARPE": 2}, "reward_std": 5.554795265197754, "metric_fail_std": 3.9266483783721924, "timestamp": 1770528022.2826343}
+{"step": 36, "stats": {"PASS": 996, "METRIC_FLIP": 20, "STRUCT_INVALID": 2, "LOW_VARIANCE": 2, "SIM_REJECT": 2, "METRIC_SHARPE": 2}, "reward_std": 4.784722328186035, "metric_fail_std": 5.253839015960693, "timestamp": 1770528043.0277631}
+{"step": 37, "stats": {"PASS": 999, "SIM_REJECT": 3, "METRIC_SHARPE": 8, "METRIC_FLIP": 12, "LOW_VARIANCE": 2}, "reward_std": 3.7536258697509766, "metric_fail_std": 3.816092014312744, "timestamp": 1770528063.1188078}
+{"step": 38, "stats": {"METRIC_SHARPE": 8, "PASS": 987, "SIM_REJECT": 9, "METRIC_FLIP": 18, "STRUCT_INVALID": 2}, "reward_std": 5.101202964782715, "metric_fail_std": 7.37570333480835, "timestamp": 1770528083.3424628}
+{"step": 39, "stats": {"PASS": 984, "METRIC_FLIP": 24, "STRUCT_INVALID": 6, "SIM_REJECT": 6, "METRIC_SHARPE": 2, "LOW_VARIANCE": 2}, "reward_std": 5.23396110534668, "metric_fail_std": 3.5784571170806885, "timestamp": 1770528103.6468813}
+{"step": 40, "stats": {"PASS": 996, "METRIC_FLIP": 20, "SIM_REJECT": 4, "STRUCT_INVALID": 4}, "reward_std": 4.968280792236328, "metric_fail_std": 3.588473320007324, "timestamp": 1770528122.1089442}
+{"step": 41, "stats": {"PASS": 1007, "METRIC_FLIP": 14, "SIM_REJECT": 3}, "reward_std": 3.7395615577697754, "metric_fail_std": 3.837503433227539, "timestamp": 1770528140.0308514}
+{"step": 42, "stats": {"PASS": 1013, "SIM_REJECT": 7, "LOW_VARIANCE": 2, "METRIC_SHARPE": 2}, "reward_std": 2.6317880153656006, "metric_fail_std": 0.0, "timestamp": 1770528157.083594}
+{"step": 43, "stats": {"PASS": 1004, "METRIC_FLIP": 14, "SIM_REJECT": 2, "METRIC_SHARPE": 2, "STRUCT_INVALID": 2}, "reward_std": 3.864196300506592, "metric_fail_std": 3.79740309715271, "timestamp": 1770528173.2213852}
+{"step": 44, "stats": {"PASS": 1005, "METRIC_FLIP": 12, "METRIC_SHARPE": 2, "SIM_REJECT": 5}, "reward_std": 4.077124118804932, "metric_fail_std": 5.571231842041016, "timestamp": 1770528189.9308884}
+{"step": 45, "stats": {"PASS": 1007, "METRIC_FLIP": 4, "LOW_VARIANCE": 4, "SIM_REJECT": 7, "METRIC_SHARPE": 2}, "reward_std": 3.3573966026306152, "metric_fail_std": 6.132812023162842, "timestamp": 1770528205.5204303}
+{"step": 46, "stats": {"PASS": 1000, "METRIC_FLIP": 16, "METRIC_SHARPE": 4, "SIM_REJECT": 4}, "reward_std": 4.006380558013916, "metric_fail_std": 4.391122341156006, "timestamp": 1770528219.840464}
+{"step": 47, "stats": {"PASS": 1016, "SIM_REJECT": 2, "METRIC_FLIP": 6}, "reward_std": 3.1039085388183594, "metric_fail_std": 2.4681756496429443, "timestamp": 1770528233.3404696}
+{"step": 48, "stats": {"PASS": 1017, "SIM_REJECT": 3, "METRIC_FLIP": 4}, "reward_std": 2.6649787425994873, "metric_fail_std": 0.0, "timestamp": 1770528247.2348766}
+{"step": 49, "stats": {"PASS": 1015, "SIM_REJECT": 1, "METRIC_SHARPE": 4, "METRIC_FLIP": 4}, "reward_std": 2.5673954486846924, "metric_fail_std": 1.5624252557754517, "timestamp": 1770528259.3992386}
+{"step": 50, "stats": {"PASS": 1017, "SIM_REJECT": 5, "METRIC_FLIP": 2}, "reward_std": 2.647629737854004, "metric_fail_std": 0.0, "timestamp": 1770528271.2920213}
+{"step": 51, "stats": {"PASS": 1020, "SIM_REJECT": 2, "METRIC_FLIP": 2}, "reward_std": 1.9514811038970947, "metric_fail_std": 0.0, "timestamp": 1770528283.0644112}
+{"step": 52, "stats": {"PASS": 1007, "METRIC_FLIP": 12, "SIM_REJECT": 3, "METRIC_SHARPE": 2}, "reward_std": 3.4991118907928467, "metric_fail_std": 4.811079502105713, "timestamp": 1770528293.382842}
+{"step": 53, "stats": {"PASS": 1019, "METRIC_FLIP": 4, "SIM_REJECT": 1}, "reward_std": 2.280043125152588, "metric_fail_std": 0.0, "timestamp": 1770528303.8399627}
+{"step": 54, "stats": {"PASS": 1016, "METRIC_SHARPE": 2, "LOW_VARIANCE": 2, "METRIC_FLIP": 4}, "reward_std": 2.514573812484741, "metric_fail_std": 5.4538164138793945, "timestamp": 1770528313.447246}
+{"step": 55, "stats": {"PASS": 1021, "SIM_REJECT": 3}, "reward_std": 1.7048213481903076, "metric_fail_std": 0.0, "timestamp": 1770528322.1457684}
+{"step": 56, "stats": {"PASS": 1013, "METRIC_FLIP": 8, "METRIC_SHARPE": 2, "SIM_REJECT": 1}, "reward_std": 2.7172656059265137, "metric_fail_std": 4.970468997955322, "timestamp": 1770528330.1606803}
+{"step": 57, "stats": {"PASS": 1015, "SIM_REJECT": 5, "METRIC_FLIP": 2, "METRIC_SHARPE": 2}, "reward_std": 2.374579668045044, "metric_fail_std": 7.442661285400391, "timestamp": 1770528338.499983}
+{"step": 58, "stats": {"PASS": 1024}, "reward_std": 1.3488337993621826, "metric_fail_std": 0.0, "timestamp": 1770528345.2451632}
+{"step": 59, "stats": {"PASS": 1020, "SIM_REJECT": 2, "METRIC_FLIP": 2}, "reward_std": 2.174447536468506, "metric_fail_std": 0.0, "timestamp": 1770528352.2226145}
+{"step": 60, "stats": {"PASS": 1018, "METRIC_FLIP": 4, "SIM_REJECT": 2}, "reward_std": 2.414334535598755, "metric_fail_std": 3.5508813858032227, "timestamp": 1770528359.5681791}
+{"step": 61, "stats": {"PASS": 1016, "METRIC_FLIP": 4, "SIM_REJECT": 4}, "reward_std": 2.310189962387085, "metric_fail_std": 3.5233190059661865, "timestamp": 1770528366.6651917}
+{"step": 62, "stats": {"PASS": 1017, "METRIC_FLIP": 4, "SIM_REJECT": 3}, "reward_std": 2.4785377979278564, "metric_fail_std": 3.5751655101776123, "timestamp": 1770528374.1603663}
+{"step": 63, "stats": {"PASS": 1012, "METRIC_FLIP": 2, "SIM_REJECT": 10}, "reward_std": 3.0746588706970215, "metric_fail_std": 0.0, "timestamp": 1770528380.9741843}
+{"step": 64, "stats": {"PASS": 1013, "SIM_REJECT": 9, "METRIC_FLIP": 2}, "reward_std": 2.697885036468506, "metric_fail_std": 0.0, "timestamp": 1770528388.229653}
+{"step": 65, "stats": {"PASS": 1012, "METRIC_FLIP": 6, "SIM_REJECT": 6}, "reward_std": 3.009354591369629, "metric_fail_std": 4.994060516357422, "timestamp": 1770528396.1248894}
+{"step": 66, "stats": {"PASS": 1014, "SIM_REJECT": 10}, "reward_std": 2.366278886795044, "metric_fail_std": 0.0, "timestamp": 1770528403.4189079}
+{"step": 67, "stats": {"PASS": 1016, "SIM_REJECT": 8}, "reward_std": 2.4191746711730957, "metric_fail_std": 0.0, "timestamp": 1770528410.230506}
+{"step": 68, "stats": {"PASS": 1019, "SIM_REJECT": 5}, "reward_std": 2.037787914276123, "metric_fail_std": 0.0, "timestamp": 1770528416.8697467}
+{"step": 69, "stats": {"PASS": 1019, "SIM_REJECT": 5}, "reward_std": 1.785866379737854, "metric_fail_std": 0.0, "timestamp": 1770528421.9336839}
+{"step": 70, "stats": {"PASS": 1020, "METRIC_FLIP": 2, "METRIC_SHARPE": 2}, "reward_std": 1.5790928602218628, "metric_fail_std": 4.341650009155273, "timestamp": 1770528426.430456}
+{"step": 71, "stats": {"PASS": 1024}, "reward_std": 0.43498939275741577, "metric_fail_std": 0.0, "timestamp": 1770528429.8260174}
+{"step": 72, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 1.1400359869003296, "metric_fail_std": 0.0, "timestamp": 1770528433.9126046}
+{"step": 73, "stats": {"PASS": 1015, "METRIC_FLIP": 6, "LOW_VARIANCE": 2, "SIM_REJECT": 1}, "reward_std": 2.4787635803222656, "metric_fail_std": 3.7327651977539062, "timestamp": 1770528436.8184028}
+{"step": 74, "stats": {"PASS": 1020, "SIM_REJECT": 2, "METRIC_FLIP": 2}, "reward_std": 1.7377625703811646, "metric_fail_std": 0.0, "timestamp": 1770528440.031292}
+{"step": 75, "stats": {"PASS": 1021, "SIM_REJECT": 1, "LOW_VARIANCE": 2}, "reward_std": 1.500079870223999, "metric_fail_std": 0.0, "timestamp": 1770528442.8589878}
+{"step": 76, "stats": {"PASS": 1022, "METRIC_SHARPE": 2}, "reward_std": 1.070922613143921, "metric_fail_std": 0.0, "timestamp": 1770528446.0452485}
+{"step": 77, "stats": {"PASS": 1018, "METRIC_SHARPE": 2, "METRIC_FLIP": 4}, "reward_std": 2.2075862884521484, "metric_fail_std": 5.749464511871338, "timestamp": 1770528449.305728}
+{"step": 78, "stats": {"PASS": 1024}, "reward_std": 0.42906343936920166, "metric_fail_std": 0.0, "timestamp": 1770528453.1214204}
+{"step": 79, "stats": {"PASS": 1022, "SIM_REJECT": 2}, "reward_std": 1.0888862609863281, "metric_fail_std": 0.0, "timestamp": 1770528456.1944046}
+{"step": 80, "stats": {"PASS": 1021, "METRIC_FLIP": 2, "SIM_REJECT": 1}, "reward_std": 1.2524210214614868, "metric_fail_std": 0.0, "timestamp": 1770528459.56968}
+{"step": 81, "stats": {"PASS": 1021, "SIM_REJECT": 3}, "reward_std": 1.304913878440857, "metric_fail_std": 0.0, "timestamp": 1770528464.009511}
+{"step": 82, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 1.1184861660003662, "metric_fail_std": 0.0, "timestamp": 1770528468.2454793}
+{"step": 83, "stats": {"PASS": 1024}, "reward_std": 0.5597225427627563, "metric_fail_std": 0.0, "timestamp": 1770528472.799258}
+{"step": 84, "stats": {"PASS": 1019, "METRIC_SHARPE": 2, "METRIC_FLIP": 2, "SIM_REJECT": 1}, "reward_std": 1.745562195777893, "metric_fail_std": 2.8381128311157227, "timestamp": 1770528477.1476047}
+{"step": 85, "stats": {"PASS": 1020, "SIM_REJECT": 2, "METRIC_FLIP": 2}, "reward_std": 1.4002406597137451, "metric_fail_std": 0.0, "timestamp": 1770528482.5670235}
+{"step": 86, "stats": {"PASS": 1021, "SIM_REJECT": 1, "METRIC_FLIP": 2}, "reward_std": 1.6070488691329956, "metric_fail_std": 0.0, "timestamp": 1770528488.2167766}
+{"step": 87, "stats": {"PASS": 1020, "SIM_REJECT": 4}, "reward_std": 1.4821516275405884, "metric_fail_std": 0.0, "timestamp": 1770528492.8165135}
+{"step": 88, "stats": {"PASS": 1020, "SIM_REJECT": 4}, "reward_std": 1.4710893630981445, "metric_fail_std": 0.0, "timestamp": 1770528497.686722}
+{"step": 89, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7355503439903259, "metric_fail_std": 0.0, "timestamp": 1770528501.1934907}
+{"step": 90, "stats": {"PASS": 1024}, "reward_std": 0.410936564207077, "metric_fail_std": 0.0, "timestamp": 1770528504.453655}
+{"step": 91, "stats": {"PASS": 1024}, "reward_std": 0.857617199420929, "metric_fail_std": 0.0, "timestamp": 1770528507.8440895}
+{"step": 92, "stats": {"PASS": 1024}, "reward_std": 0.3699573576450348, "metric_fail_std": 0.0, "timestamp": 1770528510.9006903}
+{"step": 93, "stats": {"PASS": 1024}, "reward_std": 0.795295774936676, "metric_fail_std": 0.0, "timestamp": 1770528513.4484289}
+{"step": 94, "stats": {"PASS": 1024}, "reward_std": 0.4234186112880707, "metric_fail_std": 0.0, "timestamp": 1770528516.1899893}
+{"step": 95, "stats": {"PASS": 1024}, "reward_std": 0.7523329257965088, "metric_fail_std": 0.0, "timestamp": 1770528519.1979134}
+{"step": 96, "stats": {"PASS": 1024}, "reward_std": 0.1368878334760666, "metric_fail_std": 0.0, "timestamp": 1770528521.4609017}
+{"step": 97, "stats": {"PASS": 1024}, "reward_std": 0.7599593997001648, "metric_fail_std": 0.0, "timestamp": 1770528524.4544778}
+{"step": 98, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.8233059644699097, "metric_fail_std": 0.0, "timestamp": 1770528528.1281462}
+{"step": 99, "stats": {"PASS": 1024}, "reward_std": 0.44337981939315796, "metric_fail_std": 0.0, "timestamp": 1770528531.4343143}
+{"step": 100, "stats": {"PASS": 1024}, "reward_std": 0.25361761450767517, "metric_fail_std": 0.0, "timestamp": 1770528535.7380695}
+{"step": 101, "stats": {"PASS": 1024}, "reward_std": 0.8658608794212341, "metric_fail_std": 0.0, "timestamp": 1770528541.835588}
+{"step": 102, "stats": {"PASS": 1024}, "reward_std": 0.11694016307592392, "metric_fail_std": 0.0, "timestamp": 1770528549.62129}
+{"step": 103, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.0806293487548828, "metric_fail_std": 0.0, "timestamp": 1770528562.6327343}
+{"step": 104, "stats": {"PASS": 1024}, "reward_std": 0.38729724287986755, "metric_fail_std": 0.0, "timestamp": 1770528580.2210226}
+{"step": 105, "stats": {"PASS": 1017, "SIM_REJECT": 3, "METRIC_FLIP": 4}, "reward_std": 1.972805380821228, "metric_fail_std": 2.751216411590576, "timestamp": 1770528599.8910644}
+{"step": 106, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.991674542427063, "metric_fail_std": 4.023284435272217, "timestamp": 1770528618.3661156}
+{"step": 107, "stats": {"PASS": 1020, "SIM_REJECT": 4}, "reward_std": 1.5047054290771484, "metric_fail_std": 0.0, "timestamp": 1770528634.7212558}
+{"step": 108, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.3854095935821533, "metric_fail_std": 0.0, "timestamp": 1770528648.5926197}
+{"step": 109, "stats": {"PASS": 1018, "METRIC_SHARPE": 2, "METRIC_FLIP": 4}, "reward_std": 1.8561060428619385, "metric_fail_std": 5.139623641967773, "timestamp": 1770528661.4665153}
+{"step": 110, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.9273451566696167, "metric_fail_std": 9.756512641906738, "timestamp": 1770528672.7621152}
+{"step": 111, "stats": {"METRIC_FLIP": 2, "PASS": 1021, "SIM_REJECT": 1}, "reward_std": 1.7794721126556396, "metric_fail_std": 0.0, "timestamp": 1770528683.8671017}
+{"step": 112, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 1.158022165298462, "metric_fail_std": 0.0, "timestamp": 1770528692.9890232}
+{"step": 113, "stats": {"PASS": 1019, "METRIC_FLIP": 2, "LOW_VARIANCE": 2, "SIM_REJECT": 1}, "reward_std": 1.7836993932724, "metric_fail_std": 0.0, "timestamp": 1770528700.9983156}
+{"step": 114, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 0.892356276512146, "metric_fail_std": 0.0, "timestamp": 1770528708.881902}
+{"step": 115, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 2.0591936111450195, "metric_fail_std": 1.4970452785491943, "timestamp": 1770528717.3684988}
+{"step": 116, "stats": {"PASS": 1024}, "reward_std": 0.13702531158924103, "metric_fail_std": 0.0, "timestamp": 1770528725.5864522}
+{"step": 117, "stats": {"PASS": 1024}, "reward_std": 0.46008098125457764, "metric_fail_std": 0.0, "timestamp": 1770528732.6544595}
+{"step": 118, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7294374108314514, "metric_fail_std": 0.0, "timestamp": 1770528739.6575437}
+{"step": 119, "stats": {"PASS": 1016, "METRIC_FLIP": 6, "METRIC_SHARPE": 2}, "reward_std": 2.3751490116119385, "metric_fail_std": 2.8477349281311035, "timestamp": 1770528747.8436086}
+{"step": 120, "stats": {"PASS": 1024}, "reward_std": 0.0806027203798294, "metric_fail_std": 0.0, "timestamp": 1770528755.3556223}
+{"step": 121, "stats": {"PASS": 1021, "METRIC_SHARPE": 2, "SIM_REJECT": 1}, "reward_std": 1.2239388227462769, "metric_fail_std": 0.0, "timestamp": 1770528763.5387738}
+{"step": 122, "stats": {"PASS": 1018, "METRIC_FLIP": 6}, "reward_std": 1.960546612739563, "metric_fail_std": 1.1573145389556885, "timestamp": 1770528770.0749545}
+{"step": 123, "stats": {"PASS": 1018, "SIM_REJECT": 2, "LOW_VARIANCE": 2, "METRIC_SHARPE": 2}, "reward_std": 1.6387957334518433, "metric_fail_std": 0.0, "timestamp": 1770528776.7857285}
+{"step": 124, "stats": {"PASS": 1024}, "reward_std": 0.0696101114153862, "metric_fail_std": 0.0, "timestamp": 1770528782.660733}
+{"step": 125, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.4488775730133057, "metric_fail_std": 0.0, "timestamp": 1770528788.7565362}
+{"step": 126, "stats": {"PASS": 1024}, "reward_std": 1.0212385654449463, "metric_fail_std": 0.0, "timestamp": 1770528793.8886354}
+{"step": 127, "stats": {"PASS": 1016, "METRIC_FLIP": 4, "SIM_REJECT": 2, "METRIC_SHARPE": 2}, "reward_std": 2.267613410949707, "metric_fail_std": 2.783578395843506, "timestamp": 1770528800.6668441}
+{"step": 128, "stats": {"PASS": 1018, "METRIC_FLIP": 4, "LOW_VARIANCE": 2}, "reward_std": 2.1637091636657715, "metric_fail_std": 2.05884051322937, "timestamp": 1770528807.1339643}
+{"step": 129, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7280315160751343, "metric_fail_std": 0.0, "timestamp": 1770528812.8018007}
+{"step": 130, "stats": {"PASS": 1020, "METRIC_FLIP": 2, "LOW_VARIANCE": 2}, "reward_std": 1.624572515487671, "metric_fail_std": 0.0, "timestamp": 1770528819.2749724}
+{"step": 131, "stats": {"PASS": 1024}, "reward_std": 0.1362224966287613, "metric_fail_std": 0.0, "timestamp": 1770528825.2407389}
+{"step": 132, "stats": {"PASS": 1024}, "reward_std": 0.48841381072998047, "metric_fail_std": 0.0, "timestamp": 1770528830.3556502}
+{"step": 133, "stats": {"PASS": 1018, "METRIC_FLIP": 6}, "reward_std": 2.0043814182281494, "metric_fail_std": 5.40133810043335, "timestamp": 1770528834.8488412}
+{"step": 134, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7380637526512146, "metric_fail_std": 0.0, "timestamp": 1770528839.2999935}
+{"step": 135, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.4363601207733154, "metric_fail_std": 0.0, "timestamp": 1770528843.8300846}
+{"step": 136, "stats": {"PASS": 1024}, "reward_std": 0.03308984637260437, "metric_fail_std": 0.0, "timestamp": 1770528847.1753538}
+{"step": 137, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7379975318908691, "metric_fail_std": 0.0, "timestamp": 1770528851.4264297}
+{"step": 138, "stats": {"PASS": 1024}, "reward_std": 0.018786020576953888, "metric_fail_std": 0.0, "timestamp": 1770528854.6735027}
+{"step": 139, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.6919035911560059, "metric_fail_std": 4.023284435272217, "timestamp": 1770528859.0301907}
+{"step": 140, "stats": {"PASS": 1024}, "reward_std": 0.4590316116809845, "metric_fail_std": 0.0, "timestamp": 1770528863.3875875}
+{"step": 141, "stats": {"PASS": 1024}, "reward_std": 0.1341378539800644, "metric_fail_std": 0.0, "timestamp": 1770528867.0447145}
+{"step": 142, "stats": {"PASS": 1024}, "reward_std": 0.44897258281707764, "metric_fail_std": 0.0, "timestamp": 1770528871.6863644}
+{"step": 143, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.0619404315948486, "metric_fail_std": 0.0, "timestamp": 1770528876.2017794}
+{"step": 144, "stats": {"PASS": 1024}, "reward_std": 0.26454147696495056, "metric_fail_std": 0.0, "timestamp": 1770528880.2100558}
+{"step": 145, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 0.9612151980400085, "metric_fail_std": 0.0, "timestamp": 1770528885.0086718}
+{"step": 146, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 2.0064566135406494, "metric_fail_std": 0.3273508548736572, "timestamp": 1770528889.3451202}
+{"step": 147, "stats": {"PASS": 1024}, "reward_std": 0.01942538656294346, "metric_fail_std": 0.0, "timestamp": 1770528893.7696795}
+{"step": 148, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.773220956325531, "metric_fail_std": 0.0, "timestamp": 1770528897.756141}
+{"step": 149, "stats": {"PASS": 1024}, "reward_std": 0.5326399207115173, "metric_fail_std": 0.0, "timestamp": 1770528900.3697197}
+{"step": 150, "stats": {"PASS": 1024}, "reward_std": 0.2638172209262848, "metric_fail_std": 0.0, "timestamp": 1770528903.711775}
+{"step": 151, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.39967942237854, "metric_fail_std": 0.0, "timestamp": 1770528907.1348948}
+{"step": 152, "stats": {"PASS": 1024}, "reward_std": 0.4589943289756775, "metric_fail_std": 0.0, "timestamp": 1770528910.9325047}
+{"step": 153, "stats": {"PASS": 1024}, "reward_std": 0.025505956262350082, "metric_fail_std": 0.0, "timestamp": 1770528913.9540172}
+{"step": 154, "stats": {"PASS": 1024}, "reward_std": 0.13385075330734253, "metric_fail_std": 0.0, "timestamp": 1770528916.8495934}
+{"step": 155, "stats": {"PASS": 1024}, "reward_std": 0.019827838987112045, "metric_fail_std": 0.0, "timestamp": 1770528918.6936517}
+{"step": 156, "stats": {"PASS": 1024}, "reward_std": 0.02639607898890972, "metric_fail_std": 0.0, "timestamp": 1770528921.3668158}
+{"step": 157, "stats": {"PASS": 1022, "SIM_REJECT": 2}, "reward_std": 1.025682806968689, "metric_fail_std": 0.0, "timestamp": 1770528924.139586}
+{"step": 158, "stats": {"PASS": 1024}, "reward_std": 0.01908823475241661, "metric_fail_std": 0.0, "timestamp": 1770528926.9560256}
+{"step": 159, "stats": {"PASS": 1024}, "reward_std": 0.01664917543530464, "metric_fail_std": 0.0, "timestamp": 1770528929.8117347}
+{"step": 160, "stats": {"PASS": 1024}, "reward_std": 0.14045345783233643, "metric_fail_std": 0.0, "timestamp": 1770528933.3090072}
+{"step": 161, "stats": {"PASS": 1024}, "reward_std": 0.018709948286414146, "metric_fail_std": 0.0, "timestamp": 1770528935.9185028}
+{"step": 162, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770528939.0046337}
+{"step": 163, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.2581199407577515, "metric_fail_std": 0.0, "timestamp": 1770528942.3756526}
+{"step": 164, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.3781846761703491, "metric_fail_std": 0.0, "timestamp": 1770528946.7893999}
+{"step": 165, "stats": {"PASS": 1024}, "reward_std": 0.014229635708034039, "metric_fail_std": 0.0, "timestamp": 1770528950.779094}
+{"step": 166, "stats": {"PASS": 1022, "LOW_VARIANCE": 2}, "reward_std": 0.9468899965286255, "metric_fail_std": 0.0, "timestamp": 1770528954.0901988}
+{"step": 167, "stats": {"PASS": 1024}, "reward_std": 0.9083492755889893, "metric_fail_std": 0.0, "timestamp": 1770528957.808475}
+{"step": 168, "stats": {"PASS": 1024}, "reward_std": 0.01276114210486412, "metric_fail_std": 0.0, "timestamp": 1770528960.754433}
+{"step": 169, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.0569427013397217, "metric_fail_std": 0.0, "timestamp": 1770528964.2802587}
+{"step": 170, "stats": {"PASS": 1024}, "reward_std": 0.015291607938706875, "metric_fail_std": 0.0, "timestamp": 1770528967.2305825}
+{"step": 171, "stats": {"PASS": 1024}, "reward_std": 0.0066274660639464855, "metric_fail_std": 0.0, "timestamp": 1770528970.3239217}
+{"step": 172, "stats": {"PASS": 1024}, "reward_std": 0.9984433650970459, "metric_fail_std": 0.0, "timestamp": 1770528973.3122392}
+{"step": 173, "stats": {"PASS": 1024}, "reward_std": 0.016933545470237732, "metric_fail_std": 0.0, "timestamp": 1770528976.6364765}
+{"step": 174, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770528979.8233461}
+{"step": 175, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770528983.2260091}
+{"step": 176, "stats": {"PASS": 1024}, "reward_std": 0.04419417306780815, "metric_fail_std": 0.0, "timestamp": 1770528985.5085375}
+{"step": 177, "stats": {"PASS": 1024}, "reward_std": 0.01640143059194088, "metric_fail_std": 0.0, "timestamp": 1770528988.319754}
+{"step": 178, "stats": {"PASS": 1024}, "reward_std": 0.044675517827272415, "metric_fail_std": 0.0, "timestamp": 1770528991.1674745}
+{"step": 179, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770528993.2682216}
+{"step": 180, "stats": {"PASS": 1024}, "reward_std": 0.00146924436558038, "metric_fail_std": 0.0, "timestamp": 1770528995.957456}
+{"step": 181, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.0858715772628784, "metric_fail_std": 0.0, "timestamp": 1770528998.5158818}
+{"step": 182, "stats": {"PASS": 1024}, "reward_std": 0.013038014993071556, "metric_fail_std": 0.0, "timestamp": 1770529000.2655902}
+{"step": 183, "stats": {"PASS": 1024}, "reward_std": 0.04419417306780815, "metric_fail_std": 0.0, "timestamp": 1770529002.0843704}
+{"step": 184, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529004.8714168}
+{"step": 185, "stats": {"PASS": 1024}, "reward_std": 0.0014107151655480266, "metric_fail_std": 0.0, "timestamp": 1770529007.406463}
+{"step": 186, "stats": {"PASS": 1024}, "reward_std": 0.14052483439445496, "metric_fail_std": 0.0, "timestamp": 1770529009.394001}
+{"step": 187, "stats": {"PASS": 1024}, "reward_std": 0.00036542490124702454, "metric_fail_std": 0.0, "timestamp": 1770529011.370881}
+{"step": 188, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7259208559989929, "metric_fail_std": 0.0, "timestamp": 1770529013.3058345}
+{"step": 189, "stats": {"PASS": 1022, "LOW_VARIANCE": 2}, "reward_std": 0.9469728469848633, "metric_fail_std": 0.0, "timestamp": 1770529015.9324105}
+{"step": 190, "stats": {"PASS": 1024}, "reward_std": 0.015291607938706875, "metric_fail_std": 0.0, "timestamp": 1770529017.7164774}
+{"step": 191, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529019.706431}
+{"step": 192, "stats": {"PASS": 1021, "SIM_REJECT": 1, "METRIC_FLIP": 2}, "reward_std": 1.2809656858444214, "metric_fail_std": 0.0, "timestamp": 1770529022.5673852}
+{"step": 193, "stats": {"PASS": 1024}, "reward_std": 0.00146924436558038, "metric_fail_std": 0.0, "timestamp": 1770529025.525164}
+{"step": 194, "stats": {"PASS": 1024}, "reward_std": 0.01084540318697691, "metric_fail_std": 0.0, "timestamp": 1770529027.7605388}
+{"step": 195, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529029.9397237}
+{"step": 196, "stats": {"PASS": 1024}, "reward_std": 0.6630455255508423, "metric_fail_std": 0.0, "timestamp": 1770529033.151563}
+{"step": 197, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529035.1025317}
+{"step": 198, "stats": {"PASS": 1024}, "reward_std": 0.4354226589202881, "metric_fail_std": 0.0, "timestamp": 1770529037.3530083}
+{"step": 199, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529039.606741}
+{"step": 200, "stats": {"PASS": 1024}, "reward_std": 0.36844295263290405, "metric_fail_std": 0.0, "timestamp": 1770529041.776254}
+{"step": 201, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529044.1660328}
+{"step": 202, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529046.0213773}
+{"step": 203, "stats": {"PASS": 1024}, "reward_std": 0.26309335231781006, "metric_fail_std": 0.0, "timestamp": 1770529047.9813209}
+{"step": 204, "stats": {"PASS": 1024}, "reward_std": 0.0003012061060871929, "metric_fail_std": 0.0, "timestamp": 1770529051.0324411}
+{"step": 205, "stats": {"PASS": 1024}, "reward_std": 0.4354574382305145, "metric_fail_std": 0.0, "timestamp": 1770529053.1496766}
+{"step": 206, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529055.0863276}
+{"step": 207, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7259208559989929, "metric_fail_std": 0.0, "timestamp": 1770529057.478659}
+{"step": 208, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529059.310485}
+{"step": 209, "stats": {"PASS": 1024}, "reward_std": 0.011461226269602776, "metric_fail_std": 0.0, "timestamp": 1770529061.331341}
+{"step": 210, "stats": {"PASS": 1021, "METRIC_FLIP": 2, "SIM_REJECT": 1}, "reward_std": 1.1980165243148804, "metric_fail_std": 0.0, "timestamp": 1770529063.1482227}
+{"step": 211, "stats": {"PASS": 1024}, "reward_std": 0.016563890501856804, "metric_fail_std": 0.0, "timestamp": 1770529064.9709291}
+{"step": 212, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529066.6941066}
+{"step": 213, "stats": {"PASS": 1024}, "reward_std": 0.010871301405131817, "metric_fail_std": 0.0, "timestamp": 1770529068.8405678}
+{"step": 214, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529071.1208482}
+{"step": 215, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1264111995697021, "metric_fail_std": 0.0, "timestamp": 1770529073.2006998}
+{"step": 216, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529075.2786489}
+{"step": 217, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7715716361999512, "metric_fail_std": 0.0, "timestamp": 1770529077.2010882}
+{"step": 218, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1255197525024414, "metric_fail_std": 0.0, "timestamp": 1770529078.8473268}
+{"step": 219, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.4411423206329346, "metric_fail_std": 0.0, "timestamp": 1770529080.9301143}
+{"step": 220, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529082.5857024}
+{"step": 221, "stats": {"PASS": 1024}, "reward_std": 0.001753648859448731, "metric_fail_std": 0.0, "timestamp": 1770529084.1665983}
+{"step": 222, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529086.1468914}
+{"step": 223, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529087.885066}
+{"step": 224, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529089.7858691}
+{"step": 225, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529091.448941}
+{"step": 226, "stats": {"PASS": 1024}, "reward_std": 0.0066274660639464855, "metric_fail_std": 0.0, "timestamp": 1770529093.4037778}
+{"step": 227, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529095.1395807}
+{"step": 228, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529097.1920774}
+{"step": 229, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529098.8797002}
+{"step": 230, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529100.5589993}
+{"step": 231, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529102.2701044}
+{"step": 232, "stats": {"PASS": 1024}, "reward_std": 0.0007120767841115594, "metric_fail_std": 0.0, "timestamp": 1770529104.07525}
+{"step": 233, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7259208559989929, "metric_fail_std": 0.0, "timestamp": 1770529105.7897065}
+{"step": 234, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529107.314226}
+{"step": 235, "stats": {"PASS": 1024}, "reward_std": 0.39026692509651184, "metric_fail_std": 0.0, "timestamp": 1770529108.9766703}
+{"step": 236, "stats": {"PASS": 1024}, "reward_std": 0.0007120767841115594, "metric_fail_std": 0.0, "timestamp": 1770529110.460507}
+{"step": 237, "stats": {"PASS": 1024}, "reward_std": 0.42182838916778564, "metric_fail_std": 0.0, "timestamp": 1770529111.979295}
+{"step": 238, "stats": {"PASS": 1024}, "reward_std": 0.45184972882270813, "metric_fail_std": 0.0, "timestamp": 1770529113.5047243}
+{"step": 239, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529115.2323244}
+{"step": 240, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529116.6510015}
+{"step": 241, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529118.1233163}
+{"step": 242, "stats": {"PASS": 1024}, "reward_std": 0.1330426037311554, "metric_fail_std": 0.0, "timestamp": 1770529119.7969007}
+{"step": 243, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529121.018206}
+{"step": 244, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529121.6670263}
+{"step": 245, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529123.3242102}
+{"step": 246, "stats": {"PASS": 1024}, "reward_std": 0.4520660638809204, "metric_fail_std": 0.0, "timestamp": 1770529125.0427763}
+{"step": 247, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.4303829669952393, "metric_fail_std": 0.0, "timestamp": 1770529126.7224863}
+{"step": 248, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529128.2351985}
+{"step": 249, "stats": {"PASS": 1024}, "reward_std": 0.0007120767841115594, "metric_fail_std": 0.0, "timestamp": 1770529129.888903}
+{"step": 250, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529131.5499666}
+{"step": 251, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529133.1211307}
+{"step": 252, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529134.6191502}
+{"step": 253, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529136.3071716}
+{"step": 254, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529138.0352657}
+{"step": 255, "stats": {"PASS": 1024}, "reward_std": 1.0057989358901978, "metric_fail_std": 0.0, "timestamp": 1770529139.551353}
+{"step": 256, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529140.9737883}
+{"step": 257, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529142.6038113}
+{"step": 258, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529144.1255147}
+{"step": 259, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529145.7469592}
+{"step": 260, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.085840106010437, "metric_fail_std": 0.0, "timestamp": 1770529147.356711}
+{"step": 261, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529148.935106}
+{"step": 262, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529150.6403248}
+{"step": 263, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529152.3582795}
+{"step": 264, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529154.063007}
+{"step": 265, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529155.649183}
+{"step": 266, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529156.294732}
+{"step": 267, "stats": {"PASS": 1024}, "reward_std": 0.004483245778828859, "metric_fail_std": 0.0, "timestamp": 1770529158.10525}
+{"step": 268, "stats": {"PASS": 1024}, "reward_std": 0.0003011876833625138, "metric_fail_std": 0.0, "timestamp": 1770529159.7606342}
+{"step": 269, "stats": {"PASS": 1024}, "reward_std": 0.012680238112807274, "metric_fail_std": 0.0, "timestamp": 1770529161.5364492}
+{"step": 270, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529163.3025255}
+{"step": 271, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529165.1896613}
+{"step": 272, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529166.8286843}
+{"step": 273, "stats": {"PASS": 1024}, "reward_std": 0.005205473862588406, "metric_fail_std": 0.0, "timestamp": 1770529168.6018505}
+{"step": 274, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529170.3195455}
+{"step": 275, "stats": {"PASS": 1024}, "reward_std": 0.0066274660639464855, "metric_fail_std": 0.0, "timestamp": 1770529171.8700328}
+{"step": 276, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529173.4748654}
+{"step": 277, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529175.3234024}
+{"step": 278, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529177.1256819}
+{"step": 279, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529178.6268907}
+{"step": 280, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529180.3295085}
+{"step": 281, "stats": {"PASS": 1024}, "reward_std": 0.014117551036179066, "metric_fail_std": 0.0, "timestamp": 1770529181.9420207}
+{"step": 282, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529183.5575364}
+{"step": 283, "stats": {"PASS": 1024}, "reward_std": 0.014117551036179066, "metric_fail_std": 0.0, "timestamp": 1770529185.270574}
+{"step": 284, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529186.9161935}
+{"step": 285, "stats": {"PASS": 1022, "METRIC_SHARPE": 2}, "reward_std": 0.9825193285942078, "metric_fail_std": 0.0, "timestamp": 1770529188.4979608}
+{"step": 286, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529190.126431}
+{"step": 287, "stats": {"PASS": 1024}, "reward_std": 0.4261954426765442, "metric_fail_std": 0.0, "timestamp": 1770529191.8085992}
+{"step": 288, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529193.2772524}
+{"step": 289, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529194.9586642}
+{"step": 290, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529196.537817}
+{"step": 291, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529198.1706104}
+{"step": 292, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529199.4861748}
+{"step": 293, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529201.0717165}
+{"step": 294, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529202.566579}
+{"step": 295, "stats": {"PASS": 1024}, "reward_std": 0.013050687499344349, "metric_fail_std": 0.0, "timestamp": 1770529204.1435525}
+{"step": 296, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529205.6608174}
+{"step": 297, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529207.1738577}
+{"step": 298, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529207.8446364}
+{"step": 299, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529209.1656497}
+{"step": 300, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529210.6998518}
+{"step": 301, "stats": {"PASS": 1024}, "reward_std": 0.010828174650669098, "metric_fail_std": 0.0, "timestamp": 1770529212.1836672}
+{"step": 302, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529213.6193016}
+{"step": 303, "stats": {"PASS": 1024}, "reward_std": 0.4273402690887451, "metric_fail_std": 0.0, "timestamp": 1770529215.0130644}
+{"step": 304, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529216.3864775}
+{"step": 305, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529217.792448}
+{"step": 306, "stats": {"PASS": 1024}, "reward_std": 0.0018659704364836216, "metric_fail_std": 0.0, "timestamp": 1770529219.2920265}
+{"step": 307, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.2639133930206299, "metric_fail_std": 0.0, "timestamp": 1770529220.7507868}
+{"step": 308, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529222.2180183}
+{"step": 309, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529222.9463768}
+{"step": 310, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.7414804697036743, "metric_fail_std": 6.48998498916626, "timestamp": 1770529224.4555442}
+{"step": 311, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529225.791163}
+{"step": 312, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529227.1710331}
+{"step": 313, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529228.9164608}
+{"step": 314, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529230.5695868}
+{"step": 315, "stats": {"PASS": 1024}, "reward_std": 0.43530693650245667, "metric_fail_std": 0.0, "timestamp": 1770529232.0873835}
+{"step": 316, "stats": {"PASS": 1024}, "reward_std": 0.45184972882270813, "metric_fail_std": 0.0, "timestamp": 1770529233.649756}
+{"step": 317, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529235.290117}
+{"step": 318, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529236.956895}
+{"step": 319, "stats": {"PASS": 1024}, "reward_std": 0.0006744831916876137, "metric_fail_std": 0.0, "timestamp": 1770529238.5925915}
+{"step": 320, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.4303631782531738, "metric_fail_std": 0.0, "timestamp": 1770529240.2034342}
+{"step": 321, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529241.7399335}
+{"step": 322, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529243.488894}
+{"step": 323, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529245.1252222}
+{"step": 324, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529246.890002}
+{"step": 325, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529248.4571986}
+{"step": 326, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529250.0958998}
+{"step": 327, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529251.7516067}
+{"step": 328, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529252.3832448}
+{"step": 329, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529254.1061335}
+{"step": 330, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529255.723831}
+{"step": 331, "stats": {"PASS": 1024}, "reward_std": 0.026979293674230576, "metric_fail_std": 0.0, "timestamp": 1770529257.1241944}
+{"step": 332, "stats": {"PASS": 1024}, "reward_std": 0.0014692405238747597, "metric_fail_std": 0.0, "timestamp": 1770529258.6477149}
+{"step": 333, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529260.0971284}
+{"step": 334, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529260.7447932}
+{"step": 335, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529262.2160778}
+{"step": 336, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529263.902435}
+{"step": 337, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529264.564448}
+{"step": 338, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529266.210469}
+{"step": 339, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529267.9928367}
+{"step": 340, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529268.6274667}
+{"step": 341, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529269.3092074}
+{"step": 342, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529270.8305507}
+{"step": 343, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529272.4661374}
+{"step": 344, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529273.1557806}
+{"step": 345, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529273.79736}
+{"step": 346, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529275.4706376}
+{"step": 347, "stats": {"PASS": 1024}, "reward_std": 0.0014692405238747597, "metric_fail_std": 0.0, "timestamp": 1770529277.2112324}
+{"step": 348, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529278.9165988}
+{"step": 349, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529280.528678}
+{"step": 350, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529281.1548917}
+{"step": 351, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529281.8269024}
+{"step": 352, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529282.4545546}
+{"step": 353, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7259208559989929, "metric_fail_std": 0.0, "timestamp": 1770529284.2261915}
+{"step": 354, "stats": {"PASS": 1024}, "reward_std": 0.6630197167396545, "metric_fail_std": 0.0, "timestamp": 1770529285.9041219}
+{"step": 355, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529287.5391803}
+{"step": 356, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529289.114075}
+{"step": 357, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1255197525024414, "metric_fail_std": 0.0, "timestamp": 1770529290.8697474}
+{"step": 358, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529292.361296}
+{"step": 359, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529293.8184566}
+{"step": 360, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529295.4566066}
+{"step": 361, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529296.9151525}
+{"step": 362, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529298.4857469}
+{"step": 363, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529300.0487854}
+{"step": 364, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529301.5931184}
+{"step": 365, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529303.1794293}
+{"step": 366, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7259208559989929, "metric_fail_std": 0.0, "timestamp": 1770529304.6278462}
+{"step": 367, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529305.3505745}
+{"step": 368, "stats": {"PASS": 1024}, "reward_std": 0.0066274660639464855, "metric_fail_std": 0.0, "timestamp": 1770529307.0701897}
+{"step": 369, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529308.83894}
+{"step": 370, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529310.5274491}
+{"step": 371, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529312.1156833}
+{"step": 372, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529313.5649314}
+{"step": 373, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.2024554014205933, "metric_fail_std": 0.0, "timestamp": 1770529315.244011}
+{"step": 374, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529316.7920856}
+{"step": 375, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529318.3706913}
+{"step": 376, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529319.9795597}
+{"step": 377, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529321.6159534}
+{"step": 378, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529322.2401583}
+{"step": 379, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529323.9659646}
+{"step": 380, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529324.6184883}
+{"step": 381, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529326.1143684}
+{"step": 382, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529326.7512457}
+{"step": 383, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529328.4905722}
+{"step": 384, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529329.1391718}
+{"step": 385, "stats": {"PASS": 1024}, "reward_std": 0.011238162405788898, "metric_fail_std": 0.0, "timestamp": 1770529330.8784037}
+{"step": 386, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529332.699172}
+{"step": 387, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529334.2875574}
+{"step": 388, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529335.6503916}
+{"step": 389, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529337.1155705}
+{"step": 390, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529338.9312983}
+{"step": 391, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529339.609779}
+{"step": 392, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529341.1585917}
+{"step": 393, "stats": {"PASS": 1024}, "reward_std": 0.2628917992115021, "metric_fail_std": 0.0, "timestamp": 1770529342.799627}
+{"step": 394, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529343.483196}
+{"step": 395, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529345.248232}
+{"step": 396, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529346.829593}
+{"step": 397, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529348.5107188}
+{"step": 398, "stats": {"PASS": 1024}, "reward_std": 0.015291607938706875, "metric_fail_std": 0.0, "timestamp": 1770529349.9757397}
+{"step": 399, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529350.6444597}
+{"step": 400, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529351.3711736}
+{"step": 401, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529353.0920987}
+{"step": 402, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529353.7336679}
+{"step": 403, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529355.4191804}
+{"step": 404, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529356.983104}
+{"step": 405, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529357.6509867}
+{"step": 406, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529359.4819443}
+{"step": 407, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529360.142295}
+{"step": 408, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529361.6620786}
+{"step": 409, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 0.9544602036476135, "metric_fail_std": 0.0, "timestamp": 1770529363.4345946}
+{"step": 410, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529365.0373125}
+{"step": 411, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529366.8318005}
+{"step": 412, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.4185655117034912, "metric_fail_std": 0.0, "timestamp": 1770529368.547162}
+{"step": 413, "stats": {"PASS": 1024}, "reward_std": 0.01629457250237465, "metric_fail_std": 0.0, "timestamp": 1770529369.9970186}
+{"step": 414, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529370.636668}
+{"step": 415, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529372.3332946}
+{"step": 416, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529374.124319}
+{"step": 417, "stats": {"PASS": 1024}, "reward_std": 0.0007120767841115594, "metric_fail_std": 0.0, "timestamp": 1770529375.7023726}
+{"step": 418, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529376.3349864}
+{"step": 419, "stats": {"PASS": 1022, "LOW_VARIANCE": 2}, "reward_std": 0.946891725063324, "metric_fail_std": 0.0, "timestamp": 1770529377.7610993}
+{"step": 420, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529379.256234}
+{"step": 421, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529379.949699}
+{"step": 422, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529381.4982865}
+{"step": 423, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529382.1407728}
+{"step": 424, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529382.8110452}
+{"step": 425, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529384.4566586}
+{"step": 426, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529386.2122025}
+{"step": 427, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529387.8421726}
+{"step": 428, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529389.442037}
+{"step": 429, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529390.114682}
+{"step": 430, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529390.8274975}
+{"step": 431, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529391.516461}
+{"step": 432, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529392.1774468}
+{"step": 433, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529392.8324695}
+{"step": 434, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529393.5203853}
+{"step": 435, "stats": {"PASS": 1024}, "reward_std": 0.749294638633728, "metric_fail_std": 0.0, "timestamp": 1770529395.205152}
+{"step": 436, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529395.843518}
+{"step": 437, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529396.5181231}
+{"step": 438, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529397.1913915}
+{"step": 439, "stats": {"PASS": 1024}, "reward_std": 0.36209648847579956, "metric_fail_std": 0.0, "timestamp": 1770529399.058943}
+{"step": 440, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529399.706837}
+{"step": 441, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529400.3611314}
+{"step": 442, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529402.0405376}
+{"step": 443, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529403.792671}
+{"step": 444, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529404.4437299}
+{"step": 445, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529405.08797}
+{"step": 446, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529405.7362819}
+{"step": 447, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529406.4211512}
+{"step": 448, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529407.056452}
+{"step": 449, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.3563525676727295, "metric_fail_std": 0.0, "timestamp": 1770529408.8577385}
+{"step": 450, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529409.5391033}
+{"step": 451, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529411.3117723}
+{"step": 452, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529411.982143}
+{"step": 453, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529412.672073}
+{"step": 454, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529413.344823}
+{"step": 455, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529414.0190845}
+{"step": 456, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529414.6783776}
+{"step": 457, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529415.3127575}
+{"step": 458, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529415.982403}
+{"step": 459, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529416.6364036}
+{"step": 460, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529417.2688787}
+{"step": 461, "stats": {"PASS": 1024}, "reward_std": 0.014117551036179066, "metric_fail_std": 0.0, "timestamp": 1770529418.9776855}
+{"step": 462, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529419.6586158}
+{"step": 463, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529420.3164616}
+{"step": 464, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529420.9613333}
+{"step": 465, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529421.6109178}
+{"step": 466, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529422.2522986}
+{"step": 467, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529422.8973992}
+{"step": 468, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529423.4994245}
+{"step": 469, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529425.135898}
+{"step": 470, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529425.8366895}
+{"step": 471, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529426.5152602}
+{"step": 472, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529427.175714}
+{"step": 473, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529427.7933085}
+{"step": 474, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529429.2938697}
+{"step": 475, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529430.8971012}
+{"step": 476, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529432.4971058}
+{"step": 477, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529433.1238225}
+{"step": 478, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529434.6972055}
+{"step": 479, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529436.3614094}
+{"step": 480, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529437.026955}
+{"step": 481, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529438.487578}
+{"step": 482, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529439.947816}
+{"step": 483, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529441.7067924}
+{"step": 484, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529443.1361558}
+{"step": 485, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529444.6696181}
+{"step": 486, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529446.2499547}
+{"step": 487, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529447.7158122}
+{"step": 488, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529448.375807}
+{"step": 489, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529449.7988782}
+{"step": 490, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529451.2206428}
+{"step": 491, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529451.8891325}
+{"step": 492, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529452.5362961}
+{"step": 493, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529454.15699}
+{"step": 494, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529454.7709792}
+{"step": 495, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529456.2638059}
+{"step": 496, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529457.6886923}
+{"step": 497, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529458.3520806}
+{"step": 498, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529459.0316782}
+{"step": 499, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529460.6092951}
+{"step": 500, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529462.2490194}
+{"step": 501, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529463.875905}
+{"step": 502, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529464.5270143}
+{"step": 503, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529465.9531589}
+{"step": 504, "stats": {"PASS": 1024}, "reward_std": 0.005205473862588406, "metric_fail_std": 0.0, "timestamp": 1770529467.4921794}
+{"step": 505, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529469.055742}
+{"step": 506, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529470.4884667}
+{"step": 507, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529471.141734}
+{"step": 508, "stats": {"PASS": 1024}, "reward_std": 0.4120009243488312, "metric_fail_std": 0.0, "timestamp": 1770529472.6250482}
+{"step": 509, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529474.1195922}
+{"step": 510, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529475.6868951}
+{"step": 511, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529477.273547}
+{"step": 512, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529478.823758}
+{"step": 513, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529479.4291978}
+{"step": 514, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529481.085709}
+{"step": 515, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529482.542283}
+{"step": 516, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529483.1865668}
+{"step": 517, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529483.8355434}
+{"step": 518, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529485.2658045}
+{"step": 519, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529485.939127}
+{"step": 520, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529487.4199872}
+{"step": 521, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529488.7563589}
+{"step": 522, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529490.2110775}
+{"step": 523, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529491.680976}
+{"step": 524, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529492.3609161}
+{"step": 525, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529493.658598}
+{"step": 526, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529494.3481069}
+{"step": 527, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529495.729623}
+{"step": 528, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529497.1664562}
+{"step": 529, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529498.614292}
+{"step": 530, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529500.0667691}
+{"step": 531, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529501.355247}
+{"step": 532, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529502.6749454}
+{"step": 533, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529504.0400214}
+{"step": 534, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529505.4878757}
+{"step": 535, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529506.91409}
+{"step": 536, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529507.6207643}
+{"step": 537, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529508.849852}
+{"step": 538, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529509.4878094}
+{"step": 539, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529510.7600434}
+{"step": 540, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529511.410811}
+{"step": 541, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529512.0667374}
+{"step": 542, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529513.4350448}
+{"step": 543, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529514.066584}
+{"step": 544, "stats": {"PASS": 1022, "LOW_VARIANCE": 2}, "reward_std": 0.946891725063324, "metric_fail_std": 0.0, "timestamp": 1770529515.4835627}
+{"step": 545, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529516.823633}
+{"step": 546, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529517.5311148}
+{"step": 547, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529518.9937263}
+{"step": 548, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529520.3226542}
+{"step": 549, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529520.949207}
+{"step": 550, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529522.420332}
+{"step": 551, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529523.7988563}
+{"step": 552, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529524.4503117}
+{"step": 553, "stats": {"PASS": 1022, "METRIC_SHARPE": 2}, "reward_std": 0.8775702714920044, "metric_fail_std": 0.0, "timestamp": 1770529525.902411}
+{"step": 554, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529527.3560832}
+{"step": 555, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529528.0295992}
+{"step": 556, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529529.488324}
+{"step": 557, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529530.771737}
+{"step": 558, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529532.2068112}
+{"step": 559, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529533.591194}
+{"step": 560, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529534.2630606}
+{"step": 561, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529535.7863517}
+{"step": 562, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529536.4098194}
+{"step": 563, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529538.0215843}
+{"step": 564, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529539.5017462}
+{"step": 565, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529541.0454037}
+{"step": 566, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529542.4923131}
+{"step": 567, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529543.1253612}
+{"step": 568, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529543.8164382}
+{"step": 569, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529545.46149}
+{"step": 570, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529546.9336405}
+{"step": 571, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529548.3086102}
+{"step": 572, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529549.8159344}
+{"step": 573, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529551.3115304}
+{"step": 574, "stats": {"PASS": 1024}, "reward_std": 0.13258251547813416, "metric_fail_std": 0.0, "timestamp": 1770529552.9439626}
+{"step": 575, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529554.3967037}
+{"step": 576, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529555.8470004}
+{"step": 577, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529557.4147592}
+{"step": 578, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529558.8755684}
+{"step": 579, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529560.3522935}
+{"step": 580, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529561.002947}
+{"step": 581, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529562.4658573}
+{"step": 582, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529564.0003784}
+{"step": 583, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529564.692559}
+{"step": 584, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529566.0299108}
+{"step": 585, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529567.4917674}
+{"step": 586, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529568.1168656}
+{"step": 587, "stats": {"PASS": 1024}, "reward_std": 0.0037913634441792965, "metric_fail_std": 0.0, "timestamp": 1770529569.4865856}
+{"step": 588, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529570.164459}
+{"step": 589, "stats": {"PASS": 1024}, "reward_std": 0.04419417306780815, "metric_fail_std": 0.0, "timestamp": 1770529571.5338793}
+{"step": 590, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529573.145138}
+{"step": 591, "stats": {"PASS": 1024}, "reward_std": 0.0066274660639464855, "metric_fail_std": 0.0, "timestamp": 1770529574.6082222}
+{"step": 592, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529576.0505705}
+{"step": 593, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529577.4234955}
+{"step": 594, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529578.7260516}
+{"step": 595, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529580.0525188}
+{"step": 596, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529580.7230914}
+{"step": 597, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529582.2776608}
+{"step": 598, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529582.9545944}
+{"step": 599, "stats": {"PASS": 1024}, "reward_std": 0.0008716457523405552, "metric_fail_std": 0.0, "timestamp": 1770529584.4561431}
+{"step": 600, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529585.9919817}
+{"step": 601, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529587.5647693}
+{"step": 602, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529589.0253747}
+{"step": 603, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529590.4970522}
+{"step": 604, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529591.7830276}
+{"step": 605, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529593.346952}
+{"step": 606, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529594.8307471}
+{"step": 607, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529596.3171744}
+{"step": 608, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529597.8189323}
+{"step": 609, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529599.1207442}
+{"step": 610, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529600.4628835}
+{"step": 611, "stats": {"PASS": 1024}, "reward_std": 0.13258251547813416, "metric_fail_std": 0.0, "timestamp": 1770529601.1068425}
+{"step": 612, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529601.7286737}
+{"step": 613, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529603.0591393}
+{"step": 614, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529603.6982837}
+{"step": 615, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529604.9075913}
+{"step": 616, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529605.589819}
+{"step": 617, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529606.9449456}
+{"step": 618, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529608.3864713}
+{"step": 619, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529609.7600033}
+{"step": 620, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529610.9651697}
+{"step": 621, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529612.2956398}
+{"step": 622, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529613.6382577}
+{"step": 623, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529614.94693}
+{"step": 624, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529616.24961}
+{"step": 625, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529617.6948287}
+{"step": 626, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529618.36032}
+{"step": 627, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529619.0102427}
+{"step": 628, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529620.4680412}
+{"step": 629, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529621.197627}
+{"step": 630, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529621.8823614}
+{"step": 631, "stats": {"PASS": 1024}, "reward_std": 0.00146924436558038, "metric_fail_std": 0.0, "timestamp": 1770529623.3736126}
+{"step": 632, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529624.7240784}
+{"step": 633, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529626.2687068}
+{"step": 634, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529627.7975402}
+{"step": 635, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529629.121367}
+{"step": 636, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529630.5052102}
+{"step": 637, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529631.7623832}
+{"step": 638, "stats": {"PASS": 1024}, "reward_std": 0.00036542490124702454, "metric_fail_std": 0.0, "timestamp": 1770529633.311012}
+{"step": 639, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529633.9644551}
+{"step": 640, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529635.28886}
+{"step": 641, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529636.7401383}
+{"step": 642, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529638.1085632}
+{"step": 643, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529639.5389912}
+{"step": 644, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529640.8636637}
+{"step": 645, "stats": {"PASS": 1024}, "reward_std": 0.6253495216369629, "metric_fail_std": 0.0, "timestamp": 1770529642.139253}
+{"step": 646, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529643.4735663}
+{"step": 647, "stats": {"PASS": 1022, "LOW_VARIANCE": 2}, "reward_std": 0.946891725063324, "metric_fail_std": 0.0, "timestamp": 1770529644.7918725}
+{"step": 648, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529646.1499722}
+{"step": 649, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529647.563789}
+{"step": 650, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529648.7809079}
+{"step": 651, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529650.2063348}
+{"step": 652, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529651.6379218}
+{"step": 653, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529652.349211}
+{"step": 654, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529653.0057058}
+{"step": 655, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529653.6358917}
+{"step": 656, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529654.279074}
+{"step": 657, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529654.9322457}
+{"step": 658, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529655.5887413}
+{"step": 659, "stats": {"PASS": 1024}, "reward_std": 0.0012124438071623445, "metric_fail_std": 0.0, "timestamp": 1770529656.7946873}
+{"step": 660, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529657.482249}
+{"step": 661, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529658.809324}
+{"step": 662, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529659.4374409}
+{"step": 663, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529660.115706}
+{"step": 664, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529661.4519484}
+{"step": 665, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529662.9446523}
+{"step": 666, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529664.2352464}
+{"step": 667, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529664.8691216}
+{"step": 668, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529666.208836}
+{"step": 669, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529667.63321}
+{"step": 670, "stats": {"PASS": 1024}, "reward_std": 0.42733946442604065, "metric_fail_std": 0.0, "timestamp": 1770529668.8312283}
+{"step": 671, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529670.005366}
+{"step": 672, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529671.3715906}
+{"step": 673, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529672.7098153}
+{"step": 674, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529673.3972785}
+{"step": 675, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529674.1127784}
+{"step": 676, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529675.4871113}
+{"step": 677, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529676.1713696}
+{"step": 678, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529676.8262584}
+{"step": 679, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529677.5472407}
+{"step": 680, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529678.2556012}
+{"step": 681, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529679.604265}
+{"step": 682, "stats": {"PASS": 1024}, "reward_std": 0.0018659704364836216, "metric_fail_std": 0.0, "timestamp": 1770529680.7930148}
+{"step": 683, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529681.4688623}
+{"step": 684, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529682.9825876}
+{"step": 685, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529684.6141837}
+{"step": 686, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7259208559989929, "metric_fail_std": 0.0, "timestamp": 1770529686.1820421}
+{"step": 687, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529687.6727998}
+{"step": 688, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529689.2899928}
+{"step": 689, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529690.756256}
+{"step": 690, "stats": {"PASS": 1024}, "reward_std": 0.0012124438071623445, "metric_fail_std": 0.0, "timestamp": 1770529692.2961547}
+{"step": 691, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529693.8917773}
+{"step": 692, "stats": {"PASS": 1024}, "reward_std": 0.0018659704364836216, "metric_fail_std": 0.0, "timestamp": 1770529695.5412436}
+{"step": 693, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529697.0876212}
+{"step": 694, "stats": {"PASS": 1024}, "reward_std": 0.7652453184127808, "metric_fail_std": 0.0, "timestamp": 1770529699.0711246}
+{"step": 695, "stats": {"PASS": 1024}, "reward_std": 0.002487347461283207, "metric_fail_std": 0.0, "timestamp": 1770529700.6910825}
+{"step": 696, "stats": {"PASS": 1024}, "reward_std": 0.049509353935718536, "metric_fail_std": 0.0, "timestamp": 1770529702.2054858}
+{"step": 697, "stats": {"PASS": 1024}, "reward_std": 0.004186925478279591, "metric_fail_std": 0.0, "timestamp": 1770529703.8902872}
+{"step": 698, "stats": {"PASS": 1024}, "reward_std": 0.0009216557955369353, "metric_fail_std": 0.0, "timestamp": 1770529705.380765}
+{"step": 699, "stats": {"PASS": 1024}, "reward_std": 0.14027732610702515, "metric_fail_std": 0.0, "timestamp": 1770529706.9531353}
+{"step": 700, "stats": {"PASS": 1024}, "reward_std": 0.0020422390662133694, "metric_fail_std": 0.0, "timestamp": 1770529708.408659}
+{"step": 701, "stats": {"PASS": 1024}, "reward_std": 0.059104979038238525, "metric_fail_std": 0.0, "timestamp": 1770529709.8306372}
+{"step": 702, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529711.1528728}
+{"step": 703, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529712.4481575}
+{"step": 704, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529713.7282927}
+{"step": 705, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529715.137714}
+{"step": 706, "stats": {"PASS": 1024}, "reward_std": 0.04419417306780815, "metric_fail_std": 0.0, "timestamp": 1770529716.554066}
+{"step": 707, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529717.8973255}
+{"step": 708, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529719.2295005}
+{"step": 709, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529719.918793}
+{"step": 710, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529721.1774487}
+{"step": 711, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529722.4216948}
+{"step": 712, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529723.6352665}
+{"step": 713, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529724.9619577}
+{"step": 714, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529726.2389948}
+{"step": 715, "stats": {"PASS": 1024}, "reward_std": 0.010823395103216171, "metric_fail_std": 0.0, "timestamp": 1770529727.5692365}
+{"step": 716, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529728.2457726}
+{"step": 717, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529728.911435}
+{"step": 718, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529730.411558}
+{"step": 719, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529731.0700746}
+{"step": 720, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529731.7446644}
+{"step": 721, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529732.9942029}
+{"step": 722, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529733.6626096}
+{"step": 723, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529735.0047178}
+{"step": 724, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529736.3330874}
+{"step": 725, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529737.6750166}
+{"step": 726, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529738.996381}
+{"step": 727, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529740.2837312}
+{"step": 728, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529740.958392}
+{"step": 729, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529741.642672}
+{"step": 730, "stats": {"PASS": 1024}, "reward_std": 0.0014107151655480266, "metric_fail_std": 0.0, "timestamp": 1770529742.9477348}
+{"step": 731, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529744.29782}
+{"step": 732, "stats": {"PASS": 1024}, "reward_std": 0.17678147554397583, "metric_fail_std": 0.0, "timestamp": 1770529745.5521848}
+{"step": 733, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529746.9363046}
+{"step": 734, "stats": {"PASS": 1024}, "reward_std": 0.0017260693712159991, "metric_fail_std": 0.0, "timestamp": 1770529748.3531077}
+{"step": 735, "stats": {"PASS": 1024}, "reward_std": 0.0014107151655480266, "metric_fail_std": 0.0, "timestamp": 1770529749.7087414}
+{"step": 736, "stats": {"PASS": 1018, "METRIC_FLIP": 6}, "reward_std": 2.038221836090088, "metric_fail_std": 0.0, "timestamp": 1770529751.1748126}
+{"step": 737, "stats": {"PASS": 1016, "METRIC_FLIP": 8}, "reward_std": 2.351259708404541, "metric_fail_std": 0.0, "timestamp": 1770529752.6497924}
+{"step": 738, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.665838599205017, "metric_fail_std": 0.0, "timestamp": 1770529754.0431802}
+{"step": 739, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1790975332260132, "metric_fail_std": 0.0, "timestamp": 1770529755.384771}
+{"step": 740, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.6658477783203125, "metric_fail_std": 0.0, "timestamp": 1770529756.9284737}
+{"step": 741, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1790763139724731, "metric_fail_std": 0.0, "timestamp": 1770529758.357367}
+{"step": 742, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1790786981582642, "metric_fail_std": 0.0, "timestamp": 1770529759.8578784}
+{"step": 743, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.6658324003219604, "metric_fail_std": 0.0, "timestamp": 1770529761.3486888}
+{"step": 744, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529762.0058727}
+{"step": 745, "stats": {"PASS": 1024}, "reward_std": 0.6253550052642822, "metric_fail_std": 0.0, "timestamp": 1770529763.354035}
+{"step": 746, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529764.745509}
+{"step": 747, "stats": {"PASS": 1024}, "reward_std": 0.0014107151655480266, "metric_fail_std": 0.0, "timestamp": 1770529766.0183234}
+{"step": 748, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529767.4959254}
+{"step": 749, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529768.124097}
+{"step": 750, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529769.5041761}
+{"step": 751, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529770.1574268}
+{"step": 752, "stats": {"PASS": 1024}, "reward_std": 3.8184280128916726e-06, "metric_fail_std": 0.0, "timestamp": 1770529771.526724}
+{"step": 753, "stats": {"PASS": 1022, "METRIC_SHARPE": 2}, "reward_std": 0.886916995048523, "metric_fail_std": 0.0, "timestamp": 1770529772.794486}
+{"step": 754, "stats": {"PASS": 1024}, "reward_std": 0.0014107151655480266, "metric_fail_std": 0.0, "timestamp": 1770529774.2449563}
+{"step": 755, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1790691614151, "metric_fail_std": 0.0, "timestamp": 1770529775.5445857}
+{"step": 756, "stats": {"PASS": 1024}, "reward_std": 0.0017260693712159991, "metric_fail_std": 0.0, "timestamp": 1770529776.1924264}
+{"step": 757, "stats": {"PASS": 1024}, "reward_std": 0.0009985073702409863, "metric_fail_std": 0.0, "timestamp": 1770529777.6684756}
+{"step": 758, "stats": {"PASS": 1024}, "reward_std": 0.002223961753770709, "metric_fail_std": 0.0, "timestamp": 1770529778.9978206}
+{"step": 759, "stats": {"PASS": 1024}, "reward_std": 0.0014107151655480266, "metric_fail_std": 0.0, "timestamp": 1770529780.5398834}
+{"step": 760, "stats": {"PASS": 1024}, "reward_std": 0.002971962559968233, "metric_fail_std": 0.0, "timestamp": 1770529781.9131956}
+{"step": 761, "stats": {"PASS": 1024}, "reward_std": 0.0035576242953538895, "metric_fail_std": 0.0, "timestamp": 1770529783.4685578}
+{"step": 762, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1751055717468262, "metric_fail_std": 0.0, "timestamp": 1770529785.8478765}
+{"step": 763, "stats": {"PASS": 1024}, "reward_std": 0.13302826881408691, "metric_fail_std": 0.0, "timestamp": 1770529789.5001106}
+{"step": 764, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.3338184356689453, "metric_fail_std": 0.0, "timestamp": 1770529794.8059556}
+{"step": 765, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.182672381401062, "metric_fail_std": 0.0, "timestamp": 1770529803.1050618}
+{"step": 766, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.2568708658218384, "metric_fail_std": 0.0, "timestamp": 1770529812.6224587}
+{"step": 767, "stats": {"PASS": 1023, "SIM_REJECT": 1}, "reward_std": 0.7280021905899048, "metric_fail_std": 0.0, "timestamp": 1770529823.2948296}
+{"step": 768, "stats": {"PASS": 1018, "METRIC_FLIP": 6}, "reward_std": 2.036912202835083, "metric_fail_std": 0.031438395380973816, "timestamp": 1770529834.1334355}
+{"step": 769, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.195893406867981, "metric_fail_std": 0.0, "timestamp": 1770529842.3802433}
+{"step": 770, "stats": {"PASS": 1018, "METRIC_FLIP": 6}, "reward_std": 1.8269853591918945, "metric_fail_std": 2.45293927192688, "timestamp": 1770529850.385749}
+{"step": 771, "stats": {"PASS": 1024}, "reward_std": 0.009902989491820335, "metric_fail_std": 0.0, "timestamp": 1770529857.782201}
+{"step": 772, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.3443821668624878, "metric_fail_std": 0.0, "timestamp": 1770529864.6294417}
+{"step": 773, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.2435226440429688, "metric_fail_std": 0.0, "timestamp": 1770529870.0786235}
+{"step": 774, "stats": {"PASS": 1018, "METRIC_FLIP": 6}, "reward_std": 2.1999168395996094, "metric_fail_std": 1.4721540212631226, "timestamp": 1770529876.3600025}
+{"step": 775, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.719835638999939, "metric_fail_std": 0.04249481111764908, "timestamp": 1770529881.5308132}
+{"step": 776, "stats": {"PASS": 1021, "SIM_REJECT": 1, "METRIC_FLIP": 2}, "reward_std": 1.5906805992126465, "metric_fail_std": 0.0, "timestamp": 1770529886.7721498}
+{"step": 777, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.895065188407898, "metric_fail_std": 2.2079169750213623, "timestamp": 1770529891.8888738}
+{"step": 778, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1720776557922363, "metric_fail_std": 0.0, "timestamp": 1770529895.3401968}
+{"step": 779, "stats": {"PASS": 1024}, "reward_std": 0.1330881118774414, "metric_fail_std": 0.0, "timestamp": 1770529897.6752667}
+{"step": 780, "stats": {"PASS": 1020, "METRIC_FLIP": 4}, "reward_std": 1.6646596193313599, "metric_fail_std": 0.10737600922584534, "timestamp": 1770529900.291813}
+{"step": 781, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 0.9644233584403992, "metric_fail_std": 0.0, "timestamp": 1770529903.741573}
+{"step": 782, "stats": {"PASS": 1024}, "reward_std": 0.13799461722373962, "metric_fail_std": 0.0, "timestamp": 1770529906.5106232}
+{"step": 783, "stats": {"PASS": 1024}, "reward_std": 0.008431767113506794, "metric_fail_std": 0.0, "timestamp": 1770529911.106394}
+{"step": 784, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1768358945846558, "metric_fail_std": 0.0, "timestamp": 1770529914.8059876}
+{"step": 785, "stats": {"PASS": 1024}, "reward_std": 0.013240884989500046, "metric_fail_std": 0.0, "timestamp": 1770529917.604998}
+{"step": 786, "stats": {"PASS": 1024}, "reward_std": 0.0180699210613966, "metric_fail_std": 0.0, "timestamp": 1770529920.0713155}
+{"step": 787, "stats": {"PASS": 1022, "SIM_REJECT": 2}, "reward_std": 1.0278011560440063, "metric_fail_std": 0.0, "timestamp": 1770529923.065614}
+{"step": 788, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.1623939275741577, "metric_fail_std": 0.0, "timestamp": 1770529927.0713692}
+{"step": 789, "stats": {"PASS": 1020, "METRIC_FLIP": 2, "SIM_REJECT": 2}, "reward_std": 1.6040922403335571, "metric_fail_std": 0.0, "timestamp": 1770529931.313846}
+{"step": 790, "stats": {"PASS": 1016, "SIM_REJECT": 4, "METRIC_FLIP": 4}, "reward_std": 1.9759552478790283, "metric_fail_std": 0.5423803925514221, "timestamp": 1770529934.833416}
+{"step": 791, "stats": {"PASS": 1018, "SIM_REJECT": 4, "METRIC_FLIP": 2}, "reward_std": 1.9173951148986816, "metric_fail_std": 0.0, "timestamp": 1770529938.7959735}
+{"step": 792, "stats": {"PASS": 1024}, "reward_std": 0.1655590981245041, "metric_fail_std": 0.0, "timestamp": 1770529940.9660435}
+{"step": 793, "stats": {"PASS": 1024}, "reward_std": 0.16947858035564423, "metric_fail_std": 0.0, "timestamp": 1770529943.2889435}
+{"step": 794, "stats": {"PASS": 1022, "SIM_REJECT": 2}, "reward_std": 1.0333006381988525, "metric_fail_std": 0.0, "timestamp": 1770529945.023146}
+{"step": 795, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.0897011756896973, "metric_fail_std": 0.0, "timestamp": 1770529947.1858861}
+{"step": 796, "stats": {"PASS": 1022, "METRIC_FLIP": 2}, "reward_std": 1.214897632598877, "metric_fail_std": 0.0, "timestamp": 1770529948.7434494}
+{"step": 797, "stats": {"PASS": 1024}, "reward_std": 0.024434126913547516, "metric_fail_std": 0.0, "timestamp": 1770529950.2415764}
+{"step": 798, "stats": {"PASS": 1024}, "reward_std": 0.9469873905181885, "metric_fail_std": 0.0, "timestamp": 1770529951.7639544}
+{"step": 799, "stats": {"PASS": 1024}, "reward_std": 0.02051375061273575, "metric_fail_std": 0.0, "timestamp": 1770529953.18876}

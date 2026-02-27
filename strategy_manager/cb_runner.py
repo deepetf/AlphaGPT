@@ -161,7 +161,7 @@ class CBStrategyRunner:
         feat_tensor = loader.feat_tensor.to('cpu')
         if date is not None:
             # 历史回放：切片到目标日期（包含当日）
-            feat_tensor_slice = feat_tensor[:, :, :latest_date_idx+1]
+            feat_tensor_slice = feat_tensor[:latest_date_idx+1, :, :]
             logger.info(f"Temporal slicing: Using data up to idx={latest_date_idx} (shape: {feat_tensor_slice.shape})")
         else:
             # 实盘：使用全部数据（此时 latest_date_idx=-1，表示最新）

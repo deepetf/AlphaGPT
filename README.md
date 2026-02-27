@@ -2,14 +2,49 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.5: Verify Visualization & Multi-Strategy Combo (Current)**
+Current Version: **V5.6: Live Quote Override & Warmup Alignment (Current)**
 
+当前版本run_sim CLI:
+
+  # 0) 无参数启动（默认 live + SQL 状态 + QMT 行情）
+  python strategy_manager/run_sim.py
+
+  # 1) SQL 严格回放（单日）
+  python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --state-backend sql --replay-source sql_eod
+
+  # 2) SQL 严格回放（区间）
+  python strategy_manager/run_sim.py --mode strict_replay --start-date 2025-01-01 --end-date 2025-12-31 --state-backend sql --replay-source sql_eod
+
+  # 3) Live（单日，dummy 行情）
+  python strategy_manager/run_sim.py --mode live --date 2025-12-01 --state-backend sql --live-quote-source dummy
+
+  # 4) Live（单日，QMT 行情）
+  python strategy_manager/run_sim.py --mode live --date 2025-12-01 --state-backend sql --live-quote-source qmt
+
+  可选定时跑 live：
+
+  python strategy_manager/run_sim.py --mode live --schedule --hour 14 --minute 50 --state-backend sql --live-quote-source qmt
 ---
 
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.5: Verify Visualization & Multi-Strategy Combo (Current)**
+### **V5.6: Live Quote Override & Warmup Alignment (Current)**
+*在 V5.5 基础上补强 live 行情接入稳定性，并完成训练/验证预热窗口口径升级。*
+- **Live No-Arg Default Profile**: `run_sim.py` 在无参数启动时默认使用 `--mode live --state-backend sql --live-quote-source qmt`，便于实盘日常调度。
+- **QMT Tick Snapshot Upgrade**: `RealtimeDataProvider.get_realtime_quotes` 改为 `get_full_tick` 路径，统一输出 `trade_date/open/high/low/close/vol/amount` 并解析 `timetag` 日期。
+- **Live OHLC SQL Override**: live 模式下新增 `merge_live_ohlc_into_cb_features`，按 `code` 用 QMT 的 `open/high/low/close`（有效正值）覆盖 SQL 当日行情，增强盘中执行一致性。
+- **Take-Profit Null-Safety**: `SimulationRunner` 增加 `_safe_float` 容错，修复 `float(None)` 导致的 live 止盈路径中断；价格字典与 TP 判定统一使用安全数值转换。
+- **Top-K Input Shape Hardening**: `_select_top_k` 增加 `factor_values/valid_mask/assets` 维度与长度一致性校验，避免静默截断引起持仓漂移。
+- **Warmup-Aware Loader Pipeline**: `CBDataLoader` 支持 `start_date` 与 `warmup_days` 前置加载，特征计算后裁剪预热段并清理无效资产；`FeatureEngineer` 支持 `warmup_rows` 与 `LOG_MONEYNESS` 派生特征。
+- **Strict Loader Optional Columns**: `SQLStrictLoader` 支持可选原始列缺失（用于派生特征依赖），缺失时跳过并提示，提升跨库表结构兼容性。
+- **Verify Warmup Start Backfill**: `verify_strategy` 自动从验证起点向前回补加载窗口（约 200 自然日），与滚动特征和 warmup 口径对齐。
+- **示例命令（无参数默认 live 启动）**: `python strategy_manager/run_sim.py`
+- **示例命令（live 单日 + QMT 实时行情）**: `python strategy_manager/run_sim.py --mode live --date 2026-02-27 --state-backend sql --live-quote-source qmt`
+- **示例命令（训练端指定数据起始日）**: `python -m model_core.engine --data-start-date 2023-01-01`
+- **示例命令（verify 预热对齐）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2026-02-13 --strategy-id king_v1`
+
+### **V5.5: Verify Visualization & Multi-Strategy Combo**
 *在 V5.4 基础上继续强化 verify 诊断能力，新增基准对齐可视化与多策略组合产物，便于直接评估“降回撤、提夏普”。*
 - **Verify Cash-Aware Rebalance (Verify-only)**: 在 `verify_strategy` 内新增“现金约束买单裁剪”，先卖后买、按预算与 10 张粒度裁剪买单；不修改 `sim run` 调仓逻辑。
 - **Cash Trim Audit Traceability**: `daily_trades` 新增 `requested/submitted` 买卖单统计、`trimmed/skipped` 计数与 `buy_trim_events` 事件明细，便于定位持仓数不足原因。
@@ -257,6 +292,5 @@ robust_config:
 ---
 
 **Disclaimer**: Quantitative trading involves significant risks. This code is for research purposes only.
-
 
 

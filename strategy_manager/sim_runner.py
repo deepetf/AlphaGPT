@@ -270,10 +270,16 @@ class SimulationRunner:
         if self.live_quote_source == "dummy":
             realtime_quotes = self.data_provider.get_realtime_quotes_dummy(code_list, date=date)
         elif self.live_quote_source == "qmt":
-            self.data_provider.subscribe_quotes(code_list)
+            #self.data_provider.subscribe_quotes(code_list)
             realtime_quotes = self.data_provider.get_realtime_quotes(code_list)
         else:
             raise ValueError(f"Unsupported live_quote_source: {self.live_quote_source}")
+
+        cb_features = self.data_provider.merge_live_ohlc_into_cb_features(
+            cb_features=cb_features,
+            realtime_quotes=realtime_quotes,
+            target_date=date,
+        )
 
         selection_ctx = self._build_live_selection_context(date)
         if selection_ctx is None:
@@ -560,15 +566,37 @@ class SimulationRunner:
         
         # 浠?cb_features 鑾峰彇鍩虹浠锋牸
         for _, row in cb_features.iterrows():
-            prices[row['code']] = float(row.get('close', 0))
+            code = row.get("code")
+            if not code:
+                continue
+            prices[code] = self._safe_float(row.get("close", 0))
         
         # 鐢ㄥ疄鏃舵姤浠疯鐩?
         if not realtime_quotes.empty:
             for _, row in realtime_quotes.iterrows():
-                if row['close'] > 0:
-                    prices[row['code']] = float(row['close'])
+                code = row.get("code")
+                if not code:
+                    continue
+                close_price = self._safe_float(row.get("close", 0))
+                if close_price > 0:
+                    prices[code] = close_price
         
         return prices
+
+    @staticmethod
+    def _safe_float(value, default: float = 0.0) -> float:
+        """Best-effort numeric conversion for live data values."""
+        if value is None:
+            return default
+        try:
+            if pd.isna(value):
+                return default
+        except Exception:
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
     
     def _check_take_profit(
         self, 
@@ -603,18 +631,23 @@ class SimulationRunner:
         
         # 鍏堜粠 SQL (cb_features) 鑾峰彇鍩虹鏁版嵁
         for _, row in cb_features.iterrows():
-            today_ohlc[row['code']] = {
-                'open': float(row.get('open', 0)),
-                'high': float(row.get('high', 0)),
+            code = row.get("code")
+            if not code:
+                continue
+            today_ohlc[code] = {
+                'open': self._safe_float(row.get('open', 0)),
+                'high': self._safe_float(row.get('high', 0)),
             }
         
         # 濡傛灉鏈?QMT 瀹炴椂鏁版嵁锛屼紭鍏堜娇鐢?
         if not realtime_quotes.empty:
             for _, row in realtime_quotes.iterrows():
-                code = row['code']
+                code = row.get("code")
+                if not code:
+                    continue
                 if code in today_ohlc:
-                    qmt_open = float(row.get('open', 0))
-                    qmt_high = float(row.get('high', 0))
+                    qmt_open = self._safe_float(row.get('open', 0))
+                    qmt_high = self._safe_float(row.get('high', 0))
                     if qmt_open > 0:
                         today_ohlc[code]['open'] = qmt_open
                     if qmt_high > 0:
@@ -627,7 +660,7 @@ class SimulationRunner:
             if pos.code not in today_ohlc:
                 continue
             
-            prev_close = prev_close_dict[pos.code]
+            prev_close = self._safe_float(prev_close_dict[pos.code])
             data = today_ohlc[pos.code]
             
             if prev_close <= 0:
@@ -698,17 +731,35 @@ class SimulationRunner:
         valid_mask: Optional[torch.Tensor] = None,
     ) -> List[str]:
         """閫夋嫨 Top-K 鏍囩殑 (鏀寔鍥炴祴 valid_mask 瀵归綈)"""
-        # 缁熶竴鍒?1D CPU/Device 鍚戦噺
+        # 仅接受 1D 因子向量，避免静默展平掩盖上游维度错误
         values = factor_values
-        if values.dim() > 1:
-            values = values.reshape(-1)
+        if values.dim() != 1:
+            raise ValueError(
+                f"[{self.strategy_id}] factor_values must be 1D [Assets], "
+                f"got shape={tuple(values.shape)}"
+            )
+
+        asset_count = len(asset_list)
+        if values.numel() != asset_count:
+            raise ValueError(
+                f"[{self.strategy_id}] factor_values/assets length mismatch: "
+                f"factors={values.numel()}, assets={asset_count}"
+            )
 
         # 浼樺厛浣跨敤澶栭儴浼犲叆鐨勫彲浜ゆ槗鎺╃爜锛堝洖娴嬩弗鏍煎榻愭ā寮忥級
         if valid_mask is not None:
             mask = valid_mask
-            if mask.dim() > 1:
-                mask = mask.reshape(-1)
+            if mask.dim() != 1:
+                raise ValueError(
+                    f"[{self.strategy_id}] valid_mask must be 1D [Assets], "
+                    f"got shape={tuple(mask.shape)}"
+                )
             mask = mask.to(device=values.device, dtype=torch.bool)
+            if mask.numel() != asset_count:
+                raise ValueError(
+                    f"[{self.strategy_id}] valid_mask/assets length mismatch: "
+                    f"mask={mask.numel()}, assets={asset_count}"
+                )
         else:
             # Legacy fallback: use price > 0 as tradable mask.
             mask = torch.tensor(
@@ -716,20 +767,6 @@ class SimulationRunner:
                 device=values.device,
                 dtype=torch.bool,
             )
-
-        # Protect against shape mismatch from external inputs.
-        expected_len = min(values.numel(), len(asset_list), mask.numel())
-        if expected_len <= 0:
-            logger.warning(
-                f"[{self.strategy_id}] Top-K input size mismatch: "
-                f"factors={values.numel()}, assets={len(asset_list)}, mask={mask.numel()}, "
-                f"use_first={expected_len}"
-            )
-            return []
-
-        values = values[:expected_len]
-        asset_list = asset_list[:expected_len]
-        mask = mask[:expected_len]
 
         valid_count = int(mask.sum().item())
 

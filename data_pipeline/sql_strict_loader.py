@@ -24,7 +24,7 @@ class _ColumnSpec:
     trade_date: str
     code: str
     name: Optional[str]
-    factor_cols: Dict[str, str]  # internal_name -> sql_column
+    factor_cols: Dict[str, Optional[str]]  # internal_name -> sql_column
 
 
 class SQLStrictLoader:
@@ -90,9 +90,11 @@ class SQLStrictLoader:
         code_col = resolve("code")
         name_col = resolve("name", allow_missing=True)
 
-        factor_cols: Dict[str, str] = {}
+        optional_raw = FeatureEngineer.get_optional_raw_feature_names()
+        factor_cols: Dict[str, Optional[str]] = {}
         for internal_name, db_col, _ in ModelConfig.BASIC_FACTORS:
-            factor_cols[internal_name] = resolve(db_col)
+            allow_missing = internal_name in optional_raw
+            factor_cols[internal_name] = resolve(db_col, allow_missing=allow_missing)
 
         return _ColumnSpec(
             trade_date=trade_date_col,
@@ -105,7 +107,7 @@ class SQLStrictLoader:
         select_cols = [cols.trade_date, cols.code]
         if cols.name:
             select_cols.append(cols.name)
-        select_cols.extend(cols.factor_cols.values())
+        select_cols.extend([c for c in cols.factor_cols.values() if c is not None])
 
         # Preserve order but deduplicate in case of same-name columns.
         seen = set()
@@ -177,6 +179,11 @@ class SQLStrictLoader:
         raw_tensors: Dict[str, torch.Tensor] = {}
         for internal_name, _, fill_method in ModelConfig.BASIC_FACTORS:
             sql_col = cols.factor_cols[internal_name]
+            if sql_col is None:
+                print(
+                    f"Warning: optional column for '{internal_name}' not found in SQL, skipping."
+                )
+                continue
             sub_df = pivot_df[sql_col].copy()
             sub_df = sub_df.reindex(columns=assets)
 

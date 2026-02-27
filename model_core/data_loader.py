@@ -12,7 +12,7 @@ class CBDataLoader:
         self.valid_mask = None  # [Time, Assets] 标记是否可交易
         self.split_idx = None   # 训练/验证切分索引 (基于 RobustConfig)
         
-    def load_data(self):
+    def load_data(self, start_date: str = '2022-08-01'):
         print(f"Loading Parquet from: {ModelConfig.CB_PARQUET_PATH}")
         
         # 1. Load Parquet
@@ -34,11 +34,50 @@ class CBDataLoader:
         # Ensure datetime index
         if 'trade_date' in df.columns:
             df['trade_date'] = pd.to_datetime(df['trade_date'])
-            
-        # Filter by Date (2022-08-01 ~ Now)
-        start_date = '2022-08-01'
-        print(f"Filtering data from {start_date}...")
-        df = df[df['trade_date'] >= start_date]
+
+        # 日期范围校验
+        raw_min_date = df['trade_date'].min()
+        raw_max_date = df['trade_date'].max()
+        if pd.isna(raw_min_date) or pd.isna(raw_max_date):
+            raise RuntimeError("trade_date contains no valid datetime values")
+
+        requested_start = pd.to_datetime(start_date)
+        effective_start = requested_start
+        if requested_start < raw_min_date:
+            print(
+                f"Warning: requested start_date {requested_start.strftime('%Y-%m-%d')} "
+                f"earlier than data min {raw_min_date.strftime('%Y-%m-%d')}, clamped to data min."
+            )
+            effective_start = raw_min_date
+        if requested_start > raw_max_date:
+            raise ValueError(
+                f"start_date {requested_start.strftime('%Y-%m-%d')} is later than data max "
+                f"{raw_max_date.strftime('%Y-%m-%d')}"
+            )
+
+        # --- 预热前推 (Warmup Pre-loading) ---
+        # 为 _robust_normalize 的滚动窗口提供足够的前置真实数据，
+        # 避免训练首日的特征全部为 0。
+        warmup_days = ModelConfig.WARMUP_DAYS
+        if warmup_days > 0:
+            load_start = effective_start - pd.Timedelta(days=warmup_days)
+            load_start = max(load_start, raw_min_date)  # 不超出数据范围
+            actual_warmup = (effective_start - load_start).days
+            if actual_warmup < warmup_days:
+                print(
+                    f"Warning: warmup clamped to {actual_warmup} natural days "
+                    f"(requested {warmup_days}), data starts at {raw_min_date.strftime('%Y-%m-%d')}"
+                )
+        else:
+            load_start = effective_start
+
+        print(
+            f"Filtering data from {load_start.strftime('%Y-%m-%d')} "
+            f"(effective_start={effective_start.strftime('%Y-%m-%d')}, "
+            f"warmup_days={warmup_days}, "
+            f"raw_range=[{raw_min_date.strftime('%Y-%m-%d')}, {raw_max_date.strftime('%Y-%m-%d')}])..."
+        )
+        df = df[df['trade_date'] >= load_start]
         print(f"Filtered shape: {df.shape}")
         
         # 2. Pivot to Wide Format [Time, Assets]
@@ -46,15 +85,15 @@ class CBDataLoader:
         raw_tensors = {}
         assets = df['code'].unique()
         assets = sorted(assets)
-        self.assets_list = assets
+        # assets_list 在资产池清理后再赋值（见下方 Asset Cleanup）
         
         print(f"Pivoting data for {len(assets)} assets...")
         
         # Pivot helper - 一次性 pivot 所有列
         pivot_df = df.pivot(index='trade_date', columns='code')
         
-        # 保存日期列表 (用于交易细节输出)
-        self.dates_list = pivot_df.index.strftime('%Y-%m-%d').tolist()
+        # 全范围日期列表（含预热段）
+        all_dates_list = pivot_df.index.strftime('%Y-%m-%d').tolist()
         
         # 构建 code -> name 映射 (用于交易细节输出)
         if 'name' in df.columns:
@@ -83,7 +122,6 @@ class CBDataLoader:
             data_np = sub_df.fillna(0.0).values.astype(np.float32)
             raw_tensors[internal_name] = torch.tensor(data_np, device=ModelConfig.DEVICE)
         
-        self.raw_data_cache = raw_tensors
         print(f"Loaded {len(raw_tensors)} factors: {list(raw_tensors.keys())}")
         
         # 3. Construct Valid Mask (Filter)
@@ -91,25 +129,83 @@ class CBDataLoader:
         has_price = raw_tensors['CLOSE'] > 0
         is_trading = raw_tensors['VOL'] > 0
         not_expiring = raw_tensors['LEFT_YRS'] > 0.5  # 排除剩余年限不足半年的转债
-        self.valid_mask = has_price & is_trading & not_expiring
-        print(f"Valid mask: {self.valid_mask.sum().item()} / {self.valid_mask.numel()} valid samples")
+        valid_mask = has_price & is_trading & not_expiring
         
-        # 4. Compute Features (Feature Engineer)
-        print("Computing features...")
-        self.feat_tensor = FeatureEngineer.compute_features(self.raw_data_cache)
+        # 4. 计算预热偏移量（在 compute_features 前计算，传入 warmup_rows）
+        effective_start_str = effective_start.strftime('%Y-%m-%d')
+        warmup_offset = 0
+        for i, d in enumerate(all_dates_list):
+            if d >= effective_start_str:
+                warmup_offset = i
+                break
+
+        # 5. Compute Features (Feature Engineer)
+        # 注意: 必须在裁剪前计算，让 _robust_normalize 的滚动窗口利用预热段数据
+        # warmup_offset 告知标准化器有多少行真实预热数据，以减少或跳过前 window 行的零化
+        print(f"Computing features (warmup_offset={warmup_offset})...")
+        feat_tensor = FeatureEngineer.compute_features(raw_tensors, warmup_rows=warmup_offset)
         
         # 5. Compute Target Return (T+1)
         # 我们预测的是 T+1 的收益率 (close_T+1 / close_T - 1)
         close = raw_tensors['CLOSE']
         ret_1d = (torch.roll(close, -1, dims=0) / (close + 1e-9)) - 1.0
         # 对无效数据的收益率置 0
-        ret_1d[~self.valid_mask] = 0.0
+        ret_1d[~valid_mask] = 0.0
         # 最后一行也是无效的
         ret_1d[-1] = 0.0
-        
+
+        # --- 裁剪预热段 (Warmup Trim) ---
+
+        if warmup_offset > 0:
+            print(
+                f"Warmup trim: removing {warmup_offset} pre-training rows "
+                f"(dates {all_dates_list[0]} ~ {all_dates_list[warmup_offset - 1]})"
+            )
+            # 裁剪所有张量和日期列表
+            feat_tensor = feat_tensor[warmup_offset:]
+            ret_1d = ret_1d[warmup_offset:]
+            valid_mask = valid_mask[warmup_offset:]
+            for k in raw_tensors:
+                raw_tensors[k] = raw_tensors[k][warmup_offset:]
+            all_dates_list = all_dates_list[warmup_offset:]
+
+            # 验证: 特征首行应非全零（预热生效）
+            first_row_nonzero = (feat_tensor[0].abs() > 1e-9).any().item()
+            if first_row_nonzero:
+                print("Warmup OK: first training day features are non-zero")
+            else:
+                print(
+                    "Warning: first training day features are still zero "
+                    "(warmup may be insufficient or data too sparse)"
+                )
+        else:
+            if warmup_days > 0:
+                print("Warning: warmup_offset=0, no pre-training data was trimmed")
+
+        # --- 资产池清理 (Asset Cleanup) ---
+        # 过滤在训练期间从未出现有效数据的"幽灵标的"（可能仅存在于预热段）
+        ever_valid = valid_mask.any(dim=0)  # [Assets] bool
+        if not ever_valid.all():
+            drop_count = (~ever_valid).sum().item()
+            keep_indices = ever_valid.nonzero(as_tuple=True)[0]
+            feat_tensor = feat_tensor[:, keep_indices, :]
+            ret_1d = ret_1d[:, keep_indices]
+            valid_mask = valid_mask[:, keep_indices]
+            for k in raw_tensors:
+                raw_tensors[k] = raw_tensors[k][:, keep_indices]
+            assets = [assets[i] for i in keep_indices.tolist()]
+            print(f"Asset cleanup: dropped {drop_count} assets with no valid data in training period")
+
+        # 赋值到实例属性
+        self.assets_list = assets
+        self.raw_data_cache = raw_tensors
+        self.feat_tensor = feat_tensor
         self.target_ret = ret_1d
+        self.valid_mask = valid_mask
+        self.dates_list = all_dates_list
+        print(f"Valid mask: {self.valid_mask.sum().item()} / {self.valid_mask.numel()} valid samples")
         
-        # 6. 计算 Train/Val 分割索引
+        # 6. 计算 Train/Val 分割索引（在裁剪后的日期列表上计算）
         split_date = RobustConfig.TRAIN_TEST_SPLIT_DATE
         split_idx = 0
         used_default_split = False

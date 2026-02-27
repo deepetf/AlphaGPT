@@ -419,6 +419,16 @@ def main():
     args = parse_args()
     logger = setup_logging()
 
+    # No CLI args: use the requested default profile for daily live run.
+    if len(sys.argv) == 1:
+        args.mode = "live"
+        args.state_backend = "sql"
+        args.live_quote_source = "qmt"
+        logger.info(
+            "No CLI args detected, apply defaults: "
+            "--mode live --state-backend sql --live-quote-source qmt"
+        )
+
     mode = args.mode
     if args.replay_strict:
         mode = "strict_replay"
