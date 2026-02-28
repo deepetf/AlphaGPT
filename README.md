@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.6: Live Quote Override & Warmup Alignment (Current)**
+Current Version: **V5.7: TS Ops Expansion & Validator Hardening (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,17 @@ Current Version: **V5.6: Live Quote Override & Warmup Alignment (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.6: Live Quote Override & Warmup Alignment (Current)**
+### **V5.7: TS Ops Expansion & Validator Hardening (Current)**
+*在 V5.6 基础上完成时序算子扩展与校验器风控加固，确保新算子可稳定进入训练闭环。*
+- **TS Operators Phase1 Activated**: 新增并启用 `TS_MOM10`、`TS_MOM20`、`TS_STD20`、`TS_STD60`、`TS_MAX20`、`TS_MIN20`，统一边界零化与 `nan_to_num` 处理，支持直接参与公式搜索与训练采样。
+- **Operator Set Cleanup**: 删除 `PRODUCT`（与 `MUL` 完全等价）避免算子冗余，降低搜索空间重复度。
+- **Validator Penalty Upgrade**: 新增 `TS_STD5/20/60 -> DIV` 显式软惩罚，并保留 `TS_MOM* -> DIV` 与 `Total DIV` 密度惩罚，降低分母接近 0 的结构风险。
+- **Regression Tests Strengthened**: 新增/完善 `tests/test_new_ops_phase1.py`，覆盖 `TS_STD60` 长窗口（`T>=60`）下 `NaN/Inf` 传播处理与 validator 新惩罚规则。
+- **示例命令（训练入口，使用新算子词表）**: `python -m model_core.engine`
+- **示例命令（新算子回归测试）**: `pytest tests/test_new_ops_phase1.py -q`
+- **示例命令（单日 live 仿真）**: `python strategy_manager/run_sim.py --mode live --date 2026-02-27 --state-backend sql --live-quote-source qmt`
+
+### **V5.6: Live Quote Override & Warmup Alignment**
 *在 V5.5 基础上补强 live 行情接入稳定性，并完成训练/验证预热窗口口径升级。*
 - **Live No-Arg Default Profile**: `run_sim.py` 在无参数启动时默认使用 `--mode live --state-backend sql --live-quote-source qmt`，便于实盘日常调度。
 - **QMT Tick Snapshot Upgrade**: `RealtimeDataProvider.get_realtime_quotes` 改为 `get_full_tick` 路径，统一输出 `trade_date/open/high/low/close/vol/amount` 并解析 `timetag` 日期。
@@ -39,10 +49,13 @@ Current Version: **V5.6: Live Quote Override & Warmup Alignment (Current)**
 - **Warmup-Aware Loader Pipeline**: `CBDataLoader` 支持 `start_date` 与 `warmup_days` 前置加载，特征计算后裁剪预热段并清理无效资产；`FeatureEngineer` 支持 `warmup_rows` 与 `LOG_MONEYNESS` 派生特征。
 - **Strict Loader Optional Columns**: `SQLStrictLoader` 支持可选原始列缺失（用于派生特征依赖），缺失时跳过并提示，提升跨库表结构兼容性。
 - **Verify Warmup Start Backfill**: `verify_strategy` 自动从验证起点向前回补加载窗口（约 200 自然日），与滚动特征和 warmup 口径对齐。
+- **New Ops Phase1 (TS)**: 新增 `TS_MOM10`、`TS_MOM20`、`TS_STD20`、`TS_STD60`、`TS_MAX20`、`TS_MIN20`；`TS_MOMn` 采用差分定义 `x_t - x_{t-n}`，并统一边界零化与 `nan_to_num` 处理。
+- **Validator Risk Penalty Upgrade**: `formula_validator` 新增 `TS_MOM* -> DIV`、`TS_MOM* -> LOG/SQRT`、`TS_STD5/TS_DELTA -> TS_MAX20/TS_MIN20` 软惩罚，同时新增 `DIV` 过密惩罚（`Total DIV`）。
 - **示例命令（无参数默认 live 启动）**: `python strategy_manager/run_sim.py`
 - **示例命令（live 单日 + QMT 实时行情）**: `python strategy_manager/run_sim.py --mode live --date 2026-02-27 --state-backend sql --live-quote-source qmt`
 - **示例命令（训练端指定数据起始日）**: `python -m model_core.engine --data-start-date 2023-01-01`
 - **示例命令（verify 预热对齐）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2026-02-13 --strategy-id king_v1`
+- **示例命令（新算子回归测试）**: `pytest tests/test_new_ops_phase1.py -q`
 
 ### **V5.5: Verify Visualization & Multi-Strategy Combo**
 *在 V5.4 基础上继续强化 verify 诊断能力，新增基准对齐可视化与多策略组合产物，便于直接评估“降回撤、提夏普”。*
@@ -225,6 +238,11 @@ Current Version: **V5.6: Live Quote Override & Warmup Alignment (Current)**
 - 支持时序算子（`TS_*`）、截面算子（`CS_*`）和逻辑算子（`IF_POS`...）。
 - **零未来函数设计**。
 
+新增算子（Phase1）:
+- Momentum: `TS_MOM10`, `TS_MOM20`（差分动量 `x_t - x_{t-n}`）
+- Volatility: `TS_STD20`, `TS_STD60`
+- Breakout: `TS_MAX20`, `TS_MIN20`
+
 ### 3. CBBacktest (Robust)
 - Top-K 轮动策略回测器。
 - 支持 `Transaction Fee` 与 `Turnover` 惩罚。
@@ -292,5 +310,3 @@ robust_config:
 ---
 
 **Disclaimer**: Quantitative trading involves significant risks. This code is for research purposes only.
-
-
