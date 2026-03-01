@@ -6,7 +6,7 @@
   "defaults": {
     "initial_capital": 1000000,
     "top_k": 5,
-    "take_profit_ratio": 0.04,
+    "take_profit_ratio": 0.05,
     "fee_rate": 0.001,
     "replay_strict": true,
     "replay_source": "sql_eod",
@@ -28,6 +28,23 @@
         "TS_STD5",
         "ADD",
         "MAX"
+      ],
+      "params": {
+      }
+    },
+    {
+      "id": "king_agressive",
+      "name": "agressive Factor Strategy",
+      "enabled": true,
+      "formula": [
+        "VOLATILITY_STK",
+        "VOLATILITY_STK",
+        "TS_STD5",
+        "TS_DELTA",
+        "MAX",
+        "PCT_CHG_STK",
+        "TS_STD5",
+        "ADD"
       ],
       "params": {
       }
