@@ -358,6 +358,9 @@ class AlphaEngine:
             lowvar_recovery_strike = 0
             saturation_strike = 0
             lowvar_penalty_multiplier = 1.0
+            low_reward_std_strike = 0
+            steps_since_new_king = 0
+            steps_since_pool_update = 0
             
             # 3. 控制器状态
             cool_down_timer = 0
@@ -394,6 +397,17 @@ class AlphaEngine:
                         current_beta = base_beta
                     else:
                         current_beta = base_beta
+
+                entropy_boost = 0.0
+                if steps_since_new_king >= RobustConfig.STAGNATION_PATIENCE:
+                    entropy_boost = max(entropy_boost, RobustConfig.STAGNATION_ENTROPY_BOOST)
+                if (
+                    steps_since_pool_update >= RobustConfig.REWARD_STD_PATIENCE
+                    and low_reward_std_strike >= RobustConfig.REWARD_STD_PATIENCE
+                ):
+                    entropy_boost = max(entropy_boost, RobustConfig.COLLAPSE_ENTROPY_BOOST)
+                if entropy_boost > 0:
+                    current_beta = min(current_beta + entropy_boost, 0.08)
 
                 inp = torch.zeros((bs, 1), dtype=torch.long, device=ModelConfig.DEVICE)
 
@@ -503,6 +517,8 @@ class AlphaEngine:
                 rewards_list = []
                 step_gaps = []
                 step_struct_reasons = Counter()
+                step_new_king = 0
+                step_pool_updates = 0
 
                 
                 # 聚合结果
@@ -546,6 +562,7 @@ class AlphaEngine:
                             self.best_formula_readable = self.decode_formula(formula_str)
                             self.best_sharpe = sharpe_val
                             self.best_return = ret_val
+                            step_new_king += 1
                             
                             # 记录到历史 (V2.2: 包含稳健性指标 + 年化收益 + IC/IR)
                             king_num = len(self.king_history) + 1
@@ -607,18 +624,21 @@ class AlphaEngine:
                                 if readable not in self.diverse_pool:
                                     if len(self.diverse_pool) < RobustConfig.DIVERSITY_POOL_SIZE:
                                         self.diverse_pool[readable] = new_result
+                                        step_pool_updates += 1
                                     else:
                                         # 池满: 替换最低分公式 (如果新公式更好)
                                         min_key = min(self.diverse_pool, key=lambda k: self.diverse_pool[k]['score'])
                                         if score_val > self.diverse_pool[min_key]['score']:
                                             del self.diverse_pool[min_key]
                                             self.diverse_pool[readable] = new_result
+                                            step_pool_updates += 1
                             else:
                                 # Case 2: 与池中某公式高度相似 -> 仅当分数显著更高 (+10%) 时替换
                                 similar_score = self.diverse_pool[similar_key]['score']
                                 if score_val > similar_score * 1.1:  # 需要高出 10%
                                     del self.diverse_pool[similar_key]
                                     self.diverse_pool[readable] = new_result
+                                    step_pool_updates += 1
                                     final_status = "SIM_REPLACE"
                                 else:
                                     final_status = "SIM_REJECT"
@@ -633,9 +653,22 @@ class AlphaEngine:
                     step_stats[final_status] += 1
                     global_stats[final_status] += 1
 
+                if step_new_king > 0:
+                    steps_since_new_king = 0
+                else:
+                    steps_since_new_king += 1
+                if step_pool_updates > 0:
+                    steps_since_pool_update = 0
+                else:
+                    steps_since_pool_update += 1
+
                 # [V4.1.1] 奖励饱和监控 (Standard Deviation)
                 rewards_tensor = torch.tensor(rewards_list, dtype=torch.float)
                 reward_std = rewards_tensor.std().item()
+                if reward_std < RobustConfig.REWARD_STD_FLOOR:
+                    low_reward_std_strike += 1
+                else:
+                    low_reward_std_strike = 0
                 # 修正: 监控 MetricFail 的 Std 而不是 MetricPass (PASS)
                 metric_fail_rewards = [r for i, r in enumerate(rewards_list) if "METRIC" in results[i][2]]
                 metric_fail_std = torch.tensor(metric_fail_rewards).std().item() if len(metric_fail_rewards) > 1 else 0.0
@@ -645,6 +678,10 @@ class AlphaEngine:
                     "stats": dict(step_stats),
                     "reward_std": reward_std,
                     "metric_fail_std": metric_fail_std, # 新增 MetricFail Std
+                    "entropy_boost": entropy_boost,
+                    "steps_since_new_king": steps_since_new_king,
+                    "steps_since_pool_update": steps_since_pool_update,
+                    "low_reward_std_strike": low_reward_std_strike,
                     "timestamp": time.time()
                 }
                 with open(stats_path, 'a', encoding='utf-8') as stats_file:
@@ -679,7 +716,8 @@ class AlphaEngine:
                         f"FailAbs[S:{struct_abs}, L:{lowvar_abs}, M:{metric_abs}, R:{sim_abs}] | "
                         f"Gap(avg/p50/p90) {avg_gap:.2f}/{p50_gap:.2f}/{p90_gap:.2f} | "
                         f"RStd {reward_std:.2f} | MStd {metric_fail_std:.2f} | "
-                        f"SimFS {sim_fail_share:.1%} | B:{current_beta:.4f}"
+                        f"SimFS {sim_fail_share:.1%} | B:{current_beta:.4f} "
+                        f"(+{entropy_boost:.3f}) | KWait:{steps_since_new_king}"
                     )
                     tqdm.write(msg)
                     if top_fail_str:
@@ -727,12 +765,15 @@ class AlphaEngine:
                     lowvar_recovery_strike = 0
 
                 # [V4.1.1] 熔断规则 4: 奖励饱和告警
-                if reward_std < 0.1:
+                if reward_std < RobustConfig.REWARD_STD_FLOOR:
                     saturation_strike += 1
                 else:
                     saturation_strike = 0
-                if saturation_strike >= 50:
-                    tqdm.write(f">>> [LOG] Reward Saturation Detected (RStd {reward_std:.3f} < 0.1). Check Reward Design.")
+                if saturation_strike >= RobustConfig.REWARD_STD_PATIENCE:
+                    tqdm.write(
+                        f">>> [LOG] Reward Saturation Detected "
+                        f"(RStd {reward_std:.3f} < {RobustConfig.REWARD_STD_FLOOR:.3f})."
+                    )
                     saturation_strike = 0
 
                 rewards = torch.tensor(rewards_list, device=ModelConfig.DEVICE)
@@ -740,6 +781,8 @@ class AlphaEngine:
                 
                 # 优势函数归一化
                 adv = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
+                if reward_std < RobustConfig.REWARD_STD_FLOOR and RobustConfig.ADV_NOISE_STD > 0:
+                    adv = adv + torch.randn_like(adv) * RobustConfig.ADV_NOISE_STD
                 
                 # Loss & Update
                 loss = 0

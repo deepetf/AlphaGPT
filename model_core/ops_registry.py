@@ -112,7 +112,15 @@ def op_mul(a, b):
 
 @register_op("DIV", 2, "safe division")
 def op_div(a, b):
-    return a / (b + 1e-9)
+    eps = 1e-6
+    safe_b = torch.where(
+        torch.abs(b) < eps,
+        torch.where(b >= 0, torch.full_like(b, eps), torch.full_like(b, -eps)),
+        b,
+    )
+    out = a / safe_b
+    out = torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+    return torch.clamp(out, -1e6, 1e6)
 
 
 @register_op("NEG", 1, "negation")

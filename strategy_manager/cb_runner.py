@@ -29,6 +29,7 @@ if project_root not in sys.path:
 
 from model_core.config import ModelConfig, RobustConfig
 from model_core.data_loader import CBDataLoader
+from model_core.signal_utils import default_min_valid_count, select_top_k_indices
 from model_core.vm import StackVM
 
 # Strategy Components
@@ -193,21 +194,31 @@ class CBStrategyRunner:
         # loader.valid_mask is [Time, Assets]
         today_mask = loader.valid_mask[latest_date_idx, :].to('cpu') # [Assets]
         
-        # Mask invalids
-        target_factors[~today_mask] = -1e9
-        
-        # Top-K Slicing
-        # values, indices
-        top_k_vals, top_k_indices = torch.topk(target_factors, k=self.top_k)
+        min_required = default_min_valid_count(
+            top_k=self.top_k,
+            override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+        )
+        top_k_indices, top_k_vals, effective_valid = select_top_k_indices(
+            values=target_factors,
+            valid_mask=today_mask,
+            top_k=self.top_k,
+            min_valid_count=min_required,
+            clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
+            winsor_q=RobustConfig.SIGNAL_WINSOR_Q,
+            clip_value=RobustConfig.SIGNAL_CLIP,
+            rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
+        )
+        if effective_valid < min_required:
+            logger.critical(
+                f"⛔ CIRCUIT BREAKER: effective valid assets too few after clean "
+                f"({effective_valid} < {min_required}). Trading HALTED."
+            )
+            return
         
         selected_assets = []
         for rank, idx in enumerate(top_k_indices):
             idx = idx.item()
             val = top_k_vals[rank].item()
-            
-            # double check validity
-            if val <= -1e8: 
-                break # 不足 K 个有效
             
             code = loader.assets_list[idx]
             name = loader.names_dict.get(code, "Unknown")
@@ -283,8 +294,6 @@ class CBStrategyRunner:
         else:
             logger.info("No orders generated (Holdings match Target)")
             
-        self.save_plan(latest_date, selected_assets, orders)
-        
         self.save_plan(latest_date, selected_assets, orders)
         
         # 模拟成交更新状态

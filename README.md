@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.7: TS Ops Expansion & Validator Hardening (Current)**
+Current Version: **V5.8: Signal Stabilization & Live NAV Consistency (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,19 @@ Current Version: **V5.7: TS Ops Expansion & Validator Hardening (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.7: TS Ops Expansion & Validator Hardening (Current)**
+### **V5.8: Signal Stabilization & Live NAV Consistency (Current)**
+*在 V5.7 基础上，收敛训练后期坍缩风险，并修复 live 同日重跑导致的收益率口径错位。*
+- **Unified Signal Cleaning Pipeline**: 新增 `model_core/signal_utils.py`，统一 `finite 过滤 + winsorize + clip + rank`，并在 `backtest / sim_runner / cb_runner / verify_strategy` 复用，降低极值与无效资产对 Top-K 排名扰动。
+- **Top-K Gating Consistency**: `min_valid_count` 改为配置化（`signal_min_valid_count`），strict 场景下统一判定，避免不同路径出现“可交易样本数阈值不一致”。
+- **DIV 数值稳定性增强**: `op_div` 改为带符号 `eps` 防护 + `nan_to_num` + 输出裁剪，抑制分母极小引发的 1e9 级爆值传导。
+- **Training Anti-Collapse Controls**: 新增 `reward_std` 监控与停滞熵增益（`stagnation/collapse entropy boost`），并在低离散阶段注入轻量优势噪声，提升后期结构探索能力。
+- **Live NAV Daily Return Fix**: 修复 `NavTracker` 在“同日重复运行覆盖写入”场景下 `daily_ret` 错算问题；现在同日覆盖时按“上一交易日 NAV”计算，并同步修正 `peak/mdd` 基线。
+- **Small Fixes**: 删除 `cb_runner.py` 重复 `save_plan` 调用；`verify_strategy` 的 `avg_holding` 统一改为“持仓只数”口径。
+- **示例命令（训练，含防坍缩参数）**: `python -m model_core.engine --config model_core/default_config.yaml`
+- **示例命令（strict 回放，验证新 Top-K 清洗链路）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2026-03-02 --state-backend sql --replay-source sql_eod`
+- **示例命令（live 单日，关注 nav/daily_ret 一致性）**: `python strategy_manager/run_sim.py --mode live --date 2026-03-02 --state-backend sql --live-quote-source dummy`
+
+### **V5.7: TS Ops Expansion & Validator Hardening**
 *在 V5.6 基础上完成时序算子扩展与校验器风控加固，确保新算子可稳定进入训练闭环。*
 - **TS Operators Phase1 Activated**: 新增并启用 `TS_MOM10`、`TS_MOM20`、`TS_STD20`、`TS_STD60`、`TS_MAX20`、`TS_MIN20`，统一边界零化与 `nan_to_num` 处理，支持直接参与公式搜索与训练采样。
 - **Operator Set Cleanup**: 删除 `PRODUCT`（与 `MUL` 完全等价）避免算子冗余，降低搜索空间重复度。

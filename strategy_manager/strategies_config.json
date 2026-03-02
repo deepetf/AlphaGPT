@@ -6,13 +6,38 @@
   "defaults": {
     "initial_capital": 1000000,
     "top_k": 5,
-    "take_profit_ratio": 0.05,
+    "take_profit_ratio": 0.06,
     "fee_rate": 0.001,
     "replay_strict": true,
     "replay_source": "sql_eod",
     "state_backend": "sql"
   },
+
   "strategies": [
+    {
+      "id": "king_crazy",
+      "name": "king_crazy",
+      "enabled": true,
+      "formula": [
+        "PCT_CHG_5",
+        "VOLATILITY_STK",
+        "TS_RET",
+        "IV",
+        "LOG",
+        "VOL_STK_60",
+        "PCT_CHG_STK",
+        "VOLATILITY_STK",
+        "TS_BIAS5",
+        "IF_POS",
+        "SUB",
+        "DIV",
+        "CS_DEMEAN",
+        "SUB",
+        "MIN"
+    ],
+      "params": {
+      }
+    },    
     {
       "id": "king_v1",
       "name": "Best Factor Strategy",

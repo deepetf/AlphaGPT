@@ -154,6 +154,54 @@ class ConfigMeta(type):
         # 止盈涨幅阈值，0 表示不止盈
         return cls._rc.get('take_profit', 0.0)
 
+    @property
+    def MIN_VALID_COUNT(cls) -> int:
+        return cls._rc.get('min_valid_count', 30)
+
+    @property
+    def SIGNAL_CLEAN_ENABLED(cls) -> bool:
+        return cls._rc.get('signal_clean_enabled', True)
+
+    @property
+    def SIGNAL_WINSOR_Q(cls) -> float:
+        return cls._rc.get('signal_winsor_q', 0.01)
+
+    @property
+    def SIGNAL_CLIP(cls) -> float:
+        return cls._rc.get('signal_clip', 5.0)
+
+    @property
+    def SIGNAL_RANK_OUTPUT(cls) -> bool:
+        return cls._rc.get('signal_rank_output', True)
+
+    @property
+    def SIGNAL_MIN_VALID_COUNT(cls) -> int:
+        return cls._rc.get('signal_min_valid_count', cls.MIN_VALID_COUNT)
+
+    @property
+    def REWARD_STD_FLOOR(cls) -> float:
+        return cls._rc.get('reward_std_floor', 0.12)
+
+    @property
+    def REWARD_STD_PATIENCE(cls) -> int:
+        return cls._rc.get('reward_std_patience', 20)
+
+    @property
+    def STAGNATION_PATIENCE(cls) -> int:
+        return cls._rc.get('stagnation_patience', 80)
+
+    @property
+    def STAGNATION_ENTROPY_BOOST(cls) -> float:
+        return cls._rc.get('stagnation_entropy_boost', 0.02)
+
+    @property
+    def COLLAPSE_ENTROPY_BOOST(cls) -> float:
+        return cls._rc.get('collapse_entropy_boost', 0.015)
+
+    @property
+    def ADV_NOISE_STD(cls) -> float:
+        return cls._rc.get('adv_noise_std', 0.05)
+
 
 class RobustConfig(metaclass=ConfigMeta):
     """

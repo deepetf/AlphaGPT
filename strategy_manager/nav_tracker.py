@@ -102,20 +102,22 @@ class NavTracker:
             DailyRecord 对象
         """
         nav = self.calculate_nav(holdings_value)
-        
-        # 计算收益率
-        if self.records:
-            prev_nav = self.records[-1].nav
-            daily_ret = (nav - prev_nav) / prev_nav if prev_nav > 0 else 0.0
+
+        # 同日重复运行时，daily_ret 必须相对“上一交易日”而不是同日旧记录。
+        overwrite_same_day = bool(self.records and self.records[-1].date == date)
+        baseline_records = self.records[:-1] if overwrite_same_day else self.records
+
+        if baseline_records:
+            prev_nav = baseline_records[-1].nav
         else:
-            daily_ret = (nav - self.initial_capital) / self.initial_capital
-        
+            prev_nav = self.initial_capital
+
+        daily_ret = (nav - prev_nav) / prev_nav if prev_nav > 0 else 0.0
         cum_ret = (nav - self.initial_capital) / self.initial_capital
-        
-        # 更新峰值并计算最大回撤
-        if nav > self.peak_nav:
-            self.peak_nav = nav
-        
+
+        # 同日覆盖时重建历史峰值，避免使用已被覆盖记录导致的 peak/mdd 偏差。
+        historical_peak = max([self.initial_capital] + [r.nav for r in baseline_records])
+        self.peak_nav = max(historical_peak, nav)
         mdd = (self.peak_nav - nav) / self.peak_nav if self.peak_nav > 0 else 0.0
         
         # 创建记录
@@ -131,7 +133,7 @@ class NavTracker:
         )
         
         # 避免同一天重复记录
-        if self.records and self.records[-1].date == date:
+        if overwrite_same_day:
             self.records[-1] = record
         else:
             self.records.append(record)

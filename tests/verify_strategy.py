@@ -31,6 +31,7 @@ from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.factors import FeatureEngineer
+from model_core.signal_utils import build_topk_weights
 from model_core.vm import StackVM
 from strategy_manager.strategy_config import load_strategies_config
 from strategy_manager.cb_runner import CBStrategyRunner
@@ -948,30 +949,16 @@ class StrategyVerifier:
 
         device = factors.device
         T, N = factors.shape
-        min_valid_count = max(30, backtest.top_k * 2)
-
-        masked_factors = factors.clone()
-        masked_factors[~valid_mask] = -1e9
-
-        daily_valid_count = valid_mask.sum(dim=1)
-        valid_trading_day = daily_valid_count >= min_valid_count
-        actual_k = torch.clamp(daily_valid_count, max=backtest.top_k)
-
-        weights = torch.zeros(T, N, device=device)
-        daily_holdings = []
-        for t in range(T):
-            if not valid_trading_day[t]:
-                daily_holdings.append([])
-                continue
-
-            k = int(actual_k[t].item())
-            if k == 0:
-                daily_holdings.append([])
-                continue
-
-            _, top_indices = torch.topk(masked_factors[t], k=k, largest=True)
-            weights[t, top_indices] = 1.0 / k
-            daily_holdings.append(top_indices.tolist())
+        weights, valid_trading_day, daily_valid_count, daily_holdings = build_topk_weights(
+            factors=factors,
+            valid_mask=valid_mask,
+            top_k=backtest.top_k,
+            min_valid_count=backtest.min_valid_count,
+            clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
+            winsor_q=RobustConfig.SIGNAL_WINSOR_Q,
+            clip_value=RobustConfig.SIGNAL_CLIP,
+            rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
+        )
 
         prev_weights = torch.roll(weights, 1, dims=0)
         prev_weights[0] = 0
@@ -1035,7 +1022,7 @@ class StrategyVerifier:
         avg_turnover = valid_turnover.mean()
         turnover_penalty = torch.clamp(avg_turnover - 0.3, min=0) * 2
 
-        avg_holding = weights.sum(dim=1)[valid_trading_day].mean()
+        avg_holding = (weights > 0).sum(dim=1).float()[valid_trading_day].mean()
         activity_penalty = 5.0 if avg_holding < backtest.top_k * 0.5 else 0.0
 
         reward = sharpe * 10 - turnover_penalty - activity_penalty

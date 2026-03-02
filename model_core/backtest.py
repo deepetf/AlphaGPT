@@ -6,6 +6,7 @@ V2: 增加分段验证、滚动稳定性、最大回撤、可交易性约束。
 """
 import torch
 from .config import ModelConfig, RobustConfig
+from .signal_utils import build_topk_weights, default_min_valid_count
 
 
 class CBBacktest:
@@ -30,7 +31,10 @@ class CBBacktest:
         self.fee_rate = fee_rate if fee_rate is not None else RobustConfig.FEE_RATE
         self.take_profit = take_profit if take_profit is not None else RobustConfig.TAKE_PROFIT
         # 要求有效标的至少是 top_k 的 2 倍 (最少 30 个)，保证选择性
-        self.min_valid_count = max(30, top_k * 2)
+        self.min_valid_count = default_min_valid_count(
+            top_k=top_k,
+            override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+        )
     
     def evaluate(self, factors: torch.Tensor, target_ret: torch.Tensor, 
                  valid_mask: torch.Tensor,
@@ -56,36 +60,16 @@ class CBBacktest:
         device = factors.device
         T, N = factors.shape
         
-        # 1. 应用有效性掩码
-        masked_factors = factors.clone()
-        masked_factors[~valid_mask] = -1e9
-        
-        # 2. 计算每日有效标的数量
-        daily_valid_count = valid_mask.sum(dim=1)  # [T]
-        
-        # 3. 标记有效交易日 (有效标的 >= min_valid_count)
-        valid_trading_day = daily_valid_count >= self.min_valid_count  # [T]
-        
-        # 4. 精确选择 Top-K (使用 topk 索引，避免超额持仓)
-        # 确定每天实际可选的数量 (min(top_k, 有效标的数))
-        actual_k = torch.clamp(daily_valid_count, max=self.top_k)  # [T]
-        
-        # 初始化权重矩阵
-        weights = torch.zeros(T, N, device=device)
-        
-        for t in range(T):
-            if not valid_trading_day[t]:
-                continue  # 有效标的不足，跳过
-            
-            k = int(actual_k[t].item())
-            if k == 0:
-                continue
-            
-            # 使用 topk 获取精确的 K 个索引
-            _, top_indices = torch.topk(masked_factors[t], k=k, largest=True)
-            
-            # 等权分配
-            weights[t, top_indices] = 1.0 / k
+        weights, valid_trading_day, daily_valid_count, _ = build_topk_weights(
+            factors=factors,
+            valid_mask=valid_mask,
+            top_k=self.top_k,
+            min_valid_count=self.min_valid_count,
+            clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
+            winsor_q=RobustConfig.SIGNAL_WINSOR_Q,
+            clip_value=RobustConfig.SIGNAL_CLIP,
+            rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
+        )
         
         # 5. 计算换手率
         prev_weights = torch.roll(weights, 1, dims=0)
@@ -177,7 +161,7 @@ class CBBacktest:
         turnover_penalty = torch.clamp(avg_turnover - 0.3, min=0) * 2
         
         # 10. 活跃度检查
-        avg_holding = weights.sum(dim=1)[valid_trading_day].mean()  # 平均每天持仓数量
+        avg_holding = (weights > 0).sum(dim=1).float()[valid_trading_day].mean()  # 平均每天持仓数量
         if avg_holding < self.top_k * 0.5:
             activity_penalty = 5.0
         else:
@@ -209,32 +193,16 @@ class CBBacktest:
         device = factors.device
         T, N = factors.shape
         
-        # 应用有效性掩码
-        masked_factors = factors.clone()
-        masked_factors[~valid_mask] = -1e9
-        
-        # 计算每日有效标的数量
-        daily_valid_count = valid_mask.sum(dim=1)
-        valid_trading_day = daily_valid_count >= self.min_valid_count
-        actual_k = torch.clamp(daily_valid_count, max=self.top_k)
-        
-        # 精确选择 Top-K
-        weights = torch.zeros(T, N, device=device)
-        daily_holdings = []
-        
-        for t in range(T):
-            if not valid_trading_day[t]:
-                daily_holdings.append([])
-                continue
-            
-            k = int(actual_k[t].item())
-            if k == 0:
-                daily_holdings.append([])
-                continue
-            
-            _, top_indices = torch.topk(masked_factors[t], k=k, largest=True)
-            weights[t, top_indices] = 1.0 / k
-            daily_holdings.append(top_indices.tolist())
+        weights, valid_trading_day, daily_valid_count, daily_holdings = build_topk_weights(
+            factors=factors,
+            valid_mask=valid_mask,
+            top_k=self.top_k,
+            min_valid_count=self.min_valid_count,
+            clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
+            winsor_q=RobustConfig.SIGNAL_WINSOR_Q,
+            clip_value=RobustConfig.SIGNAL_CLIP,
+            rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
+        )
         
         # 换手率和交易成本
         prev_weights = torch.roll(weights, 1, dims=0)
@@ -267,7 +235,7 @@ class CBBacktest:
         avg_turnover = valid_turnover.mean()
         turnover_penalty = torch.clamp(avg_turnover - 0.3, min=0) * 2
         
-        avg_holding = weights.sum(dim=1)[valid_trading_day].mean()
+        avg_holding = (weights > 0).sum(dim=1).float()[valid_trading_day].mean()
         activity_penalty = 5.0 if avg_holding < self.top_k * 0.5 else 0.0
         
         reward = sharpe * 10 - turnover_penalty - activity_penalty
@@ -308,23 +276,16 @@ class CBBacktest:
         T, N = factors.shape
         
         # 1. 基础计算 (与 evaluate 相同)
-        masked_factors = factors.clone()
-        masked_factors[~valid_mask] = -1e9
-        
-        daily_valid_count = valid_mask.sum(dim=1)
-        valid_trading_day = daily_valid_count >= self.min_valid_count
-        actual_k = torch.clamp(daily_valid_count, max=self.top_k)
-        
-        weights = torch.zeros(T, N, device=device)
-        
-        for t in range(T):
-            if not valid_trading_day[t]:
-                continue
-            k = int(actual_k[t].item())
-            if k == 0:
-                continue
-            _, top_indices = torch.topk(masked_factors[t], k=k, largest=True)
-            weights[t, top_indices] = 1.0 / k
+        weights, valid_trading_day, daily_valid_count, _ = build_topk_weights(
+            factors=factors,
+            valid_mask=valid_mask,
+            top_k=self.top_k,
+            min_valid_count=self.min_valid_count,
+            clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
+            winsor_q=RobustConfig.SIGNAL_WINSOR_Q,
+            clip_value=RobustConfig.SIGNAL_CLIP,
+            rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
+        )
         
         # 换手和交易成本
         prev_weights = torch.roll(weights, 1, dims=0)

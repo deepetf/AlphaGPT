@@ -20,6 +20,8 @@ import torch
 import numpy as np
 import pandas as pd
 
+from model_core.config import RobustConfig
+from model_core.signal_utils import default_min_valid_count, select_top_k_indices
 from model_core.vm import StackVM
 from data_pipeline.realtime_provider import RealtimeDataProvider
 from strategy_manager.cb_portfolio import CBPortfolioManager
@@ -768,30 +770,31 @@ class SimulationRunner:
                 dtype=torch.bool,
             )
 
-        valid_count = int(mask.sum().item())
+        strict_gate = (valid_mask is not None) or self.replay_strict
+        min_required = 1
+        if strict_gate:
+            min_required = default_min_valid_count(
+                top_k=self.top_k,
+                override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+            )
 
-        # Align with backtest guard when strict mode is enabled.
-        if valid_mask is not None or self.replay_strict:
-            min_required = max(30, self.top_k * 2)
-            if valid_count < min_required:
-                logger.warning(
-                    f"[{self.strategy_id}] Skip trading: valid assets too few "
-                    f"({valid_count} < {min_required})"
-                )
-                return []
-
-        masked_values = values.clone()
-        masked_values[~mask] = float('-inf')
-
-        # Mask non-finite values before top-k.
-        finite_mask = torch.isfinite(masked_values)
-        masked_values[~finite_mask] = float('-inf')
-        # 鍙?Top-K
-        k = min(self.top_k, valid_count)
-        if k == 0:
+        indices, scores, effective_valid = select_top_k_indices(
+            values=values,
+            valid_mask=mask,
+            top_k=self.top_k,
+            min_valid_count=min_required,
+            clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
+            winsor_q=RobustConfig.SIGNAL_WINSOR_Q,
+            clip_value=RobustConfig.SIGNAL_CLIP,
+            rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
+        )
+        if effective_valid < min_required:
+            logger.warning(
+                f"[{self.strategy_id}] Skip trading: valid assets too few after clean "
+                f"({effective_valid} < {min_required})"
+            )
             return []
 
-        scores, indices = torch.topk(masked_values, k, largest=True)
         target_codes = [asset_list[i] for i in indices.tolist()]
         
         # 淇濆瓨鍊欓€夎褰?(濡傛灉鎻愪緵浜?date 鍜?names_dict)

@@ -127,6 +127,12 @@ robust_config:
   #   定义: 单边交易费率
   #   引用位置: model_core/backtest.py -> __init__
   fee_rate: 0.0005  # 单边千分之 0.5
+  take_profit: 0.0
+  signal_clean_enabled: true
+  signal_winsor_q: 0.01
+  signal_clip: 5.0
+  signal_rank_output: true
+  signal_min_valid_count: 30
 
   # --------------------------------------------------------------------------
   # 评分权重 (Scoring Weights)
@@ -198,6 +204,12 @@ robust_config:
   #   - Entropy End: 0.01 (防止过早收敛)
   entropy_beta_start: 0.04
   entropy_beta_end: 0.015
+  reward_std_floor: 0.12
+  reward_std_patience: 20
+  stagnation_patience: 80
+  stagnation_entropy_boost: 0.02
+  collapse_entropy_boost: 0.015
+  adv_noise_std: 0.05
   
   # --------------------------------------------------------------------------
   # 多样性池 (Diversity Pool) - 结果去重控制
