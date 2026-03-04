@@ -47,6 +47,26 @@ class ConfigMeta(type):
         return cls._rc.get('penalty_metric_min', -6.0)
 
     @property
+    def METRIC_FAIL_REWARD_MODE(cls) -> str:
+        # hard: 旧版 clamp; soft: 连续 fail reward
+        return str(cls._rc.get('metric_fail_reward_mode', 'hard')).lower()
+
+    @property
+    def METRIC_GAP_W(cls) -> float:
+        # fail gap 惩罚权重
+        return cls._rc.get('metric_gap_w', 8.0)
+
+    @property
+    def METRIC_FAIL_REWARD_CAP(cls) -> float:
+        # fail reward 上限，防止失败样本变正激励
+        return cls._rc.get('metric_fail_reward_cap', 0.0)
+
+    @property
+    def METRIC_FAIL_REWARD_FLOOR(cls) -> float:
+        # fail reward 下限，防止极值爆点
+        return cls._rc.get('metric_fail_reward_floor', -10.0)
+
+    @property
     def PENALTY_SIM(cls) -> float:
         # 相似度拒绝惩罚
         return cls._rc.get('penalty_sim', -1.5)
@@ -144,6 +164,30 @@ class ConfigMeta(type):
     @property
     def DENSITY_PENALTY(cls) -> float:
         return cls._rc.get('density_penalty', -2.0)
+
+    @property
+    def DECODE_TS_DENSITY_SOFT_ENABLED(cls) -> bool:
+        return cls._rc.get('decode_ts_density_soft_enabled', True)
+
+    @property
+    def DECODE_TS_DENSITY_PENALTY_L1(cls) -> float:
+        return cls._rc.get('decode_ts_density_penalty_l1', 0.3)
+
+    @property
+    def DECODE_TS_DENSITY_PENALTY_L2(cls) -> float:
+        return cls._rc.get('decode_ts_density_penalty_l2', 0.8)
+
+    @property
+    def DECODE_TS_DENSITY_PENALTY_L3(cls) -> float:
+        return cls._rc.get('decode_ts_density_penalty_l3', 1.5)
+
+    @property
+    def DECODE_REACHABILITY_ENABLED(cls) -> bool:
+        return cls._rc.get('decode_reachability_enabled', True)
+
+    @property
+    def DECODE_LOOKAHEAD_ENABLED(cls) -> bool:
+        return cls._rc.get('decode_lookahead_enabled', True)
     
     @property
     def FEE_RATE(cls) -> float:
@@ -197,6 +241,78 @@ class ConfigMeta(type):
     @property
     def COLLAPSE_ENTROPY_BOOST(cls) -> float:
         return cls._rc.get('collapse_entropy_boost', 0.015)
+
+    @property
+    def MIN_SCORE_IMPROVEMENT(cls) -> float:
+        return cls._rc.get('min_score_improvement', 0.01)
+
+    @property
+    def ENTROPY_CONTROLLER_MODE(cls) -> str:
+        return str(cls._rc.get('entropy_controller_mode', 'hard')).lower()
+
+    @property
+    def ENTROPY_LOCK_BETA(cls) -> float:
+        return cls._rc.get('entropy_lock_beta', 0.06)
+
+    @property
+    def ENTROPY_LOCK_STEPS(cls) -> int:
+        return cls._rc.get('entropy_lock_steps', 10)
+
+    @property
+    def ENTROPY_WARN_BOOST(cls) -> float:
+        return cls._rc.get('entropy_warn_boost', 0.01)
+
+    @property
+    def CONTROLLER_HARD_FLOOR_RATE(cls) -> float:
+        return cls._rc.get('controller_hard_floor_rate', 0.01)
+
+    @property
+    def CONTROLLER_HARD_FLOOR_ABS(cls) -> float:
+        return cls._rc.get('controller_hard_floor_abs', 1.0)
+
+    @property
+    def CONTROLLER_HARD_WARN_RATE(cls) -> float:
+        return cls._rc.get('controller_hard_warn_rate', 0.05)
+
+    @property
+    def CONTROLLER_METRIC_FLOOR_RATE(cls) -> float:
+        return cls._rc.get('controller_metric_floor_rate', 0.002)
+
+    @property
+    def CONTROLLER_METRIC_FLOOR_ABS(cls) -> float:
+        return cls._rc.get('controller_metric_floor_abs', 1.0)
+
+    @property
+    def CONTROLLER_METRIC_WARN_RATE(cls) -> float:
+        return cls._rc.get('controller_metric_warn_rate', 0.01)
+
+    @property
+    def CONTROLLER_SIM_FLOOR_RATE(cls) -> float:
+        return cls._rc.get('controller_sim_floor_rate', 0.002)
+
+    @property
+    def CONTROLLER_SIM_FLOOR_ABS(cls) -> float:
+        return cls._rc.get('controller_sim_floor_abs', 1.0)
+
+    @property
+    def CONTROLLER_SIM_WARN_RATE(cls) -> float:
+        return cls._rc.get('controller_sim_warn_rate', 0.01)
+
+    @property
+    def CONTROLLER_POOL_FLOOR_RATE(cls) -> float:
+        return cls._rc.get('controller_pool_floor_rate', 0.1)
+
+    @property
+    def CONTROLLER_POOL_FLOOR_ABS(cls) -> float:
+        return cls._rc.get('controller_pool_floor_abs', 0.5)
+
+    @property
+    def CONTROLLER_POOL_WARN_RATE(cls) -> float:
+        return cls._rc.get('controller_pool_warn_rate', 0.2)
+
+    @property
+    def CONTROLLER_POOL_STAGNATION_PATIENCE(cls) -> int:
+        return cls._rc.get('controller_pool_stagnation_patience', 6)
 
     @property
     def ADV_NOISE_STD(cls) -> float:
@@ -262,7 +378,22 @@ class ModelConfig:
     D_MODEL = 256
     N_HEAD = 8
     N_LAYER = 4
-    LR = 1e-4
+
+    @classproperty
+    def LR(cls):
+        return cls._get_conf().get('lr', 1e-4)
+
+    @classproperty
+    def WEIGHT_DECAY(cls):
+        return cls._get_conf().get('weight_decay', 0.01)
+
+    @classproperty
+    def GRAD_CLIP_NORM(cls):
+        return cls._get_conf().get('grad_clip_norm', 1.0)
+
+    @classproperty
+    def GRAD_NORM_LOG_INTERVAL(cls):
+        return cls._get_conf().get('grad_norm_log_interval', 20)
 
     @classproperty
     def CB_PARQUET_PATH(cls):

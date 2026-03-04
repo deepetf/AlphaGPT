@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.8: Signal Stabilization & Live NAV Consistency (Current)**
+Current Version: **V5.9: Training Stability S1/S2/S3 Hardening (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,19 @@ Current Version: **V5.8: Signal Stabilization & Live NAV Consistency (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.8: Signal Stabilization & Live NAV Consistency (Current)**
+### **V5.9: Training Stability S1/S2/S3 Hardening (Current)**
+*在 V5.8 基础上，完成训练后期坍缩修复链路的第一阶段落地：S3 稳定性、S2 控制器观测/模式化、S1 失败样本连续地形。*
+- **S1 Fail Reward Shaping (Soft Mode)**: `METRIC_*` 失败样本不再固定硬惩罚，改为按 `gap` 连续塑形（`metric_fail_reward_mode=soft`、`metric_gap_w`、`metric_fail_reward_cap/floor`），同时保持 `best_info=None`，确保失败样本不会进入 king/pool。
+- **S2 Controller Diagnostics & Pool-Centric Control**: 熵控制器支持 `hard|metric|sim|pool` 模式，并强化 `pool_update/new_king` 停滞观测；控制台与日志新增滚动指标，便于区分“真停滞”与“近 king 缓慢推进”。
+- **Near-King 可观测性增强**: 每 20 step 打印 `NearKingTop3`（分数、best gap、pool 动作），并写入 `training_stats.jsonl`，可直接用于后验分析 gap 收敛。
+- **S3 Optimizer Stabilization**: 优化器参数改为配置驱动（`lr/weight_decay`），加入 `grad_clip_norm` 与 `grad_norm` 记录，降低 REINFORCE 高方差阶段的更新失稳。
+- **Runtime Robustness Fixes**: 修复 `self.model` 与 `cool_down_timer` 初始化误注释导致的启动错误；修复 `SIM_REJECT` 惩罚语句误注释问题，恢复相似拒绝惩罚生效。
+- **Config Documentation Upgrade**: `model_core/default_config.yaml` 完整补齐参数注释（含义/用法/建议取值），便于实验治理和 A/B 追踪。
+- **示例命令（训练，启用 V5.9 默认稳定化参数）**: `python -m model_core.engine --config model_core/default_config.yaml`
+- **示例命令（指定训练起始日期，复现实验窗口）**: `python -m model_core.engine --config model_core/default_config.yaml --data-start-date 2022-08-01`
+- **示例命令（训练完成后查看最新 king）**: `python - <<'PY'\nimport json\np='model_core/best_cb_formula.json'\nobj=json.load(open(p,'r',encoding='utf-8'))\nprint('best_score=',obj.get('best',{}).get('score'))\nprint('best_sharpe=',obj.get('best',{}).get('sharpe'))\nprint('total_kings=',obj.get('total_kings'))\nPY`
+
+### **V5.8: Signal Stabilization & Live NAV Consistency**
 *在 V5.7 基础上，收敛训练后期坍缩风险，并修复 live 同日重跑导致的收益率口径错位。*
 - **Unified Signal Cleaning Pipeline**: 新增 `model_core/signal_utils.py`，统一 `finite 过滤 + winsorize + clip + rank`，并在 `backtest / sim_runner / cb_runner / verify_strategy` 复用，降低极值与无效资产对 Top-K 排名扰动。
 - **Top-K Gating Consistency**: `min_valid_count` 改为配置化（`signal_min_valid_count`），strict 场景下统一判定，避免不同路径出现“可交易样本数阈值不一致”。

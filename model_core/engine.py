@@ -1,14 +1,15 @@
-"""
-AlphaGPT 训练引擎 (可转债版)
+﻿"""
+AlphaGPT 璁粌寮曟搸 (鍙浆鍊虹増)
 
-使用 Policy Gradient 训练 Transformer 模型生成 Alpha 因子公式。
-V2: 集成稳健性评估 (分段验证、滚动稳定性、最大回撤、可交易性约束)
+浣跨敤 Policy Gradient 璁粌 Transformer 妯″瀷鐢熸垚 Alpha 鍥犲瓙鍏紡銆?
+V2: 闆嗘垚绋冲仴鎬ц瘎浼?(鍒嗘楠岃瘉銆佹粴鍔ㄧǔ瀹氭€с€佹渶澶у洖鎾ゃ€佸彲浜ゆ槗鎬х害鏉?
 """
 import torch
 from torch.distributions import Categorical
 from tqdm import tqdm
 import json
 import os
+import re
 import time
 import argparse
 import numpy as np
@@ -22,24 +23,31 @@ from .alphagpt import AlphaGPT
 from .vm import StackVM
 from .backtest import CBBacktest
 from .ops_registry import OpsRegistry
+from .formula_validator import (
+    DISCRETE_OPS,
+    FORBIDDEN_TERMINAL_OPS,
+    HARD_FORBIDDEN_SEQUENCES,
+    MAX_TERMINAL_DISCRETE,
+    MAX_SIGN_LOG_DISTANCE,
+)
 
 
-# 全局变量，用于子进程共享只读数据 (避免 Pickling 开销)
+# 鍏ㄥ眬鍙橀噺锛岀敤浜庡瓙杩涚▼鍏变韩鍙鏁版嵁 (閬垮厤 Pickling 寮€閿€)
 _global_vm = None
 _global_bt = None
 _global_feat = None
 _global_ret = None
 _global_mask = None
-_global_split_idx = None  # 训练/验证切分索引
-# 止盈所需价格数据
+_global_split_idx = None  # 璁粌/楠岃瘉鍒囧垎绱㈠紩
+# 姝㈢泩鎵€闇€浠锋牸鏁版嵁
 _global_open = None
 _global_high = None
 _global_prev_close = None
 
 def _init_worker(feat_tensor, target_ret, valid_mask, split_idx, 
                  open_prices=None, high_prices=None, prev_close=None, config_path=None):
-    """子进程初始化函数"""
-    # 关键修复: 子进程需要重新加载动态配置，否则 INPUT_FEATURES 为空导致校验失败
+    """瀛愯繘绋嬪垵濮嬪寲鍑芥暟"""
+    # 鍏抽敭淇: 瀛愯繘绋嬮渶瑕侀噸鏂板姞杞藉姩鎬侀厤缃紝鍚﹀垯 INPUT_FEATURES 涓虹┖瀵艰嚧鏍￠獙澶辫触
     if config_path:
         try:
             from .config_loader import load_config
@@ -50,41 +58,41 @@ def _init_worker(feat_tensor, target_ret, valid_mask, split_idx,
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
     global _global_open, _global_high, _global_prev_close
     
-    # 关键优化: 强制单线程运行，防止多进程 CPU 竞争 (Oversubscription)
+    # 鍏抽敭浼樺寲: 寮哄埗鍗曠嚎绋嬭繍琛岋紝闃叉澶氳繘绋?CPU 绔炰簤 (Oversubscription)
     torch.set_num_threads(1)
     
     _global_vm = StackVM()
     _global_bt = CBBacktest(top_k=RobustConfig.TOP_K, take_profit=RobustConfig.TAKE_PROFIT)
     
-    # 将 Tensor 移动到 CPU 以避免多进程 CUDA/XPU 冲突
+    # 灏?Tensor 绉诲姩鍒?CPU 浠ラ伩鍏嶅杩涚▼ CUDA/XPU 鍐茬獊
     _global_feat = feat_tensor.to('cpu')
     _global_ret = target_ret.to('cpu')
     _global_mask = valid_mask.to('cpu')
     _global_split_idx = split_idx
     
-    # 止盈价格数据
+    # 姝㈢泩浠锋牸鏁版嵁
     _global_open = open_prices.to('cpu') if open_prices is not None else None
     _global_high = high_prices.to('cpu') if high_prices is not None else None
     _global_prev_close = prev_close.to('cpu') if prev_close is not None else None
 
 def _worker_eval(formula):
     """
-    子进程执行函数 (V2: 稳健性评估)
+    瀛愯繘绋嬫墽琛屽嚱鏁?(V2: 绋冲仴鎬ц瘎浼?
     
-    使用 evaluate_robust 获取多维指标，并计算综合奖励。
+    浣跨敤 evaluate_robust 鑾峰彇澶氱淮鎸囨爣锛屽苟璁＄畻缁煎悎濂栧姳銆?
     """
     global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
     global _global_open, _global_high, _global_prev_close
     
     try:
-        # 0. 公式结构验证 (在昂贵的回测之前进行)
+        # 0. 鍏紡缁撴瀯楠岃瘉 (鍦ㄦ槀璐电殑鍥炴祴涔嬪墠杩涜)
         from .formula_validator import validate_formula
         is_valid, structural_penalty, reason = validate_formula(formula)
         
         if not is_valid:
             return RobustConfig.PENALTY_STRUCT, None, "STRUCT_INVALID", reason
         
-        # 1. 执行公式
+        # 1. 鎵ц鍏紡
         try:
             res = _global_vm.execute(formula, _global_feat)
             if res is None:
@@ -92,13 +100,13 @@ def _worker_eval(formula):
         except Exception as e:
             return RobustConfig.PENALTY_EXEC, None, "EXEC_ERR", type(e).__name__
         
-        # 2. 检查因子方差
+        # 2. 妫€鏌ュ洜瀛愭柟宸?
         var_threshold = 1e-4
         if res.std() < var_threshold:
             return RobustConfig.PENALTY_LOWVAR, None, "LOW_VARIANCE", f"std={res.std():.2e}, thr={var_threshold}"
 
 
-        # 3. 稳健性评估 (含止盈逻辑)
+        # 3. 绋冲仴鎬ц瘎浼?(鍚鐩堥€昏緫)
         metrics = _global_bt.evaluate_robust(
             factors=res,
             target_ret=_global_ret,
@@ -109,27 +117,27 @@ def _worker_eval(formula):
             prev_close=_global_prev_close
         )
         
-        # 4. 硬淘汰条件 (Hard Filters) - [V3.5] 增加线性梯度与 Clamp
+        # 4. 纭窐姹版潯浠?(Hard Filters) - [V3.5] 澧炲姞绾挎€ф搴︿笌 Clamp
         gaps = []
         fail_status = "PASS"
         fail_reason = "OK"
         
-        # 4.1 验证集 Sharpe 太低
+        # 4.1 楠岃瘉闆?Sharpe 澶綆
         if metrics['sharpe_val'] < RobustConfig.MIN_SHARPE_VAL:
-            # 归一化 Gap: (阈值 - 实际值) / max(1, abs(阈值))
+            # 褰掍竴鍖?Gap: (闃堝€?- 瀹為檯鍊? / max(1, abs(闃堝€?)
             sharpe_gap = (RobustConfig.MIN_SHARPE_VAL - metrics['sharpe_val']) / max(1.0, abs(RobustConfig.MIN_SHARPE_VAL))
             gaps.append(max(0.0, float(sharpe_gap)))
             if fail_status == "PASS":
                 fail_status, fail_reason = "METRIC_SHARPE", f"val={metrics['sharpe_val']:.2f}"
         
-        # 4.2 活跃率太低 (选不到足够标的)
+        # 4.2 娲昏穬鐜囧お浣?(閫変笉鍒拌冻澶熸爣鐨?
         if metrics['active_ratio'] < RobustConfig.MIN_ACTIVE_RATIO:
             active_gap = (RobustConfig.MIN_ACTIVE_RATIO - metrics['active_ratio']) / RobustConfig.MIN_ACTIVE_RATIO
             gaps.append(max(0.0, float(active_gap)))
             if fail_status == "PASS":
                 fail_status, fail_reason = "METRIC_ACTIVE", f"ratio={metrics['active_ratio']:.2f}"
         
-        # 4.4 有效交易日太少 (统计不可靠)
+        # 4.4 鏈夋晥浜ゆ槗鏃ュお灏?(缁熻涓嶅彲闈?
         min_days = RobustConfig.MIN_VALID_DAYS
         if metrics['valid_days_train'] < min_days or metrics['valid_days_val'] < min_days:
             worst_days = min(metrics['valid_days_train'], metrics['valid_days_val'])
@@ -138,9 +146,11 @@ def _worker_eval(formula):
             if fail_status == "PASS":
                 fail_status, fail_reason = "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
 
-        if gaps:
-            avg_gap = sum(gaps) / len(gaps)
-            # Clamped Metric Penalty: clamp(base - scale * gap, min=-6.0, max=-4.0)
+        has_metric_gap_fail = len(gaps) > 0
+        avg_gap = (sum(gaps) / len(gaps)) if has_metric_gap_fail else 0.0
+        metric_fail_mode = RobustConfig.METRIC_FAIL_REWARD_MODE
+        if has_metric_gap_fail and metric_fail_mode == "hard":
+            # 旧版逻辑：hard clamp 后立即返回
             p_max = RobustConfig.PENALTY_METRIC_MAX
             p_min = RobustConfig.PENALTY_METRIC_MIN
             penalty = p_max - (p_max - p_min) * avg_gap
@@ -148,55 +158,68 @@ def _worker_eval(formula):
             return float(penalty), None, fail_status, f"{fail_reason} | gap={avg_gap:.2f}"
 
         
-        # 5. 综合评分 (Soft Scoring)
-        # 5.1 基础分: 加权 Sharpe
+        # 5. 缁煎悎璇勫垎 (Soft Scoring)
+        # 5.1 鍩虹鍒? 鍔犳潈 Sharpe
         base_score = (RobustConfig.TRAIN_WEIGHT * metrics['sharpe_train'] + 
                       RobustConfig.VAL_WEIGHT * metrics['sharpe_val'])
         
-        # 5.2 稳定性加成 (Mean - K*Std 越高越好)
+        # 5.2 绋冲畾鎬у姞鎴?(Mean - K*Std 瓒婇珮瓒婂ソ)
         stability_bonus = metrics['stability_metric'] * RobustConfig.STABILITY_W
         
-        # 5.3 年化收益率奖励 (鼓励高回报策略)
+        # 5.3 骞村寲鏀剁泭鐜囧鍔?(榧撳姳楂樺洖鎶ョ瓥鐣?
         ret_bonus = metrics['annualized_ret'] * RobustConfig.RET_W
         
-        # 5.4 回撤惩罚
+        # 5.4 鍥炴挙鎯╃綒
         mdd_penalty = metrics['max_drawdown'] * RobustConfig.MDD_W
         
-        # 5.5 长度惩罚
+        # 5.5 闀垮害鎯╃綒
         len_penalty = len(formula) * RobustConfig.LEN_W
         
-        # 5.6 公式结构惩罚 (来自 validate_formula)
-        # structural_penalty 是负数或 0，直接加到分数上
+        # 5.6 鍏紡缁撴瀯鎯╃綒 (鏉ヨ嚜 validate_formula)
+        # structural_penalty 鏄礋鏁版垨 0锛岀洿鎺ュ姞鍒板垎鏁颁笂
         
-        # 5.7 [New] 翻转软惩罚 (Dynamic Soft Penalty)
+        # 5.7 [New] 缈昏浆杞儵缃?(Dynamic Soft Penalty)
         flip_penalty = 0.0
         is_flip = False
         detail_msg = "OK"
         if metrics['sharpe_train'] * metrics['sharpe_val'] < 0:
             is_flip = True
-            # 动态惩罚: 罚分与 Val 的亏损程度成正比: Penalty = -1 * COEF * abs(Val)
+            # 鍔ㄦ€佹儵缃? 缃氬垎涓?Val 鐨勪簭鎹熺▼搴︽垚姝ｆ瘮: Penalty = -1 * COEF * abs(Val)
             flip_penalty = -1.0 * RobustConfig.PENALTY_FLIP_COEF * abs(metrics['sharpe_val'])
             detail_msg = f"Soft Flip ({flip_penalty:.2f}, val={metrics['sharpe_val']:.2f})"
 
-        # 5.8 最终分数
+        # 5.8 鏈€缁堝垎鏁?
         final_score = (base_score + stability_bonus) * RobustConfig.SCALE + ret_bonus - mdd_penalty - len_penalty + structural_penalty + flip_penalty
         
-        # 返回分数和详细信息
+        # 杩斿洖鍒嗘暟鍜岃缁嗕俊鎭?
+        if has_metric_gap_fail:
+            if metric_fail_mode == "soft":
+                fail_reward = final_score - RobustConfig.METRIC_GAP_W * avg_gap
+                fail_reward = min(float(RobustConfig.METRIC_FAIL_REWARD_CAP), float(fail_reward))
+                fail_reward = max(float(RobustConfig.METRIC_FAIL_REWARD_FLOOR), float(fail_reward))
+                return float(fail_reward), None, fail_status, f"{fail_reason} | gap={avg_gap:.2f} | mode=soft"
+            # 鏈煡 mode 鍏滃簳涓?hard
+            p_max = RobustConfig.PENALTY_METRIC_MAX
+            p_min = RobustConfig.PENALTY_METRIC_MIN
+            penalty = p_max - (p_max - p_min) * avg_gap
+            penalty = max(float(p_min), min(float(p_max), penalty))
+            return float(penalty), None, fail_status, f"{fail_reason} | gap={avg_gap:.2f} | mode=hard_fallback"
+
         if is_flip:
-            # [Candidate Isolation] 有分数(RL可学习)，但info=None(不作为King候选)
+            # [Candidate Isolation] 鏈夊垎鏁?RL鍙涔?锛屼絾info=None(涓嶄綔涓篕ing鍊欓€?
             return final_score, None, "METRIC_FLIP", detail_msg
         else:
             return final_score, (final_score, metrics['annualized_ret'], metrics['sharpe_all'], formula, metrics), "PASS", "OK"
     
     except (ImportError, NameError, AttributeError, SyntaxError) as e:
-        # 系统级错误：直接抛出，中断训练，方便 Debug (如刚才的 ImportError)
+        # 绯荤粺绾ч敊璇細鐩存帴鎶涘嚭锛屼腑鏂缁冿紝鏂逛究 Debug (濡傚垰鎵嶇殑 ImportError)
         import traceback
         traceback.print_exc()
-        raise e  # 让主进程感知到 Worker 挂了
+        raise e  # 璁╀富杩涚▼鎰熺煡鍒?Worker 鎸備簡
 
     except Exception:
-        # 运行时错误 (如除零、NaN、矩阵尺寸不匹配)：视为公式无效，给最低分
-        # 如果需要调试，可以打开下面的注释
+        # 杩愯鏃堕敊璇?(濡傞櫎闆躲€丯aN銆佺煩闃靛昂瀵镐笉鍖归厤)锛氳涓哄叕寮忔棤鏁堬紝缁欐渶浣庡垎
+        # 濡傛灉闇€瑕佽皟璇曪紝鍙互鎵撳紑涓嬮潰鐨勬敞閲?
         # import traceback
         # traceback.print_exc()
         return RobustConfig.PENALTY_EXEC, None, "EXEC_ERR", "RuntimeError"
@@ -206,14 +229,14 @@ def _worker_eval(formula):
 class AlphaEngine:
     def __init__(self, data_start_date=None):
         print("Initializing AlphaEngine...")
-        # 打印配置来源
+        # 鎵撳嵃閰嶇疆鏉ユ簮
         config_source = getattr(RobustConfig, '_config_path', 'default_config.yaml')
         print(f"Config source: {config_source}")
         print(f"Using Device: {ModelConfig.DEVICE}")
         print(f"Take Profit: {RobustConfig.TAKE_PROFIT}")
         
-        # 1. 初始化并加载数据
-        # 确保 engine 拥有唯一的数据加载器实例
+        # 1. 鍒濆鍖栧苟鍔犺浇鏁版嵁
+        # 纭繚 engine 鎷ユ湁鍞竴鐨勬暟鎹姞杞藉櫒瀹炰緥
         self.loader = CBDataLoader()
         effective_data_start_date = data_start_date or "2022-08-01"
         print(f"Data start date: {effective_data_start_date}")
@@ -221,33 +244,37 @@ class AlphaEngine:
         
         # 2. 初始化模型
         self.model = AlphaGPT().to(ModelConfig.DEVICE)
-        self.opt = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
+        self.opt = torch.optim.AdamW(
+            self.model.parameters(),
+            lr=float(getattr(ModelConfig, "LR", 1e-4)),
+            weight_decay=float(getattr(ModelConfig, "WEIGHT_DECAY", 0.01)),
+        )
         
-        # 3. 追踪最佳结果
+        # 3. 杩借釜鏈€浣崇粨鏋?
         self.best_score = -float('inf')
         self.best_formula = None
         self.best_formula_readable = None
         self.best_sharpe = 0.0
         self.best_return = 0.0
         
-        # 4. 记录所有 New King 历史
+        # 4. 璁板綍鎵€鏈?New King 鍘嗗彶
         self.king_history = []
         
-        # 5. 多样性池 (formula_readable -> metrics_dict)
+        # 5. 澶氭牱鎬ф睜 (formula_readable -> metrics_dict)
         self.diverse_pool = {}
         
-        # 6. Session 级回测缓存 (V3.5: formula_tuple -> result_tuple)
+        # 6. Session 绾у洖娴嬬紦瀛?(V3.5: formula_tuple -> result_tuple)
         self.eval_cache = OrderedDict()
         
         print(f"Model vocab size: {self.model.vocab_size}")
 
     def _tokens_to_strings(self, tokens: list) -> list:
-        """[内部方法] 将 token ID 列表转换为字符串列表 (仅用于训练时的即时转换)"""
+        """[鍐呴儴鏂规硶] 灏?token ID 鍒楄〃杞崲涓哄瓧绗︿覆鍒楄〃 (浠呯敤浜庤缁冩椂鐨勫嵆鏃惰浆鎹?"""
         vocab = self.model.vocab
         return [vocab[t] if t < len(vocab) else f'?{t}' for t in tokens]
     
     def decode_formula(self, formula: list) -> str:
-        """将公式字符串列表转换为可读字符串"""
+        """灏嗗叕寮忓瓧绗︿覆鍒楄〃杞崲涓哄彲璇诲瓧绗︿覆"""
         if not formula:
             return ''
         if not isinstance(formula[0], str):
@@ -256,7 +283,7 @@ class AlphaEngine:
     
     def _calculate_similarity(self, formula_a: list, formula_b: list) -> float:
         """
-        计算两个公式的 Jaccard 相似度 (基于 Token 集合)
+        璁＄畻涓や釜鍏紡鐨?Jaccard 鐩镐技搴?(鍩轰簬 Token 闆嗗悎)
         """
         set_a = set(formula_a)
         set_b = set(formula_b)
@@ -276,60 +303,62 @@ class AlphaEngine:
         print(f"   - Top-K:       {RobustConfig.TOP_K}")
         print(f"   - Fee Rate:    {RobustConfig.FEE_RATE:.4f} ({RobustConfig.FEE_RATE*100:.2f}% single-side)")
         print(f"   - Entropy beta:{RobustConfig.ENTROPY_BETA_START} -> {RobustConfig.ENTROPY_BETA_END} (linear decay)")
+        print(f"   - Optimizer:   AdamW(lr={ModelConfig.LR}, wd={ModelConfig.WEIGHT_DECAY})")
+        print(f"   - Grad Clip:   {ModelConfig.GRAD_CLIP_NORM} (log every {ModelConfig.GRAD_NORM_LOG_INTERVAL} steps)")
         print(f"   - Factors ({len(ModelConfig.INPUT_FEATURES)}): {ModelConfig.INPUT_FEATURES}")
         print(f"   - Operators ({len(OpsRegistry.list_ops())}): {OpsRegistry.list_ops()}")
         print("=" * 60)
         
         start_time = time.time()
         
-        # workers 数量设置为 CPU 核心数 (逻辑核心)
+        # workers 鏁伴噺璁剧疆涓?CPU 鏍稿績鏁?(閫昏緫鏍稿績)
         num_workers = os.cpu_count() or 4
         print(f"Using {num_workers} worker processes")
         
-        # 准备共享数据 (转为 CPU Tensor)
+        # 鍑嗗鍏变韩鏁版嵁 (杞负 CPU Tensor)
         cpu_feat = self.loader.feat_tensor.to('cpu')
         cpu_ret = self.loader.target_ret.to('cpu')
         cpu_mask = self.loader.valid_mask.to('cpu')
         split_idx = self.loader.split_idx
         
-        # 止盈价格数据准备
-        # 时序对齐说明:
-        #   - weights[t] = t日收盘时的持仓决策
-        #   - target_ret[t] = close[t+1]/close[t] - 1 = 持有 t→t+1 的收益
-        #   - 止盈检查发生在持仓期间(t+1日盘中)
-        #   - 因此: open_prices[t] 应为 open[t+1], high_prices[t] 应为 high[t+1]
-        #   - prev_close[t] = close[t] = 买入价格
+        # 姝㈢泩浠锋牸鏁版嵁鍑嗗
+        # 鏃跺簭瀵归綈璇存槑:
+        #   - weights[t] = t鏃ユ敹鐩樻椂鐨勬寔浠撳喅绛?
+        #   - target_ret[t] = close[t+1]/close[t] - 1 = 鎸佹湁 t鈫抰+1 鐨勬敹鐩?
+        #   - 姝㈢泩妫€鏌ュ彂鐢熷湪鎸佷粨鏈熼棿(t+1鏃ョ洏涓?
+        #   - 鍥犳: open_prices[t] 搴斾负 open[t+1], high_prices[t] 搴斾负 high[t+1]
+        #   - prev_close[t] = close[t] = 涔板叆浠锋牸
         cpu_open = None
         cpu_high = None
         cpu_prev_close = None
         if RobustConfig.TAKE_PROFIT > 0:
-            # 只在启用止盈时加载价格数据
+            # 鍙湪鍚敤姝㈢泩鏃跺姞杞戒环鏍兼暟鎹?
             if 'OPEN' in self.loader.raw_data_cache and 'HIGH' in self.loader.raw_data_cache:
                 raw_open = self.loader.raw_data_cache['OPEN'].to('cpu')
                 raw_high = self.loader.raw_data_cache['HIGH'].to('cpu')
                 close = self.loader.raw_data_cache['CLOSE'].to('cpu')
                 
-                # 时序对齐: roll(-1) 使得 [t] 位置存储的是 t+1 日的价格
+                # 鏃跺簭瀵归綈: roll(-1) 浣垮緱 [t] 浣嶇疆瀛樺偍鐨勬槸 t+1 鏃ョ殑浠锋牸
                 cpu_open = torch.roll(raw_open, -1, dims=0)
                 cpu_high = torch.roll(raw_high, -1, dims=0)
-                # 最后一行无有效数据，置为极大值使其不触发止盈
+                # 鏈€鍚庝竴琛屾棤鏈夋晥鏁版嵁锛岀疆涓烘瀬澶у€间娇鍏朵笉瑙﹀彂姝㈢泩
                 cpu_open[-1] = 1e9
                 cpu_high[-1] = 1e9
                 
-                # prev_close[t] = close[t] = 买入价（t日收盘价）
+                # prev_close[t] = close[t] = 涔板叆浠凤紙t鏃ユ敹鐩樹环锛?
                 cpu_prev_close = close.clone()
                 
                 print(f"   - Take Profit: {RobustConfig.TAKE_PROFIT:.1%} enabled, price data loaded (time-aligned)")
             else:
                 print("   - Warning: TAKE_PROFIT enabled but OPEN/HIGH data not available")
         
-        # 获取当前 Config 路径 (传递给子进程)
+        # 鑾峰彇褰撳墠 Config 璺緞 (浼犻€掔粰瀛愯繘绋?
         from .config_loader import get_loaded_config_path
         config_path = get_loaded_config_path()
         
-        # 启动进程池
-        # 注意: Windows 下每次都需要在这里从头启动 executor 比较安全，或者长期持有
-        # 这里我们选择长期持有 executor 上下文
+        # 鍚姩杩涚▼姹?
+        # 娉ㄦ剰: Windows 涓嬫瘡娆￠兘闇€瑕佸湪杩欓噷浠庡ご鍚姩 executor 姣旇緝瀹夊叏锛屾垨鑰呴暱鏈熸寔鏈?
+        # 杩欓噷鎴戜滑閫夋嫨闀挎湡鎸佹湁 executor 涓婁笅鏂?
         with ProcessPoolExecutor(
             max_workers=num_workers, 
             initializer=_init_worker,
@@ -341,20 +370,83 @@ class AlphaEngine:
             global_struct_reasons = Counter()
             stats_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'training_stats.jsonl')
             
-            # [Grammar] 1. 准备元数据 (移至循环外以优化性能)
+            # [Grammar] 1. 鍑嗗鍏冩暟鎹?(绉昏嚦寰幆澶栦互浼樺寲鎬ц兘)
             is_feat, is_unary, is_binary, net_change = self.model.get_grammar_masks(ModelConfig.DEVICE)
+            vocab_size = self.model.vocab_size
+            max_len = ModelConfig.MAX_FORMULA_LEN
+            max_stack_depth = RobustConfig.MAX_STACK_DEPTH
+
+            token_to_idx = {token: idx for idx, token in enumerate(self.model.vocab)}
+            pair_ban_matrix = torch.zeros(
+                vocab_size + 1, vocab_size, dtype=torch.bool, device=ModelConfig.DEVICE
+            )
+            for prev_token, next_token in HARD_FORBIDDEN_SEQUENCES:
+                prev_idx = token_to_idx.get(prev_token)
+                next_idx = token_to_idx.get(next_token)
+                if prev_idx is None or next_idx is None:
+                    continue
+                pair_ban_matrix[prev_idx + 1, next_idx] = True
+
+            forbidden_terminal_mask = torch.zeros(
+                vocab_size, dtype=torch.bool, device=ModelConfig.DEVICE
+            )
+            for token in FORBIDDEN_TERMINAL_OPS:
+                idx = token_to_idx.get(token)
+                if idx is not None:
+                    forbidden_terminal_mask[idx] = True
+
+            sign_idx = token_to_idx.get("SIGN")
+            log_idx = token_to_idx.get("LOG")
+            discrete_token_mask = torch.tensor(
+                [token in DISCRETE_OPS for token in self.model.vocab],
+                dtype=torch.bool,
+                device=ModelConfig.DEVICE,
+            )
+            max_terminal_discrete = int(MAX_TERMINAL_DISCRETE)
+            ts_token_mask = torch.tensor(
+                [token.startswith("TS_") for token in self.model.vocab],
+                dtype=torch.bool,
+                device=ModelConfig.DEVICE,
+            )
+            ts_token_mask_f = ts_token_mask.float()
+
+            density_window = max(1, int(RobustConfig.DENSITY_WINDOW))
+            max_ts_in_window = int(RobustConfig.MAX_TS_IN_WINDOW)
+            decode_ts_soft_enabled = bool(RobustConfig.DECODE_TS_DENSITY_SOFT_ENABLED)
+            decode_reachability_enabled = bool(RobustConfig.DECODE_REACHABILITY_ENABLED)
+            decode_lookahead_enabled = bool(RobustConfig.DECODE_LOOKAHEAD_ENABLED)
+
+            ts_penalty_l1 = float(RobustConfig.DECODE_TS_DENSITY_PENALTY_L1)
+            ts_penalty_l2 = float(RobustConfig.DECODE_TS_DENSITY_PENALTY_L2)
+            ts_penalty_l3 = float(RobustConfig.DECODE_TS_DENSITY_PENALTY_L3)
+
+            terminal_unary_exists = bool((is_unary & ~forbidden_terminal_mask).any().item())
+            terminal_binary_exists = bool((is_binary & ~forbidden_terminal_mask).any().item())
+            terminal_feat_exists = bool((is_feat & ~forbidden_terminal_mask).any().item())
+
+            safe_token_mask = torch.zeros(vocab_size, dtype=torch.bool, device=ModelConfig.DEVICE)
+            for safe_token in ["ABS", "CS_RANK", "TS_MEAN", "TS_STD5", "ADD", "SUB", "MUL", "MAX", "MIN"]:
+                safe_idx = token_to_idx.get(safe_token)
+                if safe_idx is not None:
+                    safe_token_mask[safe_idx] = True
             
-            # [V4.1] 状态监控变量 (工程加固版)
-            # 1. 成功率窗口 (用于平滑控制)
-            # [V4.1.1] 初始化下调为 0.5，防止前期"历史太好"导致一级熵触发反应迟钝
+            # [V4.1] 鐘舵€佺洃鎺у彉閲?(宸ョ▼鍔犲浐鐗?
+            # 1. 鎴愬姛鐜囩獥鍙?(鐢ㄤ簬骞虫粦鎺у埗)
+            # [V4.1.1] 鍒濆鍖栦笅璋冧负 0.5锛岄槻姝㈠墠鏈?鍘嗗彶澶ソ"瀵艰嚧涓€绾х喌瑙﹀彂鍙嶅簲杩熼挐
             window_size = 10
             hard_pass_rate_history = deque([0.5]*window_size, maxlen=window_size)
             hard_pass_abs_history = deque([int(ModelConfig.BATCH_SIZE * 0.5)]*window_size, maxlen=window_size)
+            metric_pass_rate_history = deque([0.02]*window_size, maxlen=window_size)
+            metric_pass_abs_history = deque([max(1, int(ModelConfig.BATCH_SIZE * 0.02))]*window_size, maxlen=window_size)
+            sim_pass_rate_history = deque([0.02]*window_size, maxlen=window_size)
+            sim_pass_abs_history = deque([max(1, int(ModelConfig.BATCH_SIZE * 0.02))]*window_size, maxlen=window_size)
+            pool_update_rate_history = deque([0.2]*window_size, maxlen=window_size)
+            pool_update_abs_history = deque([1.0]*window_size, maxlen=window_size)
             struct_rate_history = deque([0.0]*window_size, maxlen=window_size)
             
-            # 2. 持续故障触发器 (熔断逻辑)
-            struct_failure_strike = 0  # 连续高 Struct 计数
-            lowvar_failure_strike = 0  # 连续高 LowVar 计数
+            # 2. 鎸佺画鏁呴殰瑙﹀彂鍣?(鐔旀柇閫昏緫)
+            struct_failure_strike = 0  # 杩炵画楂?Struct 璁℃暟
+            lowvar_failure_strike = 0  # 杩炵画楂?LowVar 璁℃暟
             lowvar_recovery_strike = 0
             saturation_strike = 0
             lowvar_penalty_multiplier = 1.0
@@ -365,38 +457,116 @@ class AlphaEngine:
             # 3. 控制器状态
             cool_down_timer = 0
             total_steps = ModelConfig.TRAIN_STEPS
+            grad_clip_norm = float(getattr(ModelConfig, "GRAD_CLIP_NORM", 1.0))
+            grad_norm_log_interval = max(1, int(getattr(ModelConfig, "GRAD_NORM_LOG_INTERVAL", 20)))
+            controller_mode = RobustConfig.ENTROPY_CONTROLLER_MODE
+            if controller_mode not in {"hard", "metric", "sim", "pool"}:
+                controller_mode = "hard"
             
             for step in pbar:
                 step_stats = Counter()
-                # [V4.1] 定义三级成功计数
+                raw_status_counts = Counter()
+                pre_metric_counts = Counter()
+                # [V4.1] 瀹氫箟涓夌骇鎴愬姛璁℃暟
                 counts = {"HardPass": 0, "MetricPass": 0, "SimPass": 0}
                 bs = ModelConfig.BATCH_SIZE
                 
-                # [V4.1] 计算当前平滑指标
+                # [V4.1] 璁＄畻褰撳墠骞虫粦鎸囨爣
                 rolling_hpr = sum(hard_pass_rate_history) / window_size
                 rolling_hpa = sum(hard_pass_abs_history) / window_size
+                rolling_mpr = sum(metric_pass_rate_history) / window_size
+                rolling_mpa = sum(metric_pass_abs_history) / window_size
+                rolling_spr = sum(sim_pass_rate_history) / window_size
+                rolling_spa = sum(sim_pass_abs_history) / window_size
+                rolling_pur = sum(pool_update_rate_history) / window_size
+                rolling_pua = sum(pool_update_abs_history) / window_size
                 rolling_str = sum(struct_rate_history) / window_size
                 
-                # [V4.1] 自适应熵控制回路 (Rolling 版)
+                # [V4.1] 鑷€傚簲鐔垫帶鍒跺洖璺?(Rolling 鐗?
                 base_beta = RobustConfig.ENTROPY_BETA_START - (
                     RobustConfig.ENTROPY_BETA_START - RobustConfig.ENTROPY_BETA_END
                 ) * (step / total_steps)
+                controller_reason = "base"
                 
                 if cool_down_timer > 0:
                     cool_down_timer -= 1
                     current_beta = getattr(self, '_current_beta_locked', base_beta)
+                    controller_reason = "cooldown_lock"
                 else:
-                    # [V4.1.1] 强化一级触发 (PR < 1%) -> 救火档锁定 0.06
-                    if rolling_hpr < 0.01 or rolling_hpa < 1:
-                        current_beta = 0.06
-                        self._current_beta_locked = current_beta
-                        cool_down_timer = 10
-                    elif rolling_hpr < 0.05:
-                        current_beta = base_beta + 0.005
-                    elif rolling_hpr > 0.02 and rolling_str < 0.9:
-                        current_beta = base_beta
+                    warn_boost = float(RobustConfig.ENTROPY_WARN_BOOST)
+                    lock_beta = float(RobustConfig.ENTROPY_LOCK_BETA)
+                    lock_steps = int(RobustConfig.ENTROPY_LOCK_STEPS)
+                    current_beta = base_beta
+
+                    if controller_mode == "hard":
+                        if (
+                            rolling_hpr < RobustConfig.CONTROLLER_HARD_FLOOR_RATE
+                            or rolling_hpa < RobustConfig.CONTROLLER_HARD_FLOOR_ABS
+                        ):
+                            current_beta = lock_beta
+                            self._current_beta_locked = current_beta
+                            cool_down_timer = lock_steps
+                            controller_reason = "hard_floor"
+                        elif rolling_hpr < RobustConfig.CONTROLLER_HARD_WARN_RATE:
+                            current_beta = min(base_beta + warn_boost, 0.08)
+                            controller_reason = "hard_warn"
+                        else:
+                            controller_reason = "hard_ok"
+                    elif controller_mode == "metric":
+                        if (
+                            rolling_mpr < RobustConfig.CONTROLLER_METRIC_FLOOR_RATE
+                            or rolling_mpa < RobustConfig.CONTROLLER_METRIC_FLOOR_ABS
+                        ):
+                            current_beta = lock_beta
+                            self._current_beta_locked = current_beta
+                            cool_down_timer = lock_steps
+                            controller_reason = "metric_floor"
+                        elif rolling_mpr < RobustConfig.CONTROLLER_METRIC_WARN_RATE:
+                            current_beta = min(base_beta + warn_boost, 0.08)
+                            controller_reason = "metric_warn"
+                        else:
+                            controller_reason = "metric_ok"
+                    elif controller_mode == "sim":
+                        if (
+                            rolling_spr < RobustConfig.CONTROLLER_SIM_FLOOR_RATE
+                            or rolling_spa < RobustConfig.CONTROLLER_SIM_FLOOR_ABS
+                        ):
+                            current_beta = lock_beta
+                            self._current_beta_locked = current_beta
+                            cool_down_timer = lock_steps
+                            controller_reason = "sim_floor"
+                        elif rolling_spr < RobustConfig.CONTROLLER_SIM_WARN_RATE:
+                            current_beta = min(base_beta + warn_boost, 0.08)
+                            controller_reason = "sim_warn"
+                        else:
+                            controller_reason = "sim_ok"
                     else:
-                        current_beta = base_beta
+                        if steps_since_pool_update >= RobustConfig.CONTROLLER_POOL_STAGNATION_PATIENCE:
+                            current_beta = lock_beta
+                            self._current_beta_locked = current_beta
+                            cool_down_timer = lock_steps
+                            controller_reason = f"pool_stall({steps_since_pool_update})"
+                        elif (
+                            rolling_pur < RobustConfig.CONTROLLER_POOL_FLOOR_RATE
+                            or rolling_pua < RobustConfig.CONTROLLER_POOL_FLOOR_ABS
+                        ):
+                            current_beta = lock_beta
+                            self._current_beta_locked = current_beta
+                            cool_down_timer = lock_steps
+                            controller_reason = "pool_floor"
+                        elif rolling_pur < RobustConfig.CONTROLLER_POOL_WARN_RATE:
+                            current_beta = min(base_beta + warn_boost, 0.08)
+                            controller_reason = "pool_warn"
+                        else:
+                            controller_reason = "pool_ok"
+
+                        # pool mode secondary guard: metric pass too low also needs exploration.
+                        if (
+                            rolling_mpr < RobustConfig.CONTROLLER_METRIC_FLOOR_RATE
+                            or rolling_mpa < RobustConfig.CONTROLLER_METRIC_FLOOR_ABS
+                        ):
+                            current_beta = max(current_beta, min(base_beta + warn_boost, 0.08))
+                            controller_reason += "+metric_guard"
 
                 entropy_boost = 0.0
                 if steps_since_new_king >= RobustConfig.STAGNATION_PATIENCE:
@@ -408,6 +578,7 @@ class AlphaEngine:
                     entropy_boost = max(entropy_boost, RobustConfig.COLLAPSE_ENTROPY_BOOST)
                 if entropy_boost > 0:
                     current_beta = min(current_beta + entropy_boost, 0.08)
+                    controller_reason += "+boost"
 
                 inp = torch.zeros((bs, 1), dtype=torch.long, device=ModelConfig.DEVICE)
 
@@ -417,14 +588,27 @@ class AlphaEngine:
                 log_probs = []
                 entropies = []
                 tokens_list = []
+                prev_actions = torch.full((bs,), -1, dtype=torch.long, device=ModelConfig.DEVICE)
+                last_sign_steps = torch.full((bs,), -10_000, dtype=torch.long, device=ModelConfig.DEVICE)
+                ts_recent_flags = deque()
+                ts_recent_count = torch.zeros(bs, dtype=torch.long, device=ModelConfig.DEVICE)
+                terminal_discrete_tail = torch.zeros(bs, dtype=torch.long, device=ModelConfig.DEVICE)
+                empty_sample_hit = torch.zeros(bs, dtype=torch.bool, device=ModelConfig.DEVICE)
+                decode_mask_empty_count = 0
+                decode_fallback_force_finish_count = 0
+                decode_fallback_repair_count = 0
+                decode_fallback_safe_count = 0
+                decode_fallback_last_resort_count = 0
+                fallback_reason_counter = Counter()
 
                 
-                # 自回归生成公式 (在 Main Process GPU 上进行)
+                # 鑷洖褰掔敓鎴愬叕寮?(鍦?Main Process GPU 涓婅繘琛?
                 for gen_step in range(ModelConfig.MAX_FORMULA_LEN):
                     logits, _ = self.model(inp)
+                    R = max_len - 1 - gen_step
 
                     # [Grammar] 2. Action Masking
-                    mask = torch.ones(bs, self.model.vocab_size, dtype=torch.bool, device=ModelConfig.DEVICE)
+                    mask = torch.ones(bs, vocab_size, dtype=torch.bool, device=ModelConfig.DEVICE)
                     
                     # Rule 1: D < 1 -> Ban All Ops (Underflow)
                     mask &= ~((current_depths < 1).unsqueeze(1) & (is_unary | is_binary))
@@ -432,18 +616,165 @@ class AlphaEngine:
                     # Rule 2: D < 2 -> Ban Binary (Underflow)
                     mask &= ~((current_depths < 2).unsqueeze(1) & is_binary)
                     
-                    # Rule 3: R <= D - 1 -> Ban Feature (Overrun, 无法归约)
-                    # 剩余步数 R = (Total - 1) - current_step
+                    # Rule 3: R <= D - 1 -> Ban Feature (Overrun, 鏃犳硶褰掔害)
+                    # 鍓╀綑姝ユ暟 R = (Total - 1) - current_step
                     # e.g. Total=12. Step=0, R=11. Step=11, R=0.
-                    R = ModelConfig.MAX_FORMULA_LEN - 1 - gen_step
+                    # R already computed above
                     mask &= ~((R <= current_depths - 1).unsqueeze(1) & is_feat)
                     
                     # Rule 4: R < D - 1 -> Ban Unary (Force Binary Reduce)
                     mask &= ~((R < current_depths - 1).unsqueeze(1) & is_unary)
                     
                     # Rule 5: D >= MAX -> Ban Feature (Stack Limit)
-                    mask &= ~((current_depths >= RobustConfig.MAX_STACK_DEPTH).unsqueeze(1) & is_feat)
+                    mask &= ~((current_depths >= max_stack_depth).unsqueeze(1) & is_feat)
                     
+                    # Rule 6: hard forbidden token pairs
+                    if gen_step > 0:
+                        pair_ban = pair_ban_matrix[(prev_actions + 1).long()]
+                        mask &= ~pair_ban
+
+                    # Rule 7: SIGN -> LOG proximity hard ban
+                    if sign_idx is not None and log_idx is not None and MAX_SIGN_LOG_DISTANCE >= 1:
+                        sign_recent = (last_sign_steps >= 0) & (
+                            (gen_step - last_sign_steps) <= MAX_SIGN_LOG_DISTANCE
+                        )
+                        if sign_recent.any():
+                            mask[sign_recent, log_idx] = False
+
+                    # Rule 8: terminal operator ban at final position
+                    if gen_step == max_len - 1:
+                        mask &= ~forbidden_terminal_mask.unsqueeze(0)
+                        if max_terminal_discrete <= 0:
+                            mask &= ~discrete_token_mask.unsqueeze(0)
+                        else:
+                            too_many_terminal_discrete = terminal_discrete_tail >= max_terminal_discrete
+                            if too_many_terminal_discrete.any():
+                                mask[too_many_terminal_discrete] &= ~discrete_token_mask
+
+                    # Rule 9: reachability bounds check
+                    if decode_reachability_enabled:
+                        depth_after = current_depths.unsqueeze(1) + net_change.unsqueeze(0)
+                        remain_after = max_len - (gen_step + 1)
+                        min_reachable = depth_after - remain_after
+                        max_reachable = depth_after + remain_after
+                        mask &= (depth_after >= 1) & (min_reachable <= 1) & (max_reachable >= 1)
+
+                    # Rule 10: one-step lookahead (avoid dead-end at the penultimate step)
+                    if decode_lookahead_enabled and (max_len - (gen_step + 1) == 1):
+                        depth_after = current_depths.unsqueeze(1) + net_change.unsqueeze(0)
+                        can_finish_next = torch.zeros_like(depth_after, dtype=torch.bool)
+                        if terminal_unary_exists:
+                            can_finish_next |= (depth_after == 1)
+                        if terminal_binary_exists:
+                            can_finish_next |= (depth_after == 2)
+                        if terminal_feat_exists:
+                            can_finish_next |= (depth_after == 0)
+                        mask &= can_finish_next
+
+                    # Deterministic fallback for all-masked rows
+                    empty_rows = ~mask.any(dim=1)
+                    if empty_rows.any():
+                        empty_indices = empty_rows.nonzero(as_tuple=False).squeeze(1)
+                        decode_mask_empty_count += int(empty_indices.numel())
+                        empty_sample_hit[empty_rows] = True
+                        for row_idx in empty_indices.tolist():
+                            row_mask = mask[row_idx]
+                            row_mask.fill_(False)
+                            depth_val = int(current_depths[row_idx].item())
+                            remain_after = max_len - (gen_step + 1)
+                            tail_discrete_val = int(terminal_discrete_tail[row_idx].item())
+                            ban_terminal_discrete = (
+                                remain_after == 0 and (
+                                    max_terminal_discrete <= 0 or tail_discrete_val >= max_terminal_discrete
+                                )
+                            )
+                            used_fallback = False
+
+                            # Priority 1: if this is terminal step, force a finish-capable action.
+                            if remain_after == 0:
+                                if depth_val == 1:
+                                    candidate = is_unary & ~forbidden_terminal_mask
+                                elif depth_val == 2:
+                                    candidate = is_binary & ~forbidden_terminal_mask
+                                else:
+                                    candidate = torch.zeros_like(row_mask)
+                                if ban_terminal_discrete:
+                                    candidate &= ~discrete_token_mask
+                                if candidate.any():
+                                    row_mask |= candidate
+                                    decode_fallback_force_finish_count += 1
+                                    fallback_reason_counter["force_finish"] += 1
+                                    used_fallback = True
+
+                            # Priority 2: repair stack state.
+                            if not used_fallback:
+                                if depth_val >= 2:
+                                    candidate = is_binary.clone()
+                                    if gen_step == max_len - 1:
+                                        candidate &= ~forbidden_terminal_mask
+                                    if candidate.any():
+                                        row_mask |= candidate
+                                        decode_fallback_repair_count += 1
+                                        fallback_reason_counter["repair_binary"] += 1
+                                        used_fallback = True
+                                if (not used_fallback) and depth_val <= 0:
+                                    candidate = is_feat.clone()
+                                    if candidate.any():
+                                        row_mask |= candidate
+                                        decode_fallback_repair_count += 1
+                                        fallback_reason_counter["repair_feature"] += 1
+                                        used_fallback = True
+                                if (not used_fallback) and depth_val == 1:
+                                    candidate = is_unary.clone()
+                                    if gen_step == max_len - 1:
+                                        candidate &= ~forbidden_terminal_mask
+                                    if ban_terminal_discrete:
+                                        candidate &= ~discrete_token_mask
+                                    if candidate.any():
+                                        row_mask |= candidate
+                                        decode_fallback_repair_count += 1
+                                        fallback_reason_counter["repair_unary"] += 1
+                                        used_fallback = True
+
+                            # Priority 3: safe token list.
+                            if not used_fallback:
+                                candidate = safe_token_mask.clone()
+                                if depth_val < 1:
+                                    candidate &= is_feat
+                                elif depth_val < 2:
+                                    candidate &= ~is_binary
+                                if gen_step == max_len - 1:
+                                    candidate &= ~forbidden_terminal_mask
+                                if ban_terminal_discrete:
+                                    candidate &= ~discrete_token_mask
+                                if candidate.any():
+                                    row_mask |= candidate
+                                    decode_fallback_safe_count += 1
+                                    fallback_reason_counter["safe_list"] += 1
+                                    used_fallback = True
+
+                            # Last resort.
+                            if not used_fallback:
+                                row_mask[:] = True
+                                if gen_step == max_len - 1:
+                                    row_mask &= ~forbidden_terminal_mask
+                                if ban_terminal_discrete:
+                                    row_mask &= ~discrete_token_mask
+                                if not row_mask.any():
+                                    row_mask[:] = True
+                                decode_fallback_last_resort_count += 1
+                                fallback_reason_counter["last_resort"] += 1
+
+                    # TS density soft penalty: graded logit down-weight (not hard mask).
+                    if decode_ts_soft_enabled and max_ts_in_window >= 0:
+                        projected_ts = ts_recent_count + 1
+                        excess = projected_ts - max_ts_in_window
+                        ts_penalty = torch.zeros(bs, dtype=logits.dtype, device=ModelConfig.DEVICE)
+                        ts_penalty = torch.where(excess == 1, ts_penalty + ts_penalty_l1, ts_penalty)
+                        ts_penalty = torch.where(excess == 2, ts_penalty + ts_penalty_l2, ts_penalty)
+                        ts_penalty = torch.where(excess >= 3, ts_penalty + ts_penalty_l3, ts_penalty)
+                        logits = logits - ts_penalty.unsqueeze(1) * ts_token_mask_f.unsqueeze(0)
+
                     # Apply Mask
                     logits = logits.masked_fill(~mask, -1e9)
 
@@ -451,9 +782,28 @@ class AlphaEngine:
 
                     action = dist.sample()
                     
-                    # [Grammar] 3. 更新深度
+                    # [Grammar] 3. 鏇存柊娣卞害
                     current_depths += net_change[action]
-                    
+                    prev_actions = action
+
+                    if sign_idx is not None:
+                        sign_pos = torch.full_like(last_sign_steps, gen_step)
+                        last_sign_steps = torch.where(action == sign_idx, sign_pos, last_sign_steps)
+
+                    is_discrete_action = discrete_token_mask[action].long()
+                    terminal_discrete_tail = torch.where(
+                        is_discrete_action > 0,
+                        terminal_discrete_tail + 1,
+                        torch.zeros_like(terminal_discrete_tail),
+                    )
+
+                    if density_window > 1:
+                        current_is_ts = ts_token_mask[action].long()
+                        ts_recent_flags.append(current_is_ts)
+                        ts_recent_count = ts_recent_count + current_is_ts
+                        if len(ts_recent_flags) > density_window - 1:
+                            ts_recent_count = ts_recent_count - ts_recent_flags.popleft()
+
                     log_probs.append(dist.log_prob(action))
                     entropies.append(dist.entropy())
                     tokens_list.append(action)
@@ -461,13 +811,13 @@ class AlphaEngine:
                 
                 seqs = torch.stack(tokens_list, dim=1)
                 
-                # 准备任务: 立即将 token ID 转为字符串，消除解码不一致风险
+                # 鍑嗗浠诲姟: 绔嬪嵆灏?token ID 杞负瀛楃涓诧紝娑堥櫎瑙ｇ爜涓嶄竴鑷撮闄?
                 formula_list = [self._tokens_to_strings(seq.tolist()) for seq in seqs]
                 
-                # [V3.5] 批次去重与 LRU 缓存 (核心提速逻辑)
+                # [V3.5] 鎵规鍘婚噸涓?LRU 缂撳瓨 (鏍稿績鎻愰€熼€昏緫)
                 unique_formula_to_indices = {}
                 for idx, f in enumerate(formula_list):
-                    # Canonical Key: 对 RPN 进行简单规范化 (目前仅作为 tuple)
+                    # Canonical Key: 瀵?RPN 杩涜绠€鍗曡鑼冨寲 (鐩墠浠呬綔涓?tuple)
                     f_tuple = tuple(f)
                     if f_tuple not in unique_formula_to_indices:
                         unique_formula_to_indices[f_tuple] = []
@@ -475,7 +825,7 @@ class AlphaEngine:
                 
                 num_unique_gen = len(unique_formula_to_indices)
                 
-                # 识别不在缓存中的唯一公式
+                # 璇嗗埆涓嶅湪缂撳瓨涓殑鍞竴鍏紡
                 to_eval_formulas = []
                 f_idx_to_eval = {}
                 for f_tuple in unique_formula_to_indices:
@@ -485,7 +835,7 @@ class AlphaEngine:
                 
                 num_to_eval = len(to_eval_formulas)
                 
-                # 仅回测从未见过且当前批次唯一的公式
+                # 浠呭洖娴嬩粠鏈杩囦笖褰撳墠鎵规鍞竴鐨勫叕寮?
                 if to_eval_formulas:
                     new_results = list(executor.map(_worker_eval, to_eval_formulas))
                     for f_tuple, eval_idx in f_idx_to_eval.items():
@@ -494,22 +844,22 @@ class AlphaEngine:
                             self.eval_cache.move_to_end(f_tuple)
                         self.eval_cache[f_tuple] = new_results[eval_idx]
                     
-                    # [V3.5] Cache 容量管理 (LRU 淘汰)
+                    # [V3.5] Cache 瀹归噺绠＄悊 (LRU 娣樻卑)
                     max_cache = RobustConfig.CACHE_MAX_SIZE
                     if len(self.eval_cache) > max_cache:
-                        # 淘汰最早的 20%
+                        # 娣樻卑鏈€鏃╃殑 20%
                         for _ in range(int(max_cache * 0.2)):
                             self.eval_cache.popitem(last=False)
                 
-                # 组装 512 个结果
+                # 缁勮 512 涓粨鏋?
                 results = []
                 for f in formula_list:
                     res_tuple = self.eval_cache[tuple(f)]
                     results.append(res_tuple)
-                    # 每次命中都移到末尾 (LRU)
+                    # 姣忔鍛戒腑閮界Щ鍒版湯灏?(LRU)
                     self.eval_cache.move_to_end(tuple(f))
                 
-                # [V3.5] 提速指标计算
+                # [V3.5] 鎻愰€熸寚鏍囪绠?
                 batch_hit_rate = (bs - num_unique_gen) / bs
                 cache_hit_rate = (num_unique_gen - num_to_eval) / bs
                 uniq_rate_gen = num_unique_gen / bs
@@ -519,20 +869,34 @@ class AlphaEngine:
                 step_struct_reasons = Counter()
                 step_new_king = 0
                 step_pool_updates = 0
+                step_pass_candidates = []
 
                 
-                # 聚合结果
+                # 鑱氬悎缁撴灉
                 for i, (rew, best_info, status, detail) in enumerate(results):
                     final_status = status
+                    raw_status_counts[status] += 1
+                    if status == "STRUCT_INVALID":
+                        pre_metric_counts["validator_fail"] += 1
+                    elif status in ("EXEC_ERR", "EXEC_NONE"):
+                        pre_metric_counts["exec_fail"] += 1
+                    elif status == "LOW_VARIANCE":
+                        pre_metric_counts["lowvar_fail"] += 1
+                    elif status.startswith("METRIC_"):
+                        pre_metric_counts["metric_fail"] += 1
+                    elif status == "PASS":
+                        pre_metric_counts["post_metric_pass"] += 1
+                    else:
+                        pre_metric_counts["other"] += 1
                     
-                    # [V4.1] 三级成功定义
+                    # [V4.1] 涓夌骇鎴愬姛瀹氫箟
                     is_hard_pass = status not in ["STRUCT_INVALID", "EXEC_ERR", "EXEC_NONE", "LOW_VARIANCE"]
                     if is_hard_pass:
                         counts["HardPass"] += 1
                         if status == "PASS":
                             counts["MetricPass"] += 1
                     
-                    # [V4.1] 动态惩罚倍率应用 (针对顽固 LowVar)
+                    # [V4.1] 鍔ㄦ€佹儵缃氬€嶇巼搴旂敤 (閽堝椤藉浐 LowVar)
                     if status == "LOW_VARIANCE":
                         rew = rew * lowvar_penalty_multiplier
                     
@@ -543,28 +907,33 @@ class AlphaEngine:
                         global_struct_reasons[detail] += 1
                         step_struct_reasons[detail] += 1
                     
-                    # 提取 Gap 指标
-                    if "gap=" in detail:
-                        try:
-                            gap_val = float(detail.split("gap=")[-1])
-                            step_gaps.append(gap_val)
-                        except: pass
+                    # 鎻愬彇 Gap 鎸囨爣
+                    if isinstance(detail, str) and "gap=" in detail:
+                        match = re.search(r"gap=([-+]?\d*\.?\d+)", detail)
+                        if match:
+                            try:
+                                step_gaps.append(float(match.group(1)))
+                            except Exception:
+                                pass
                     
                     score_val = None
+                    pool_action = "NA"
+                    is_new_king = False
                     if best_info:
-                        # V2.2: best_info 现包含 (score, annualized_ret, sharpe_all, formula, metrics)
+                        # V2.2: best_info 鐜板寘鍚?(score, annualized_ret, sharpe_all, formula, metrics)
                         score_val, ret_val, sharpe_val, formula_str, metrics = best_info
                         
-                        # 优化: 只有提升超过阈值才视为 New King，减少 I/O 阻塞
-                        if score_val > self.best_score + ModelConfig.MIN_SCORE_IMPROVEMENT:
+                        # 浼樺寲: 鍙湁鎻愬崌瓒呰繃闃堝€兼墠瑙嗕负 New King锛屽噺灏?I/O 闃诲
+                        if score_val > self.best_score + RobustConfig.MIN_SCORE_IMPROVEMENT:
                             self.best_score = score_val
-                            self.best_formula = formula_str  # 现在是字符串列表
+                            self.best_formula = formula_str  # 鐜板湪鏄瓧绗︿覆鍒楄〃
                             self.best_formula_readable = self.decode_formula(formula_str)
                             self.best_sharpe = sharpe_val
                             self.best_return = ret_val
                             step_new_king += 1
+                            is_new_king = True
                             
-                            # 记录到历史 (V2.2: 包含稳健性指标 + 年化收益 + IC/IR)
+                            # 璁板綍鍒板巻鍙?(V2.2: 鍖呭惈绋冲仴鎬ф寚鏍?+ 骞村寲鏀剁泭 + IC/IR)
                             king_num = len(self.king_history) + 1
                             self.king_history.append({
                                 'step': step,
@@ -574,8 +943,8 @@ class AlphaEngine:
                                 'sharpe_val': metrics.get('sharpe_val', 0),
                                 'max_drawdown': metrics.get('max_drawdown', 0),
                                 'stability': metrics.get('stability_metric', 0),
-                                'annualized_ret': ret_val,  # 年化收益率
-                                # IC/IR 指标
+                                'annualized_ret': ret_val,  # 骞村寲鏀剁泭鐜?
+                                # IC/IR 鎸囨爣
                                 'ic_mean': metrics.get('ic_mean', 0),
                                 'ic_std': metrics.get('ic_std', 0),
                                 'ic_ir': metrics.get('ic_ir'),
@@ -586,22 +955,23 @@ class AlphaEngine:
                                 'readable': self.best_formula_readable
                             })
                             
-                            # 保存交易细节到独立文件
+                            # 淇濆瓨浜ゆ槗缁嗚妭鍒扮嫭绔嬫枃浠?
                             self._save_king_trades(king_num, formula_str, score_val, sharpe_val, ret_val)
                             
-                            # IC/IR 安全格式化
+                            # IC/IR 瀹夊叏鏍煎紡鍖?
                             ic_val = metrics.get('ic_mean', 0)
                             ir_val = metrics.get('ic_ir')
                             ir_str = f"{ir_val:.2f}" if ir_val is not None else "None"
                             
                             tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | IC {ic_val:.3f} (IR {ir_str}) | MDD {metrics.get('max_drawdown', 0):.1%} | {self.best_formula_readable}")
 
-                        # V2.3: 收集多样性公式 (Diversity Pool)
-                        # 仅当分数足够高且公式独特时入池
+                        # V2.3: 鏀堕泦澶氭牱鎬у叕寮?(Diversity Pool)
+                        # 浠呭綋鍒嗘暟瓒冲楂樹笖鍏紡鐙壒鏃跺叆姹?
                         if status == "PASS" and score_val > 0:
+                            pool_action = "PASS_POS"
                             readable = self.decode_formula(formula_str)
                             new_result = {
-                                'step': step,  # 记录产生步数
+                                'step': step,  # 璁板綍浜х敓姝ユ暟
                                 'score': score_val,
                                 'sharpe': sharpe_val,
                                 'annualized_ret': ret_val,
@@ -609,43 +979,61 @@ class AlphaEngine:
                                 'readable': readable
                             }
                             
-                            # V2.3: Jaccard 相似度过滤
-                            # 检查与池中现有公式的相似度
+                            # V2.3: Jaccard 鐩镐技搴﹁繃婊?
+                            # 妫€鏌ヤ笌姹犱腑鐜版湁鍏紡鐨勭浉浼煎害
                             similar_key = None
                             for pool_key, pool_data in self.diverse_pool.items():
                                 similarity = self._calculate_similarity(formula_str, pool_data['formula'])
-                                if similarity > RobustConfig.JACCARD_THRESHOLD:  # 相似度阈值
+                                if similarity > RobustConfig.JACCARD_THRESHOLD:  # 鐩镐技搴﹂槇鍊?
                                     similar_key = pool_key
                                     break
                             
-                            # 入池逻辑
+                            # 鍏ユ睜閫昏緫
                             if similar_key is None:
-                                # Case 1: 与池中无相似公式 -> 正常入池
+                                # Case 1: 涓庢睜涓棤鐩镐技鍏紡 -> 姝ｅ父鍏ユ睜
                                 if readable not in self.diverse_pool:
                                     if len(self.diverse_pool) < RobustConfig.DIVERSITY_POOL_SIZE:
                                         self.diverse_pool[readable] = new_result
                                         step_pool_updates += 1
+                                        pool_action = "POOL_ADD"
                                     else:
-                                        # 池满: 替换最低分公式 (如果新公式更好)
+                                        # 姹犳弧: 鏇挎崲鏈€浣庡垎鍏紡 (濡傛灉鏂板叕寮忔洿濂?
                                         min_key = min(self.diverse_pool, key=lambda k: self.diverse_pool[k]['score'])
                                         if score_val > self.diverse_pool[min_key]['score']:
                                             del self.diverse_pool[min_key]
                                             self.diverse_pool[readable] = new_result
                                             step_pool_updates += 1
+                                            pool_action = "POOL_REPLACE_MIN"
+                                        else:
+                                            pool_action = "POOL_SKIP_LOW"
+                                else:
+                                    pool_action = "POOL_DUP_KEY"
                             else:
-                                # Case 2: 与池中某公式高度相似 -> 仅当分数显著更高 (+10%) 时替换
+                                # Case 2: 涓庢睜涓煇鍏紡楂樺害鐩镐技 -> 浠呭綋鍒嗘暟鏄捐憲鏇撮珮 (+10%) 鏃舵浛鎹?
                                 similar_score = self.diverse_pool[similar_key]['score']
-                                if score_val > similar_score * 1.1:  # 需要高出 10%
+                                if score_val > similar_score * 1.1:  # 闇€瑕侀珮鍑?10%
                                     del self.diverse_pool[similar_key]
                                     self.diverse_pool[readable] = new_result
                                     step_pool_updates += 1
                                     final_status = "SIM_REPLACE"
+                                    pool_action = "POOL_SIM_REPLACE"
                                 else:
                                     final_status = "SIM_REJECT"
                                     # [V3.5] 应用相似度拒绝惩罚，避免躲进冗余区
                                     rewards_list[i] = RobustConfig.PENALTY_SIM
+                                    pool_action = "POOL_SIM_REJECT"
+                        elif status == "PASS":
+                            pool_action = "PASS_NONPOS"
                     
-                    # [V4.1.2] SimPass 定义修复: 通用的 MetricPass 且未被 SIM_REJECT (包含 SIM_REPLACE)
+                    if status == "PASS" and score_val is not None:
+                        step_pass_candidates.append({
+                            "score": float(score_val),
+                            "pool_action": pool_action,
+                            "final_status": final_status,
+                            "is_new_king": bool(is_new_king),
+                        })
+
+                    # [V4.1.2] SimPass 瀹氫箟淇: 閫氱敤鐨?MetricPass 涓旀湭琚?SIM_REJECT (鍖呭惈 SIM_REPLACE)
                     if final_status != "SIM_REJECT" and is_hard_pass and status == "PASS":
                         counts["SimPass"] += 1
 
@@ -662,30 +1050,89 @@ class AlphaEngine:
                 else:
                     steps_since_pool_update += 1
 
-                # [V4.1.1] 奖励饱和监控 (Standard Deviation)
+                # [V4.1.1] 濂栧姳楗卞拰鐩戞帶 (Standard Deviation)
                 rewards_tensor = torch.tensor(rewards_list, dtype=torch.float)
                 reward_std = rewards_tensor.std().item()
                 if reward_std < RobustConfig.REWARD_STD_FLOOR:
                     low_reward_std_strike += 1
                 else:
                     low_reward_std_strike = 0
-                # 修正: 监控 MetricFail 的 Std 而不是 MetricPass (PASS)
-                metric_fail_rewards = [r for i, r in enumerate(rewards_list) if "METRIC" in results[i][2]]
-                metric_fail_std = torch.tensor(metric_fail_rewards).std().item() if len(metric_fail_rewards) > 1 else 0.0
+                # 淇: 鐩戞帶 MetricFail 鐨?Std 鑰屼笉鏄?MetricPass (PASS)
+                metric_fail_rewards = [
+                    float(r) for i, r in enumerate(rewards_list)
+                    if str(results[i][2]).startswith("METRIC_")
+                ]
+                if metric_fail_rewards:
+                    metric_fail_reward_avg = float(np.mean(metric_fail_rewards))
+                    metric_fail_reward_p90 = float(np.percentile(metric_fail_rewards, 90))
+                    metric_fail_std = float(np.std(metric_fail_rewards))
+                else:
+                    metric_fail_reward_avg = 0.0
+                    metric_fail_reward_p90 = 0.0
+                    metric_fail_std = 0.0
+                metric_gap_avg = float(np.mean(step_gaps)) if step_gaps else 0.0
+                metric_gap_p90 = float(np.percentile(step_gaps, 90)) if step_gaps else 0.0
+                valid_formula_rate = 1.0 - (raw_status_counts["STRUCT_INVALID"] / bs)
+                decode_mask_empty_rate = decode_mask_empty_count / float(bs * max_len)
+                decode_mask_empty_sample_count = int(empty_sample_hit.sum().item())
+                decode_mask_empty_sample_rate = decode_mask_empty_sample_count / float(bs)
+                fallback_reason_topk = fallback_reason_counter.most_common(5)
+                struct_reason_top3 = step_struct_reasons.most_common(3)
+                reason_breakdown_before_metric = {
+                    "validator_fail": int(pre_metric_counts["validator_fail"]),
+                    "exec_fail": int(pre_metric_counts["exec_fail"]),
+                    "lowvar_fail": int(pre_metric_counts["lowvar_fail"]),
+                    "metric_fail": int(pre_metric_counts["metric_fail"]),
+                    "post_metric_pass": int(pre_metric_counts["post_metric_pass"]),
+                    "other": int(pre_metric_counts["other"]),
+                }
+                near_king_candidates = [
+                    c for c in step_pass_candidates if not c["is_new_king"]
+                ]
+                near_king_candidates.sort(key=lambda x: x["score"], reverse=True)
+                near_king_top3 = []
+                for c in near_king_candidates[:3]:
+                    near_king_top3.append({
+                        "score": c["score"],
+                        "best_gap": float(self.best_score - c["score"]),
+                        "pool_action": c["pool_action"],
+                        "final_status": c["final_status"],
+                    })
 
                 log_entry = {
                     "step": step,
                     "stats": dict(step_stats),
+                    "raw_status_counts": dict(raw_status_counts),
+                    "controller_mode": controller_mode,
+                    "controller_reason": controller_reason,
+                    "rolling_hpr": rolling_hpr,
+                    "rolling_mpr": rolling_mpr,
+                    "rolling_spr": rolling_spr,
+                    "rolling_pur": rolling_pur,
                     "reward_std": reward_std,
-                    "metric_fail_std": metric_fail_std, # 新增 MetricFail Std
+                    "metric_fail_std": metric_fail_std, # 鏂板 MetricFail Std
+                    "metric_fail_reward_avg": metric_fail_reward_avg,
+                    "metric_fail_reward_p90": metric_fail_reward_p90,
+                    "metric_gap_avg": metric_gap_avg,
+                    "metric_gap_p90": metric_gap_p90,
+                    "valid_formula_rate": valid_formula_rate,
+                    "decode_mask_empty_count": decode_mask_empty_count,
+                    "decode_mask_empty_rate": decode_mask_empty_rate,
+                    "decode_mask_empty_sample_count": decode_mask_empty_sample_count,
+                    "decode_mask_empty_sample_rate": decode_mask_empty_sample_rate,
+                    "decode_fallback_force_finish_count": decode_fallback_force_finish_count,
+                    "decode_fallback_repair_count": decode_fallback_repair_count,
+                    "decode_fallback_safe_count": decode_fallback_safe_count,
+                    "decode_fallback_last_resort_count": decode_fallback_last_resort_count,
+                    "fallback_reason_topk": fallback_reason_topk,
+                    "struct_reason_top3": struct_reason_top3,
+                    "reason_breakdown_before_metric": reason_breakdown_before_metric,
+                    "near_king_top3": near_king_top3,
                     "entropy_boost": entropy_boost,
                     "steps_since_new_king": steps_since_new_king,
                     "steps_since_pool_update": steps_since_pool_update,
                     "low_reward_std_strike": low_reward_std_strike,
-                    "timestamp": time.time()
                 }
-                with open(stats_path, 'a', encoding='utf-8') as stats_file:
-                    stats_file.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
                 if step % 20 == 0:
                     total = bs
@@ -696,41 +1143,67 @@ class AlphaEngine:
                     else:
                         avg_gap = p50_gap = p90_gap = 0.0
                     
-                    # [V4.1] 动力学观测 2.0++: 包含 FailAbs 与分级 Pass
-                    struct_abs = step_stats['STRUCT_INVALID']
-                    lowvar_abs = step_stats['LOW_VARIANCE']
-                    metric_abs = sum(step_stats[s] for s in step_stats if 'METRIC' in s)
+                    # [V4.1] 鍔ㄥ姏瀛﹁娴?2.0++: 鍖呭惈 FailAbs 涓庡垎绾?Pass
+                    struct_abs = raw_status_counts['STRUCT_INVALID']
+                    lowvar_abs = raw_status_counts['LOW_VARIANCE']
+                    metric_abs = sum(raw_status_counts[s] for s in raw_status_counts if 'METRIC' in s)
                     sim_abs = step_stats['SIM_REJECT']
                     
-                    # [V4.1.1] 计算 SimFailShare 与 TopFail
-                    # [V4.1.2] 修正: 分母为 MetricPass (在这些 Good Ones 里有多少是重复的)
+                    # [V4.1.1] 璁＄畻 SimFailShare 涓?TopFail
+                    # [V4.1.2] 淇: 鍒嗘瘝涓?MetricPass (鍦ㄨ繖浜?Good Ones 閲屾湁澶氬皯鏄噸澶嶇殑)
                     sim_fs_denom = counts['MetricPass']
                     sim_fail_share = sim_abs / sim_fs_denom if sim_fs_denom > 0 else 0.0
-                    top_fails = step_struct_reasons.most_common(3)
+                    top_fails = struct_reason_top3
                     top_fail_str = " | ".join([f"{k}:{v}" for k, v in top_fails])
                     
                     msg = (
                         f"[Step {step}] "
                         f"H/M/S_Pass: {counts['HardPass']}/{counts['MetricPass']}/{counts['SimPass']} | "
-                        f"RollPR {rolling_hpr:.1%} | "
+                        f"Roll[H/M/S/P] {rolling_hpr:.1%}/{rolling_mpr:.1%}/{rolling_spr:.1%}/{rolling_pur:.1%} | "
+                        f"Ctl {controller_mode}:{controller_reason} | "
                         f"FailAbs[S:{struct_abs}, L:{lowvar_abs}, M:{metric_abs}, R:{sim_abs}] | "
                         f"Gap(avg/p50/p90) {avg_gap:.2f}/{p50_gap:.2f}/{p90_gap:.2f} | "
-                        f"RStd {reward_std:.2f} | MStd {metric_fail_std:.2f} | "
+                        f"RStd {reward_std:.2f} | "
+                        f"MFailRew(avg/p90/std) {metric_fail_reward_avg:.2f}/{metric_fail_reward_p90:.2f}/{metric_fail_std:.2f} | "
+                        f"Valid {valid_formula_rate:.1%} | "
+                        f"MaskEmpty[T:{decode_mask_empty_rate:.1%},S:{decode_mask_empty_sample_rate:.1%}] | "
                         f"SimFS {sim_fail_share:.1%} | B:{current_beta:.4f} "
                         f"(+{entropy_boost:.3f}) | KWait:{steps_since_new_king}"
                     )
                     tqdm.write(msg)
+                    if near_king_top3:
+                        near_str = " | ".join(
+                            [
+                                f"{c['score']:.2f}(gap {c['best_gap']:.2f}, {c['pool_action']})"
+                                for c in near_king_top3
+                            ]
+                        )
+                        tqdm.write(f"   NearKingTop3: {near_str}")
+                    else:
+                        tqdm.write("   NearKingTop3: none")
                     if top_fail_str:
                         tqdm.write(f"   TopFail: {top_fail_str}")
+                    if fallback_reason_topk:
+                        fallback_str = " | ".join([f"{k}:{v}" for k, v in fallback_reason_topk])
+                        tqdm.write(f"   FallbackTop: {fallback_str}")
                 
-                # [V4.1] 更新滚动窗口与持续故障触发器
+                # [V4.1] 鏇存柊婊氬姩绐楀彛涓庢寔缁晠闅滆Е鍙戝櫒
                 hpr = counts['HardPass'] / bs
+                mpr = counts['MetricPass'] / bs
+                spr = counts['SimPass'] / bs
+                pool_update_rate = 1.0 if step_pool_updates > 0 else 0.0
                 hard_pass_rate_history.append(hpr)
                 hard_pass_abs_history.append(counts['HardPass'])
-                struct_rate = step_stats['STRUCT_INVALID'] / bs
+                metric_pass_rate_history.append(mpr)
+                metric_pass_abs_history.append(counts['MetricPass'])
+                sim_pass_rate_history.append(spr)
+                sim_pass_abs_history.append(counts['SimPass'])
+                pool_update_rate_history.append(pool_update_rate)
+                pool_update_abs_history.append(float(step_pool_updates))
+                struct_rate = raw_status_counts['STRUCT_INVALID'] / bs
                 struct_rate_history.append(struct_rate)
                 
-                # 熔断规则 1: 结构坍缩 (30步 > 90%)
+                # 鐔旀柇瑙勫垯 1: 缁撴瀯鍧嶇缉 (30姝?> 90%)
                 if struct_rate > 0.9:
                     struct_failure_strike += 1
                 else:
@@ -743,7 +1216,7 @@ class AlphaEngine:
                     cool_down_timer = 20
                     struct_failure_strike = 0
                 
-                # 熔断规则 2: 低方差坍缩 (50步 > 70%)
+                # 鐔旀柇瑙勫垯 2: 浣庢柟宸潔缂?(50姝?> 70%)
                 if (step_stats['LOW_VARIANCE'] / bs) > 0.7:
                     lowvar_failure_strike += 1
                 else:
@@ -754,7 +1227,7 @@ class AlphaEngine:
                     lowvar_penalty_multiplier = 1.15
                     lowvar_failure_strike = 0
                 
-                # [V4.1.1] 熔断规则 3: 低方差恢复
+                # [V4.1.1] 鐔旀柇瑙勫垯 3: 浣庢柟宸仮澶?
                 if (step_stats['LOW_VARIANCE'] / bs) < 0.1:
                     lowvar_recovery_strike += 1
                 else:
@@ -764,7 +1237,7 @@ class AlphaEngine:
                     lowvar_penalty_multiplier = 1.0
                     lowvar_recovery_strike = 0
 
-                # [V4.1.1] 熔断规则 4: 奖励饱和告警
+                # [V4.1.1] 鐔旀柇瑙勫垯 4: 濂栧姳楗卞拰鍛婅
                 if reward_std < RobustConfig.REWARD_STD_FLOOR:
                     saturation_strike += 1
                 else:
@@ -779,7 +1252,7 @@ class AlphaEngine:
                 rewards = torch.tensor(rewards_list, device=ModelConfig.DEVICE)
 
                 
-                # 优势函数归一化
+                # 浼樺娍鍑芥暟褰掍竴鍖?
                 adv = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
                 if reward_std < RobustConfig.REWARD_STD_FLOOR and RobustConfig.ADV_NOISE_STD > 0:
                     adv = adv + torch.randn_like(adv) * RobustConfig.ADV_NOISE_STD
@@ -791,19 +1264,39 @@ class AlphaEngine:
                 
                 loss = loss.mean()
                 
-                # V3.5: 使用带精炼控制回路的熵正则化
+                # V3.5: 浣跨敤甯︾簿鐐兼帶鍒跺洖璺殑鐔垫鍒欏寲
                 avg_entropy = torch.stack(entropies).mean()
                 loss = loss - current_beta * avg_entropy
                 
                 self.opt.zero_grad()
                 loss.backward()
+                if grad_clip_norm > 0:
+                    grad_norm = float(
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=grad_clip_norm)
+                    )
+                else:
+                    grad_sq = 0.0
+                    for p in self.model.parameters():
+                        if p.grad is not None:
+                            grad_sq += float(p.grad.detach().norm(2).item() ** 2)
+                    grad_norm = grad_sq ** 0.5
                 self.opt.step()
+
+                log_entry["grad_norm"] = grad_norm
+                log_entry["grad_clip_norm"] = grad_clip_norm
+                log_entry["timestamp"] = time.time()
+                with open(stats_path, 'a', encoding='utf-8') as stats_file:
+                    stats_file.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+                if step % grad_norm_log_interval == 0:
+                    tqdm.write(f"   GradNorm {grad_norm:.3f} | Clip {grad_clip_norm:.3f}")
                 
                 pbar.set_postfix({
                     'AvgRew': f'{rewards.mean().item():.2f}',
                     'Best': f'{self.best_score:.2f}',
                     'Ent': f'{avg_entropy.item():.2f}',
-                    'β': f'{current_beta:.3f}'
+                    '尾': f'{current_beta:.3f}',
+                    'G': f'{grad_norm:.2f}'
                 })
 
             end_time = time.time()
@@ -820,14 +1313,14 @@ class AlphaEngine:
         trades_dir = os.path.join(output_dir, 'king_trades')
         os.makedirs(trades_dir, exist_ok=True)
         
-        # 重新执行公式获取因子值
+        # 閲嶆柊鎵ц鍏紡鑾峰彇鍥犲瓙鍊?
         vm = StackVM()
         factors = vm.execute(formula, self.loader.feat_tensor)
         
         if factors is None:
             return
         
-        # 使用详细回测获取交易记录
+        # 浣跨敤璇︾粏鍥炴祴鑾峰彇浜ゆ槗璁板綍
         bt = CBBacktest(top_k=RobustConfig.TOP_K)
         details = bt.evaluate_with_details(
             factors=factors,
@@ -835,12 +1328,12 @@ class AlphaEngine:
             valid_mask=self.loader.valid_mask
         )
         
-        # 构建交易记录
+        # 鏋勫缓浜ゆ槗璁板綍
         trades = []
         for t, (indices, daily_ret) in enumerate(zip(details['daily_holdings'], details['daily_returns'])):
             date = self.loader.dates_list[t] if t < len(self.loader.dates_list) else f"Day_{t}"
             
-            # 将资产索引转换为名称
+            # 灏嗚祫浜х储寮曡浆鎹负鍚嶇О
             holdings = []
             for idx in indices:
                 if idx < len(self.loader.assets_list):
@@ -854,7 +1347,7 @@ class AlphaEngine:
                 'daily_ret': round(daily_ret, 6)
             })
         
-        # 保存到文件
+        # 淇濆瓨鍒版枃浠?
         result = {
             'king_num': king_num,
             'formula': self.decode_formula(formula),
@@ -871,14 +1364,14 @@ class AlphaEngine:
     def _save_results(self):
         output_dir = os.path.dirname(os.path.abspath(__file__))
         
-        # 构建完整结果，包含最佳因子和进化历史
+        # 鏋勫缓瀹屾暣缁撴灉锛屽寘鍚渶浣冲洜瀛愬拰杩涘寲鍘嗗彶
         result = {
             'best': {
-                'formula': self.best_formula,  # 现在是字符串列表
+                'formula': self.best_formula,  # 鐜板湪鏄瓧绗︿覆鍒楄〃
                 'readable': self.best_formula_readable,
                 'score': self.best_score,
                 'sharpe': self.best_sharpe,
-                'annualized_ret': self.best_return  # 年化收益率
+                'annualized_ret': self.best_return  # 骞村寲鏀剁泭鐜?
             },
             'history': self.king_history,
             'total_kings': len(self.king_history),
@@ -903,21 +1396,21 @@ class AlphaEngine:
         torch.save(self.model.state_dict(), os.path.join(output_dir, 'alphagpt_cb.pt'))
 
 if __name__ == "__main__":
-    # 命令行参数解析
+    # 鍛戒护琛屽弬鏁拌В鏋?
     parser = argparse.ArgumentParser(
-        description='AlphaGPT 训练引擎 - 可转债因子挖掘',
+        description='AlphaGPT training engine - convertible bond factor mining',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例:
-  python -m model_core.engine                          # 使用默认配置
-  python -m model_core.engine --config my_config.yaml  # 使用自定义配置
-        """
+        epilog=(
+            "Examples:\\n"
+            "  python -m model_core.engine\\n"
+            "  python -m model_core.engine --config my_config.yaml"
+        ),
     )
     parser.add_argument(
         '--config', '-c',
         type=str,
         default=None,
-        help='配置文件路径 (YAML 格式)，不指定则使用 default_config.yaml'
+        help='閰嶇疆鏂囦欢璺緞 (YAML 鏍煎紡)锛屼笉鎸囧畾鍒欎娇鐢?default_config.yaml'
     )
     parser.add_argument(
         '--data-start-date',
@@ -927,12 +1420,12 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     
-    # 加载配置 (必须在创建 AlphaEngine 之前)
+    # 鍔犺浇閰嶇疆 (蹇呴』鍦ㄥ垱寤?AlphaEngine 涔嬪墠)
     from .config_loader import load_config
     config = load_config(args.config)
     
-    # 记录配置文件路径以便在 init 中打印
-    # 记录配置路径 (仅用于打印/调试)
+    # 璁板綍閰嶇疆鏂囦欢璺緞浠ヤ究鍦?init 涓墦鍗?
+    # 璁板綍閰嶇疆璺緞 (浠呯敤浜庢墦鍗?璋冭瘯)
     RobustConfig._config_path = args.config if args.config else "default_config.yaml"  # type: ignore[attr-defined]
     
     if args.config:
@@ -940,6 +1433,7 @@ if __name__ == "__main__":
     else:
         print("Using default config: default_config.yaml")
     
-    # Windows 为了支持 ProcessPool，必须要有这个 protect
+    # Windows 涓轰簡鏀寔 ProcessPool锛屽繀椤昏鏈夎繖涓?protect
     eng = AlphaEngine(data_start_date=args.data_start_date)
     eng.train()
+
