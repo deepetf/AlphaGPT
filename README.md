@@ -41,6 +41,9 @@ Current Version: **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction
 - **示例命令（verify，确认不再落盘 plan）**: `python tests/verify_strategy.py --start 2026-03-03 --end 2026-03-03 --strategy-id king_mom`
 
 ### **V5.9: Training Stability S1/S2/S3 Hardening**
+
+**********此版本基本解决live持仓与verify和replay不一致的问题*********
+
 *在 V5.8 基础上，完成训练后期坍缩修复链路的第一阶段落地：S3 稳定性、S2 控制器观测/模式化、S1 失败样本连续地形。*
 - **S1 Fail Reward Shaping (Soft Mode)**: `METRIC_*` 失败样本不再固定硬惩罚，改为按 `gap` 连续塑形（`metric_fail_reward_mode=soft`、`metric_gap_w`、`metric_fail_reward_cap/floor`），同时保持 `best_info=None`，确保失败样本不会进入 king/pool。
 - **S2 Controller Diagnostics & Pool-Centric Control**: 熵控制器支持 `hard|metric|sim|pool` 模式，并强化 `pool_update/new_king` 停滞观测；控制台与日志新增滚动指标，便于区分“真停滞”与“近 king 缓慢推进”。
