@@ -48,11 +48,13 @@ class SQLStrictLoader:
         table_name: str = "CB_DATA",
         start_date: str = "2022-08-01",
         end_date: Optional[str] = None,
+        warmup_anchor_date: Optional[str] = None,
     ):
         self.sql_engine = sql_engine or create_engine(Config.CB_DB_DSN)
         self.table_name = table_name
         self.start_date = start_date
         self.end_date = end_date
+        self.warmup_anchor_date = warmup_anchor_date
 
         self.raw_data_cache = None
         self.feat_tensor = None
@@ -63,6 +65,20 @@ class SQLStrictLoader:
         self.dates_list: List[str] = []
         self.assets_list: List[str] = []
         self.names_dict: Dict[str, str] = {}
+
+    def _resolve_warmup_rows(self) -> int:
+        """Resolve warmup rows used by FeatureEngineer._robust_normalize."""
+        if not self.dates_list:
+            return 0
+        if not self.warmup_anchor_date:
+            return 0
+        if self.warmup_anchor_date in self.dates_list:
+            return self.dates_list.index(self.warmup_anchor_date)
+        print(
+            f"Warning: warmup_anchor_date '{self.warmup_anchor_date}' not in SQLStrictLoader dates "
+            f"[{self.dates_list[0]}, {self.dates_list[-1]}], fallback warmup_rows=0"
+        )
+        return 0
 
     def _resolve_columns(self) -> _ColumnSpec:
         inspector = inspect(self.sql_engine)
@@ -204,7 +220,11 @@ class SQLStrictLoader:
         self.valid_mask = has_price & is_trading & not_expiring
 
         # Build normalized features.
-        self.feat_tensor = FeatureEngineer.compute_features(self.raw_data_cache)
+        warmup_rows = self._resolve_warmup_rows()
+        self.feat_tensor = FeatureEngineer.compute_features(
+            self.raw_data_cache,
+            warmup_rows=warmup_rows,
+        )
 
         # Build target return.
         close = raw_tensors["CLOSE"]
@@ -213,26 +233,16 @@ class SQLStrictLoader:
         ret_1d[-1] = 0.0
         self.target_ret = ret_1d
 
-        split_date = RobustConfig.TRAIN_TEST_SPLIT_DATE
-        split_idx = 0
-        used_default_split = False
-        for i, d in enumerate(self.dates_list):
-            if d >= split_date:
-                split_idx = i
-                break
-        if split_idx == 0:
-            split_idx = int(len(self.dates_list) * 0.8)
-            used_default_split = True
-        self.split_idx = split_idx
-
-        if used_default_split:
-            print(
-                f"Warning: Split date '{split_date}' not found, using default 80% split"
-            )
+        # NOTE:
+        # SQLStrictLoader is used by sim/live strict replay path only.
+        # Sim path does not consume train/val split, keep split_idx as a
+        # compatibility placeholder to avoid emitting misleading warnings.
+        self.split_idx = 0
         print(
             f"SQL data ready. feat={self.feat_tensor.shape}, "
             f"valid={self.valid_mask.sum().item()}/{self.valid_mask.numel()}, "
-            f"split_idx={self.split_idx}"
+            f"split_idx={self.split_idx}, warmup_rows={warmup_rows}, "
+            f"warmup_anchor_date={self.warmup_anchor_date or 'None'}"
         )
 
     def close(self):

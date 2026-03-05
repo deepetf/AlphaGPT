@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.9: Training Stability S1/S2/S3 Hardening (Current)**
+Current Version: **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,18 @@ Current Version: **V5.9: Training Stability S1/S2/S3 Hardening (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.9: Training Stability S1/S2/S3 Hardening (Current)**
+### **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction (Current)**
+*在 V5.9 基础上，完成 verify/sim 特征预热口径对齐与 verify 阶段无效 I/O 精简。*
+- **Warmup Anchor Alignment (Verify)**: `verify_strategy` 在裁剪窗口后重算特征时，使用验证起点作为 `feature_warmup_anchor_date`，显式传递 `warmup_rows`，减少窗口起始段“假性零化/分支触发”。
+- **Warmup Anchor Alignment (Sim Live/Replay)**: `run_sim -> multi_sim_runner -> sim_runner -> SQLStrictLoader` 打通 `strict_anchor_date/warmup_anchor_date` 透传；`live` 以当日为锚点，`strict_replay` 以单日目标日/区间首日为锚点，统一特征标准化预热口径。
+- **Remove Misleading Split Warning in Sim Loader**: `SQLStrictLoader` 移除 train/val split 计算与 `Split date ... not found` 警告（sim 路径不消费 split 逻辑），保留 `split_idx` 兼容占位。
+- **Verify Plan I/O Reduction**: `CBStrategyRunner` 新增 `save_plan_enabled` 开关；verify 注入 runner 时关闭 `execution/plans/plan_*.json` 落盘，减少无效磁盘写入。
+- **Verify Formula Guardrails**: `verify_strategy` 增加公式结构预校验与 VM 返回 `None` 的显式报错，提升失败可定位性。
+- **示例命令（strict replay 单日，验证 warmup 锚点口径）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2026-03-03 --state-backend sql --replay-source sql_eod`
+- **示例命令（strict replay 区间，验证首日锚点）**: `python strategy_manager/run_sim.py --mode strict_replay --start-date 2026-03-01 --end-date 2026-03-05 --state-backend sql --replay-source sql_eod`
+- **示例命令（verify，确认不再落盘 plan）**: `python tests/verify_strategy.py --start 2026-03-03 --end 2026-03-03 --strategy-id king_mom`
+
+### **V5.9: Training Stability S1/S2/S3 Hardening**
 *在 V5.8 基础上，完成训练后期坍缩修复链路的第一阶段落地：S3 稳定性、S2 控制器观测/模式化、S1 失败样本连续地形。*
 - **S1 Fail Reward Shaping (Soft Mode)**: `METRIC_*` 失败样本不再固定硬惩罚，改为按 `gap` 连续塑形（`metric_fail_reward_mode=soft`、`metric_gap_w`、`metric_fail_reward_cap/floor`），同时保持 `best_info=None`，确保失败样本不会进入 king/pool。
 - **S2 Controller Diagnostics & Pool-Centric Control**: 熵控制器支持 `hard|metric|sim|pool` 模式，并强化 `pool_update/new_king` 停滞观测；控制台与日志新增滚动指标，便于区分“真停滞”与“近 king 缓慢推进”。

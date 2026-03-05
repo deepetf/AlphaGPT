@@ -129,6 +129,7 @@ def _build_runner(
     replay_source_override: Optional[str],
     strict_start_date: Optional[str] = None,
     strict_end_date: Optional[str] = None,
+    strict_anchor_date: Optional[str] = None,
 ) -> MultiSimRunner:
     strategy_ids = [strategy_id] if strategy_id else None
     return MultiSimRunner(
@@ -141,6 +142,7 @@ def _build_runner(
         replay_source_override=replay_source_override,
         strict_start_date=strict_start_date,
         strict_end_date=strict_end_date,
+        strict_anchor_date=strict_anchor_date,
     )
 
 
@@ -162,6 +164,7 @@ def run_once(
     try:
         strict_start_date = None
         strict_end_date = None
+        strict_anchor_date = trade_date
         if mode == "strict_replay":
             strict_end_date = trade_date
             strict_start_date = _get_warmup_start_date(data_provider, trade_date, warmup_days=65)
@@ -179,6 +182,7 @@ def run_once(
             replay_source_override=replay_source_override,
             strict_start_date=strict_start_date,
             strict_end_date=strict_end_date,
+            strict_anchor_date=strict_anchor_date,
         )
 
         # strict_replay single-day run: clear only the target date and continue from historical SQL state.
@@ -282,6 +286,7 @@ def run_range(
         logger.info(f"Found {len(trade_dates)} trading dates, replay will run sequentially")
         strict_start_date = _get_warmup_start_date(data_provider, trade_dates[0], warmup_days=65)
         strict_end_date = trade_dates[-1]
+        strict_anchor_date = trade_dates[0]
         logger.info(
             f"strict replay load window resolved: [{strict_start_date}, {strict_end_date}]"
         )
@@ -295,6 +300,7 @@ def run_range(
             replay_source_override=replay_source_override,
             strict_start_date=strict_start_date,
             strict_end_date=strict_end_date,
+            strict_anchor_date=strict_anchor_date,
         )
 
         for r in runner.runners.values():

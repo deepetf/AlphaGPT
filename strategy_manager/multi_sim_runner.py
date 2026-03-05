@@ -33,6 +33,7 @@ class MultiSimRunner:
         replay_source_override: Optional[str] = None,
         strict_start_date: Optional[str] = None,
         strict_end_date: Optional[str] = None,
+        strict_anchor_date: Optional[str] = None,
     ):
         self.data_provider = data_provider
         self.config_path = config_path or self.DEFAULT_CONFIG_PATH
@@ -41,6 +42,7 @@ class MultiSimRunner:
         self.replay_source_override = replay_source_override
         self.strict_start_date = strict_start_date
         self.strict_end_date = strict_end_date
+        self.strict_anchor_date = strict_anchor_date
         self.config = load_strategies_config(self.config_path)
 
         enabled = self.config.get_enabled_strategies()
@@ -70,13 +72,15 @@ class MultiSimRunner:
                 live_quote_source=self.live_quote_source,
                 strict_start_date=self.strict_start_date,
                 strict_end_date=self.strict_end_date,
+                strict_anchor_date=self.strict_anchor_date,
             )
 
         logger.info(
             f"MultiSimRunner ready: runners={len(self.runners)}, "
             f"dataset={self.dataset}, live_quote_source={self.live_quote_source}, "
             f"replay_source_override={self.replay_source_override or 'None'}, "
-            f"strict_range=[{self.strict_start_date or 'default'}, {self.strict_end_date or 'latest'}]"
+            f"strict_range=[{self.strict_start_date or 'default'}, {self.strict_end_date or 'latest'}], "
+            f"strict_anchor_date={self.strict_anchor_date or 'None'}"
         )
 
     def run_all_strategies(self, date: str, mode: str = "auto") -> Dict[str, Dict]:

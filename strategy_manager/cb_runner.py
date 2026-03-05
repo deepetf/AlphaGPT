@@ -49,7 +49,14 @@ class CBStrategyRunner:
     5. 执行稳健性风控 (Active Ratio Check)
     """
     
-    def __init__(self, strategy_path=None, loader=None, portfolio=None, trader=None):
+    def __init__(
+        self,
+        strategy_path=None,
+        loader=None,
+        portfolio=None,
+        trader=None,
+        save_plan_enabled: bool = True,
+    ):
         """初始化策略执行器
         
         Args:
@@ -66,8 +73,10 @@ class CBStrategyRunner:
         self.formula = None
         # 优先使用配置中的 Top-K，否则默认 10
         self.top_k = getattr(RobustConfig, "TOP_K", 10)
+        self.save_plan_enabled = bool(save_plan_enabled)
         self.output_dir = os.path.join(project_root, "execution", "plans")
-        os.makedirs(self.output_dir, exist_ok=True)
+        if self.save_plan_enabled:
+            os.makedirs(self.output_dir, exist_ok=True)
         
         # Initialize Components (支持依赖注入)
         self.loader = loader  # 允许外部传入已加载的 loader
@@ -294,7 +303,8 @@ class CBStrategyRunner:
         else:
             logger.info("No orders generated (Holdings match Target)")
             
-        self.save_plan(latest_date, selected_assets, orders)
+        if self.save_plan_enabled:
+            self.save_plan(latest_date, selected_assets, orders)
         
         # 模拟成交更新状态
         if simulate:

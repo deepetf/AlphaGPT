@@ -63,6 +63,7 @@ class SimulationRunner:
         live_quote_source: str = "dummy",
         strict_start_date: Optional[str] = None,
         strict_end_date: Optional[str] = None,
+        strict_anchor_date: Optional[str] = None,
     ):
         """
         初始化模拟盘运行器（仅支持策略配置驱动）。
@@ -80,6 +81,7 @@ class SimulationRunner:
         self.live_quote_source = live_quote_source
         self.strict_start_date = strict_start_date
         self.strict_end_date = strict_end_date
+        self.strict_anchor_date = strict_anchor_date
         self._init_from_strategy_config(strategy_config)
 
         # 初始化公式虚拟机
@@ -105,6 +107,7 @@ class SimulationRunner:
         self,
         start_date: Optional[str],
         end_date: Optional[str],
+        anchor_date: Optional[str] = None,
     ) -> None:
         """
         Configure strict replay loading window.
@@ -112,6 +115,8 @@ class SimulationRunner:
         """
         self.strict_start_date = start_date
         self.strict_end_date = end_date
+        if anchor_date is not None:
+            self.strict_anchor_date = anchor_date
         if self._bt_loader is not None:
             logger.warning(
                 f"[{self.strategy_id}] strict context already initialized, "
@@ -363,6 +368,7 @@ class SimulationRunner:
                 sql_engine=self.data_provider.sql_engine,
                 start_date=trading_days[0],
                 end_date=date,
+                warmup_anchor_date=date,
             )
             loader.load_data()
 
@@ -404,13 +410,15 @@ class SimulationRunner:
             end_date = self.strict_end_date
             logger.info(
                 f"[{self.strategy_id}] strict context init: "
-                f"range=[{start_date}, {end_date or 'latest'}]"
+                f"range=[{start_date}, {end_date or 'latest'}], "
+                f"warmup_anchor_date={self.strict_anchor_date or 'None'}"
             )
 
             self._bt_loader = SQLStrictLoader(
                 sql_engine=self.data_provider.sql_engine,
                 start_date=start_date,
                 end_date=end_date,
+                warmup_anchor_date=self.strict_anchor_date,
             )
 
             t0 = time.perf_counter()

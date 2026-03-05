@@ -31,6 +31,7 @@ from model_core.config import RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.factors import FeatureEngineer
+from model_core.formula_validator import validate_formula
 from model_core.signal_utils import build_topk_weights
 from model_core.vm import StackVM
 from strategy_manager.strategy_config import load_strategies_config
@@ -204,6 +205,7 @@ class StrategyVerifier:
         self._trim_loader_and_recompute(
             load_start_date=warmup_start_date,
             load_end_date=actual_end_date,
+            feature_warmup_anchor_date=actual_start_date,
         )
 
         # Rebuild verification dates on trimmed loader.
@@ -241,7 +243,12 @@ class StrategyVerifier:
         start_idx = max(0, anchor_idx - max(1, int(warmup_days)) + 1)
         return all_dates[start_idx]
 
-    def _trim_loader_and_recompute(self, load_start_date: str, load_end_date: str) -> None:
+    def _trim_loader_and_recompute(
+        self,
+        load_start_date: str,
+        load_end_date: str,
+        feature_warmup_anchor_date: Optional[str] = None,
+    ) -> None:
         """Trim loader tensors by date range and recompute feature/target tensors for alignment."""
         dates = self.loader.dates_list
         if load_start_date not in dates or load_end_date not in dates:
@@ -267,8 +274,27 @@ class StrategyVerifier:
         self.loader.valid_mask = self.loader.valid_mask[time_slice]
         self.loader.dates_list = dates[time_slice]
 
-        # 3) Recompute features on trimmed window to align warmup context with run_sim strict replay.
-        self.loader.feat_tensor = FeatureEngineer.compute_features(self.loader.raw_data_cache)
+        # 3) Recompute features on trimmed window with explicit warmup anchor.
+        warmup_rows = 0
+        if feature_warmup_anchor_date:
+            if feature_warmup_anchor_date in self.loader.dates_list:
+                warmup_rows = self.loader.dates_list.index(feature_warmup_anchor_date)
+            else:
+                logger.warning(
+                    "feature_warmup_anchor_date not found in trimmed dates, fallback warmup_rows=0: %s",
+                    feature_warmup_anchor_date,
+                )
+        self.loader.feat_tensor = FeatureEngineer.compute_features(
+            self.loader.raw_data_cache,
+            warmup_rows=warmup_rows,
+        )
+        logger.info(
+            "Recomputed features with warmup_rows=%d (anchor=%s, range=%s~%s)",
+            warmup_rows,
+            feature_warmup_anchor_date or "None",
+            self.loader.dates_list[0] if self.loader.dates_list else "N/A",
+            self.loader.dates_list[-1] if self.loader.dates_list else "N/A",
+        )
 
         # 4) Recompute target return on trimmed window (last day should be zero).
         close = self.loader.raw_data_cache["CLOSE"]
@@ -349,6 +375,7 @@ class StrategyVerifier:
             f"tp={self.take_profit_ratio}, initial_cash={self.initial_cash}"
         )
         logger.info(f"Formula: {' '.join(self.formula)}")
+        self._validate_formula_or_raise()
 
     def _load_formula_legacy(self):
         """鍔犺浇鍥犲瓙鍏紡 (legacy king mode)"""
@@ -400,6 +427,23 @@ class StrategyVerifier:
         logger.info(f"Formula: {' '.join(self.formula)}")
         logger.info(f"Sharpe: {self.formula_info.get('sharpe', 'N/A'):.4f}, "
                    f"Ann. Return: {self.formula_info.get('annualized_ret', 'N/A'):.2%}")
+        self._validate_formula_or_raise()
+
+    def _validate_formula_or_raise(self):
+        """Validate formula structure before long-running verification."""
+        if not self.formula:
+            raise ValueError("Formula is empty.")
+        if not isinstance(self.formula, list) or not isinstance(self.formula[0], str):
+            raise TypeError("Formula must be a list of string tokens.")
+        ok, _, reason = validate_formula(self.formula)
+        if not ok:
+            formula_str = " ".join(self.formula)
+            msg = (
+                f"Invalid formula for verification (source={self.formula_source}): {reason}. "
+                f"formula={formula_str}"
+            )
+            logger.error(msg)
+            raise ValueError(msg)
         
     def print_config_alignment(self):
         """鎵撳嵃鍙傛暟瀵归綈妫€鏌?"""
@@ -677,7 +721,8 @@ class StrategyVerifier:
         runner = CBStrategyRunner(
             loader=self.loader,
             portfolio=portfolio,
-            trader=mock_trader
+            trader=mock_trader,
+            save_plan_enabled=False,
         )
         # Keep simulation formula strictly aligned with verifier formula
         # (especially important when --king is specified).
@@ -892,6 +937,14 @@ class StrategyVerifier:
         vm = StackVM()
         feat_tensor = self.loader.feat_tensor.to('cpu')
         factors = vm.execute(self.formula, feat_tensor)
+        if factors is None:
+            ok, _, reason = validate_formula(self.formula)
+            reason_msg = reason if not ok else "VM returned None"
+            formula_str = " ".join(self.formula)
+            raise ValueError(
+                f"Formula execution failed in vector backtest: {reason_msg}. "
+                f"formula={formula_str}"
+            )
         
         # Run backtest (if TP enabled, use TP-aware vector simulation)
         if self.take_profit_ratio > 0:
@@ -934,6 +987,8 @@ class StrategyVerifier:
         - 鐩樹腑瑙﹀彂: 閿佸畾 take_profit_ratio (on t+1 intraday)
         - 褰撴棩涔板洖: 閫氳繃棰濆鍙岃竟璐圭巼鎵ｅ噺浣撶幇
         """
+        if factors is None:
+            raise ValueError("TP backtest received None factors (formula execution failed).")
         factors = factors.to('cpu')
         target_ret = self.loader.target_ret.to('cpu')
         valid_mask = self.loader.valid_mask.to('cpu')
