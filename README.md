@@ -2,11 +2,11 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction (Current)**
+Current Version: **V5.92: Masked CS/Execution Price Alignment + Strategy Refresh (Current)**
 
 当前版本run_sim CLI:
 
-  # 0) 无参数启动（默认 live + SQL 状态 + QMT 行情）
+  # 0) 无参数启动（默认 live + SQL 状态 + dummy 行情）
   python strategy_manager/run_sim.py
 
   # 1) SQL 严格回放（单日）
@@ -29,7 +29,18 @@ Current Version: **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction (Current)**
+### **V5.92: Masked CS/Execution Price Alignment + Strategy Refresh (Current)**
+*在 V5.91 基础上，继续收敛 live/strict 口径差异，并更新当前默认策略组合。*
+- **Masked CS Pipeline in VM**: `StackVM.execute` 支持传入 `cs_mask`，`CS_RANK/CS_DEMEAN/CS_ROBUST_Z` 在统一可交易宇宙上计算，减少横截面样本漂移。
+- **SQLStrictLoader Presence/Raw Cache**: 新增 `present_mask` 与 `exec_raw_cache`（`CLOSE/OPEN/HIGH` 原值）；strict 执行价优先使用原始 SQL 当日值，再回退填充值。
+- **Sim Runner CS/Price Unification**: live 与 strict_replay 均通过统一掩码组合（`valid_mask & present_mask`，可配置）参与选股；strict 的止盈与估值定价统一走原值优先口径。
+- **Runtime Defaults Update**: `run_sim` 无参数默认行情源调整为 `dummy`，避免环境缺少 QMT 时启动失败。
+- **Strategy Set Refresh**: `strategies_config.json` 当前启用策略切换为 `king_dblow` 与 `king_mom`，用于 V5.92 组合验证。
+- **示例命令（live 默认启动，使用 dummy 行情）**: `python strategy_manager/run_sim.py`
+- **示例命令（strict replay 单日，检查执行价原值优先）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2026-03-05 --state-backend sql --replay-source sql_eod --strategy-id king_mom`
+- **示例命令（strict replay 区间，检查 masked CS 口径）**: `python strategy_manager/run_sim.py --mode strict_replay --start-date 2026-01-01 --end-date 2026-03-05 --state-backend sql --replay-source sql_eod --strategy-id king_mom`
+
+### **V5.91: Warmup Alignment for Verify/Sim + Verify I/O Reduction**
 *在 V5.9 基础上，完成 verify/sim 特征预热口径对齐与 verify 阶段无效 I/O 精简。*
 - **Warmup Anchor Alignment (Verify)**: `verify_strategy` 在裁剪窗口后重算特征时，使用验证起点作为 `feature_warmup_anchor_date`，显式传递 `warmup_rows`，减少窗口起始段“假性零化/分支触发”。
 - **Warmup Anchor Alignment (Sim Live/Replay)**: `run_sim -> multi_sim_runner -> sim_runner -> SQLStrictLoader` 打通 `strict_anchor_date/warmup_anchor_date` 透传；`live` 以当日为锚点，`strict_replay` 以单日目标日/区间首日为锚点，统一特征标准化预热口径。

@@ -1,7 +1,7 @@
 import torch
 from .ops_registry import OpsRegistry
 from .config import ModelConfig
-from typing import List
+from typing import List, Optional
 
 
 class StackVM:
@@ -20,8 +20,9 @@ class StackVM:
         
         # 特征列表
         self.features = ModelConfig.INPUT_FEATURES
+        self._cs_ops = {"CS_RANK", "CS_DEMEAN", "CS_ROBUST_Z"}
 
-    def execute(self, formula: List[str], feat_tensor):
+    def execute(self, formula: List[str], feat_tensor, cs_mask: Optional[torch.Tensor] = None):
         """
         执行公式
         
@@ -57,8 +58,11 @@ class StackVM:
                     args.reverse()  # 恢复参数顺序
                     
                     # 执行算子
-                    func = self.ops_map[token_name]
-                    res = func(*args)
+                    if token_name in self._cs_ops and cs_mask is not None:
+                        res = self._apply_masked_cs(token_name, args[0], cs_mask)
+                    else:
+                        func = self.ops_map[token_name]
+                        res = func(*args)
                     
                     # 处理异常值
                     if torch.isnan(res).any() or torch.isinf(res).any():
@@ -77,3 +81,86 @@ class StackVM:
                 
         except Exception:
             return None
+
+    def _resolve_cs_mask(self, x: torch.Tensor, cs_mask: torch.Tensor) -> torch.Tensor:
+        """
+        将 cs_mask 统一为与 x 对齐的 bool 掩码 [Time, Assets]。
+        支持:
+        - [Assets]：扩展到所有时点
+        - [Time, Assets]：直接使用
+        """
+        if not isinstance(cs_mask, torch.Tensor):
+            raise TypeError(f"cs_mask must be torch.Tensor, got {type(cs_mask)}")
+
+        mask = cs_mask.to(device=x.device, dtype=torch.bool)
+        if x.dim() != 2:
+            raise ValueError(f"masked CS operators require 2D tensor [T, A], got {tuple(x.shape)}")
+
+        t, a = x.shape
+        if mask.dim() == 1:
+            if mask.numel() != a:
+                raise ValueError(f"cs_mask length mismatch: mask={mask.numel()}, assets={a}")
+            mask = mask.unsqueeze(0).expand(t, a)
+        elif mask.dim() == 2:
+            if tuple(mask.shape) != (t, a):
+                raise ValueError(f"cs_mask shape mismatch: mask={tuple(mask.shape)}, x={(t, a)}")
+        else:
+            raise ValueError(f"cs_mask must be 1D/2D, got dim={mask.dim()}")
+        return mask
+
+    def _apply_masked_cs(self, op_name: str, x: torch.Tensor, cs_mask: torch.Tensor) -> torch.Tensor:
+        mask = self._resolve_cs_mask(x, cs_mask)
+
+        if op_name == "CS_RANK":
+            return self._masked_cs_rank(x, mask)
+        if op_name == "CS_DEMEAN":
+            return self._masked_cs_demean(x, mask)
+        if op_name == "CS_ROBUST_Z":
+            return self._masked_cs_robust_z(x, mask)
+
+        # 理论上不会到这里，保留兜底
+        return self.ops_map[op_name](x)
+
+    @staticmethod
+    def _masked_cs_rank(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        out = torch.zeros_like(x)
+        t, _ = x.shape
+        eps = 1e-9
+        for i in range(t):
+            row_mask = mask[i]
+            n = int(row_mask.sum().item())
+            if n <= 1:
+                continue
+            row = x[i, row_mask]
+            order = torch.argsort(row)
+            ranks = torch.empty(n, device=x.device, dtype=torch.float32)
+            ranks[order] = torch.arange(n, device=x.device, dtype=torch.float32)
+            out[i, row_mask] = ranks / (n - 1 + eps)
+        return out
+
+    @staticmethod
+    def _masked_cs_demean(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        out = torch.zeros_like(x)
+        t, _ = x.shape
+        for i in range(t):
+            row_mask = mask[i]
+            if not torch.any(row_mask):
+                continue
+            row = x[i, row_mask]
+            out[i, row_mask] = row - row.mean()
+        return out
+
+    @staticmethod
+    def _masked_cs_robust_z(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        out = torch.zeros_like(x)
+        t, _ = x.shape
+        for i in range(t):
+            row_mask = mask[i]
+            if not torch.any(row_mask):
+                continue
+            row = x[i, row_mask]
+            median = row.median()
+            mad = (row - median).abs().median() + 1e-9
+            z = (row - median) / (mad * 1.4826)
+            out[i, row_mask] = torch.clamp(z, -5.0, 5.0)
+        return out

@@ -33,9 +33,11 @@ class SQLStrictLoader:
 
     Exposed attributes:
     - raw_data_cache: Dict[str, Tensor[Time, Assets]]
+    - exec_raw_cache: Dict[str, Tensor[Time, Assets]]  # raw (no fill), for execution prices
     - feat_tensor: Tensor[Time, Assets, Features]
     - target_ret: Tensor[Time, Assets]
     - valid_mask: Tensor[Time, Assets]
+    - present_mask: Tensor[Time, Assets]  # whether date-code exists in raw SQL rows
     - split_idx: int
     - dates_list: List[str]
     - assets_list: List[str]
@@ -57,9 +59,11 @@ class SQLStrictLoader:
         self.warmup_anchor_date = warmup_anchor_date
 
         self.raw_data_cache = None
+        self.exec_raw_cache = None
         self.feat_tensor = None
         self.target_ret = None
         self.valid_mask = None
+        self.present_mask = None
         self.split_idx = None
 
         self.dates_list: List[str] = []
@@ -181,6 +185,20 @@ class SQLStrictLoader:
 
         self.dates_list = pivot_df.index.strftime("%Y-%m-%d").tolist()
 
+        # Raw date-code presence mask (do not fill): used to align strict/live CS universe.
+        present_df = (
+            df.assign(__present__=1.0)
+            .pivot(index=cols.trade_date, columns=cols.code, values="__present__")
+            .sort_index(axis=0)
+            .reindex(index=pivot_df.index, columns=assets)
+            .fillna(0.0)
+        )
+        self.present_mask = torch.tensor(
+            (present_df.values > 0.5),
+            device=ModelConfig.DEVICE,
+            dtype=torch.bool,
+        )
+
         if cols.name and cols.name in df.columns:
             names = (
                 df[[cols.code, cols.name]]
@@ -193,6 +211,7 @@ class SQLStrictLoader:
             self.names_dict = {code: code for code in assets}
 
         raw_tensors: Dict[str, torch.Tensor] = {}
+        exec_raw_tensors: Dict[str, torch.Tensor] = {}
         for internal_name, _, fill_method in ModelConfig.BASIC_FACTORS:
             sql_col = cols.factor_cols[internal_name]
             if sql_col is None:
@@ -200,8 +219,8 @@ class SQLStrictLoader:
                     f"Warning: optional column for '{internal_name}' not found in SQL, skipping."
                 )
                 continue
-            sub_df = pivot_df[sql_col].copy()
-            sub_df = sub_df.reindex(columns=assets)
+            sub_df = pivot_df[sql_col].copy().reindex(columns=assets)
+            sub_df_raw = sub_df.copy()
 
             if fill_method == "ffill":
                 sub_df = sub_df.ffill()
@@ -211,7 +230,14 @@ class SQLStrictLoader:
             data_np = sub_df.fillna(0.0).values.astype(np.float32)
             raw_tensors[internal_name] = torch.tensor(data_np, device=ModelConfig.DEVICE)
 
+            if internal_name in {"CLOSE", "OPEN", "HIGH"}:
+                raw_np = sub_df_raw.fillna(0.0).values.astype(np.float32)
+                exec_raw_tensors[internal_name] = torch.tensor(
+                    raw_np, device=ModelConfig.DEVICE
+                )
+
         self.raw_data_cache = raw_tensors
+        self.exec_raw_cache = exec_raw_tensors
 
         # Build valid mask exactly aligned with CBDataLoader.
         has_price = raw_tensors["CLOSE"] > 0
@@ -241,6 +267,7 @@ class SQLStrictLoader:
         print(
             f"SQL data ready. feat={self.feat_tensor.shape}, "
             f"valid={self.valid_mask.sum().item()}/{self.valid_mask.numel()}, "
+            f"present={self.present_mask.sum().item()}/{self.present_mask.numel()}, "
             f"split_idx={self.split_idx}, warmup_rows={warmup_rows}, "
             f"warmup_anchor_date={self.warmup_anchor_date or 'None'}"
         )

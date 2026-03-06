@@ -14,67 +14,57 @@
   },
 
   "strategies": [
+
     {
-      "id": "king_crazy",
-      "name": "king_crazy",
+      "id": "king_dblow",
+      "name": "king_dblow",
       "enabled": true,
       "formula": [
-        "PCT_CHG_5",
-        "VOLATILITY_STK",
+        "DBLOW",
+        "PREM_Z",
+        "DBLOW",
+        "CUT_NEG",
+        "TS_MOM20",
         "TS_RET",
-        "IV",
-        "LOG",
-        "VOL_STK_60",
-        "PCT_CHG_STK",
-        "VOLATILITY_STK",
-        "TS_BIAS5",
-        "IF_POS",
-        "SUB",
         "DIV",
-        "CS_DEMEAN",
-        "SUB",
-        "MIN"
-    ],
-      "params": {
-      }
-    },    
-    {
-      "id": "king_v1",
-      "name": "Best Factor Strategy",
-      "enabled": true,
-      "formula": [
-        "PURE_VALUE",
         "VOLATILITY_STK",
-        "VOLATILITY_STK",
-        "TS_STD5",
-        "TS_DELTA",
-        "MAX",
         "PCT_CHG_STK",
-        "TS_STD5",
-        "ADD",
-        "MAX"
+        "DIV",
+        "LOG_MONEYNESS",
+        "MUL",
+        "MUL",
+        "TS_STD60",
+        "SUB"
       ],
       "params": {
       }
-    },
+    },    
+    
     {
-      "id": "king_agressive",
-      "name": "agressive Factor Strategy",
+      "id": "king_mom",
+      "name": "king_mom",
       "enabled": true,
       "formula": [
-        "VOLATILITY_STK",
-        "VOLATILITY_STK",
+        "PCT_CHG",
+        "ALPHA_PCT_CHG_5",
+        "ADD",
         "TS_STD5",
-        "TS_DELTA",
+        "ABS",
+        "TS_STD5",
+        "TS_MIN20",
+        "VOL",
+        "CLOSE",
+        "VOLATILITY_STK",
+        "DIV",
+        "CS_ROBUST_Z",
         "MAX",
-        "PCT_CHG_STK",
-        "TS_STD5",
-        "ADD"
+        "CS_RANK",
+        "IF_POS"
+
       ],
       "params": {
       }
     }
-     
 
   ]
 }

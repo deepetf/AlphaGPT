@@ -209,7 +209,10 @@ class SimulationRunner:
             f"top_k={self.top_k}, tp={self.take_profit_ratio}, "
             f"replay_strict={self.replay_strict}, replay_source={self.replay_source}, "
             f"state_backend={self.state_backend}, dataset={self.dataset}, "
-            f"live_quote_source={self.live_quote_source}"
+            f"live_quote_source={self.live_quote_source}, "
+            f"sim_masked_cs={RobustConfig.SIM_MASKED_CS_ENABLED}, "
+            f"sim_cs_require_present={RobustConfig.SIM_CS_REQUIRE_PRESENT}, "
+            f"sim_exec_price_raw_priority={RobustConfig.SIM_EXEC_PRICE_RAW_PRIORITY}"
         )
 
     def _get_required_window(self) -> int:
@@ -377,13 +380,15 @@ class SimulationRunner:
                 return None
 
             feat_tensor_cpu = loader.feat_tensor.to("cpu")
-            factors = self.vm.execute(self.formula, feat_tensor_cpu)
+            cs_mask = self._compose_cs_mask(loader)
+            cs_mask_cpu = cs_mask.to("cpu") if cs_mask is not None else None
+            factors = self.vm.execute(self.formula, feat_tensor_cpu, cs_mask=cs_mask_cpu)
             if factors is None:
                 raise ValueError("Formula execution failed: VM returned None")
 
             date_idx = loader.dates_list.index(date)
             factor_row = factors[date_idx] if factors.dim() == 2 else factors
-            valid_mask = loader.valid_mask[date_idx].to("cpu")
+            valid_mask = self._compose_selection_valid_mask(loader, date_idx)
 
             return {
                 "factor_values": factor_row,
@@ -394,6 +399,25 @@ class SimulationRunner:
         except Exception as e:
             logger.exception(f"[{self.strategy_id}] build live selection context failed: {e}")
             return None
+
+    def _compose_cs_mask(self, loader) -> Optional[torch.Tensor]:
+        """Compose 2D CS mask for VM execution."""
+        if not RobustConfig.SIM_MASKED_CS_ENABLED:
+            return None
+
+        cs_mask = loader.valid_mask
+        present_mask = getattr(loader, "present_mask", None)
+        if RobustConfig.SIM_CS_REQUIRE_PRESENT and present_mask is not None:
+            cs_mask = cs_mask & present_mask
+        return cs_mask
+
+    def _compose_selection_valid_mask(self, loader, date_idx: int) -> torch.Tensor:
+        """Compose 1D tradable mask for final top-k selection on one day."""
+        mask = loader.valid_mask[date_idx]
+        present_mask = getattr(loader, "present_mask", None)
+        if RobustConfig.SIM_CS_REQUIRE_PRESENT and present_mask is not None:
+            mask = mask & present_mask[date_idx]
+        return mask.to("cpu")
     
     def _ensure_backtest_context(self):
         """Load strict replay context on demand."""
@@ -441,7 +465,9 @@ class SimulationRunner:
                 f"tensor_shape={tuple(feat_tensor_cpu.shape)}"
             )
             t0 = time.perf_counter()
-            factors = self.vm.execute(self.formula, feat_tensor_cpu)
+            cs_mask = self._compose_cs_mask(self._bt_loader)
+            cs_mask_cpu = cs_mask.to("cpu") if cs_mask is not None else None
+            factors = self.vm.execute(self.formula, feat_tensor_cpu, cs_mask=cs_mask_cpu)
             if factors is None:
                 raise ValueError("Formula execution failed: VM returned None")
             self._bt_factors = factors.to("cpu")
@@ -451,12 +477,33 @@ class SimulationRunner:
                 f"factor_shape={tuple(self._bt_factors.shape)}, elapsed={elapsed:.2f}s"
             )
     
+    def _loader_exec_price(self, field: str, date_idx: int, asset_idx: int) -> float:
+        """
+        Get strict replay execution price.
+        Priority: raw SQL value (same day) -> filled cache fallback.
+        """
+        if self._bt_loader is None:
+            return 0.0
+
+        key = field.upper()
+
+        if RobustConfig.SIM_EXEC_PRICE_RAW_PRIORITY:
+            raw_cache = getattr(self._bt_loader, "exec_raw_cache", None)
+            if isinstance(raw_cache, dict) and key in raw_cache:
+                raw_val = float(raw_cache[key][date_idx, asset_idx].item())
+                if raw_val > 0:
+                    return raw_val
+
+        filled_tensor = self._bt_loader.raw_data_cache.get(key)
+        if filled_tensor is None:
+            return 0.0
+        return float(filled_tensor[date_idx, asset_idx].item())
+
     def _build_prices_from_loader(self, date_idx: int) -> Dict[str, float]:
         """Build close price dict from strict loader cache."""
-        close_row = self._bt_loader.raw_data_cache["CLOSE"][date_idx].to("cpu")
         prices: Dict[str, float] = {}
         for i, code in enumerate(self._bt_loader.assets_list):
-            prices[code] = float(close_row[i].item())
+            prices[code] = self._loader_exec_price("CLOSE", date_idx, i)
         return prices
     
     def _check_take_profit_from_loader(
@@ -467,19 +514,15 @@ class SimulationRunner:
         if date_idx <= 0:
             return []
         
-        close = self._bt_loader.raw_data_cache["CLOSE"].to("cpu")
-        open_ = self._bt_loader.raw_data_cache["OPEN"].to("cpu")
-        high = self._bt_loader.raw_data_cache["HIGH"].to("cpu")
-        
         orders: List[SimOrder] = []
         for pos in self.portfolio.get_all_positions():
             asset_idx = self._bt_code_to_idx.get(pos.code)
             if asset_idx is None:
                 continue
-            
-            prev_close = float(close[date_idx - 1, asset_idx].item())
-            today_open = float(open_[date_idx, asset_idx].item())
-            today_high = float(high[date_idx, asset_idx].item())
+
+            prev_close = self._loader_exec_price("CLOSE", date_idx - 1, asset_idx)
+            today_open = self._loader_exec_price("OPEN", date_idx, asset_idx)
+            today_high = self._loader_exec_price("HIGH", date_idx, asset_idx)
             
             if prev_close <= 0:
                 continue
@@ -531,7 +574,7 @@ class SimulationRunner:
                 tp_records = self.trader.execute(tp_orders, prices, date)
         
         factor_row = self._bt_factors[date_idx]
-        valid_mask = self._bt_loader.valid_mask[date_idx].to("cpu")
+        valid_mask = self._compose_selection_valid_mask(self._bt_loader, date_idx)
         target_codes = self._select_top_k(
             factor_values=factor_row,
             asset_list=self._bt_loader.assets_list,

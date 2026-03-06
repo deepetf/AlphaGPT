@@ -191,6 +191,24 @@ robust_config:
   # - 建议: 与 min_valid_count 保持一致或略高。
   signal_min_valid_count: 30
 
+  # sim_masked_cs_enabled
+  # - 含义: 是否在 sim/live 选股中，对 CS_* 算子使用“统一可交易宇宙”掩码。
+  # - 作用: 减少 live(短窗口) 与 strict_replay(长窗口) 因横截面宇宙差异导致的 TopK 分叉。
+  # - 建议: true（推荐）；如需回滚旧行为可设为 false。
+  sim_masked_cs_enabled: true
+
+  # sim_cs_require_present
+  # - 含义: CS/选股掩码是否额外要求“当日原始 SQL 有该 code 行”。
+  # - 作用: 避免仅因前值填充而把“当日无原始记录”的标的纳入横截面。
+  # - 建议: true（推荐）。
+  sim_cs_require_present: true
+
+  # sim_exec_price_raw_priority
+  # - 含义: strict_replay 执行价口径是否“当日原值优先”。
+  # - 作用: CLOSE/OPEN/HIGH 先取原始值；原始缺失再回退到填充值，减少执行价失真。
+  # - 建议: true（推荐），便于与 SQL 原始日行情对齐。
+  sim_exec_price_raw_priority: true
+
   # --------------------------------------------------------------------------
   # 评分权重
   # --------------------------------------------------------------------------

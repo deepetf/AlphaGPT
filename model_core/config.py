@@ -223,6 +223,18 @@ class ConfigMeta(type):
         return cls._rc.get('signal_min_valid_count', cls.MIN_VALID_COUNT)
 
     @property
+    def SIM_MASKED_CS_ENABLED(cls) -> bool:
+        return cls._rc.get('sim_masked_cs_enabled', True)
+
+    @property
+    def SIM_CS_REQUIRE_PRESENT(cls) -> bool:
+        return cls._rc.get('sim_cs_require_present', True)
+
+    @property
+    def SIM_EXEC_PRICE_RAW_PRIORITY(cls) -> bool:
+        return cls._rc.get('sim_exec_price_raw_priority', True)
+
+    @property
     def REWARD_STD_FLOOR(cls) -> float:
         return cls._rc.get('reward_std_floor', 0.12)
 
