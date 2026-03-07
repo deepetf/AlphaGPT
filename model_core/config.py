@@ -353,7 +353,10 @@ class ModelConfig:
 
     # 原有的静态部分
     DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    BATCH_SIZE = 512
+
+    @classproperty
+    def BATCH_SIZE(cls):
+        return max(1, int(cls._get_conf().get('batch_size', 512)))
 
     # RPN 最大 Token 长度 (对外兼容字段名)
     MAX_FORMULA_LEN = 15

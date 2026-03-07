@@ -147,6 +147,10 @@ def _validate_config(config: Dict[str, Any]) -> None:
     if 'robust_config' not in config:
         raise ValueError("配置缺少 'robust_config'")
     
+    batch_size = config.get('batch_size', 512)
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+        raise ValueError("batch_size must be a positive integer")
+
     rc = config['robust_config']
     required_fields = [
         'train_test_split_date', 'rolling_window', 'stability_k',

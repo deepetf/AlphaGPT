@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.92: Masked CS/Execution Price Alignment + Strategy Refresh (Current)**
+Current Version: **V5.93: Configurable Training Batch Size (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,18 @@ Current Version: **V5.92: Masked CS/Execution Price Alignment + Strategy Refresh
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.92: Masked CS/Execution Price Alignment + Strategy Refresh (Current)**
+### **V5.93: Configurable Training Batch Size (Current)**
+*在 V5.92 基础上，补齐训练 `batch_size` 的配置化入口，并为大 batch 训练提供基础联动支持。*
+- **Configurable Batch Size**: `ModelConfig.BATCH_SIZE` 改为从 YAML 动态读取，训练侧不再依赖写死常量，支持按实验配置直接切换 batch。
+- **Config Validation Upgrade**: `config_loader` 新增 `batch_size` 正整数校验，错误配置在启动阶段直接失败，减少训练中途报错。
+- **Batch-Aware Controller Seeding**: 训练滚动窗口中的 `hard/metric/sim` 初始绝对计数改为基于当前 batch 动态计算，避免改大或改小 batch 后控制器初始行为失真。
+- **Default Config Documentation**: `model_core/default_config.yaml` 新增 `batch_size` 说明与调参建议，明确它表示“每 step 的候选公式数”而非时间样本数。
+- **Batch-1024 Override Template**: 新增 `model_core/config_batch1024.yaml`，提供 `batch_size=1024` 及相关联动阈值的可直接运行模板。
+- **示例命令（默认 batch 配置训练）**: `python -m model_core.engine --config model_core/default_config.yaml`
+- **示例命令（1024 batch 训练）**: `python -m model_core.engine --config model_core/config_batch1024.yaml`
+- **示例命令（1024 batch + 指定训练起始日）**: `python -m model_core.engine --config model_core/config_batch1024.yaml --data-start-date 2022-08-01`
+
+### **V5.92: Masked CS/Execution Price Alignment + Strategy Refresh**
 *在 V5.91 基础上，继续收敛 live/strict 口径差异，并更新当前默认策略组合。*
 - **Masked CS Pipeline in VM**: `StackVM.execute` 支持传入 `cs_mask`，`CS_RANK/CS_DEMEAN/CS_ROBUST_Z` 在统一可交易宇宙上计算，减少横截面样本漂移。
 - **SQLStrictLoader Presence/Raw Cache**: 新增 `present_mask` 与 `exec_raw_cache`（`CLOSE/OPEN/HIGH` 原值）；strict 执行价优先使用原始 SQL 当日值，再回退填充值。

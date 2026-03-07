@@ -434,12 +434,14 @@ class AlphaEngine:
             # 1. 鎴愬姛鐜囩獥鍙?(鐢ㄤ簬骞虫粦鎺у埗)
             # [V4.1.1] 鍒濆鍖栦笅璋冧负 0.5锛岄槻姝㈠墠鏈?鍘嗗彶澶ソ"瀵艰嚧涓€绾х喌瑙﹀彂鍙嶅簲杩熼挐
             window_size = 10
+            init_bs = ModelConfig.BATCH_SIZE
+            metric_pass_seed = max(1, int(init_bs * 0.02))
             hard_pass_rate_history = deque([0.5]*window_size, maxlen=window_size)
-            hard_pass_abs_history = deque([int(ModelConfig.BATCH_SIZE * 0.5)]*window_size, maxlen=window_size)
+            hard_pass_abs_history = deque([int(init_bs * 0.5)]*window_size, maxlen=window_size)
             metric_pass_rate_history = deque([0.02]*window_size, maxlen=window_size)
-            metric_pass_abs_history = deque([max(1, int(ModelConfig.BATCH_SIZE * 0.02))]*window_size, maxlen=window_size)
+            metric_pass_abs_history = deque([metric_pass_seed]*window_size, maxlen=window_size)
             sim_pass_rate_history = deque([0.02]*window_size, maxlen=window_size)
-            sim_pass_abs_history = deque([max(1, int(ModelConfig.BATCH_SIZE * 0.02))]*window_size, maxlen=window_size)
+            sim_pass_abs_history = deque([metric_pass_seed]*window_size, maxlen=window_size)
             pool_update_rate_history = deque([0.2]*window_size, maxlen=window_size)
             pool_update_abs_history = deque([1.0]*window_size, maxlen=window_size)
             struct_rate_history = deque([0.0]*window_size, maxlen=window_size)

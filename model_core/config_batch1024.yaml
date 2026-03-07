@@ -1,0 +1,29 @@
+# AlphaGPT override config for batch_size=1024
+# Usage:
+#   python -m model_core.engine --config model_core/config_batch1024.yaml
+
+batch_size: 1024
+
+robust_config:
+  reward_std_floor: 0.09
+  reward_std_patience: 10
+
+  controller_hard_floor_rate: 0.008
+  controller_hard_floor_abs: 2.0
+  controller_hard_warn_rate: 0.04
+
+  controller_metric_floor_rate: 0.002
+  controller_metric_floor_abs: 2.0
+  controller_metric_warn_rate: 0.008
+
+  controller_sim_floor_rate: 0.002
+  controller_sim_floor_abs: 2.0
+  controller_sim_warn_rate: 0.008
+
+  controller_pool_floor_rate: 0.08
+  controller_pool_floor_abs: 0.8
+  controller_pool_warn_rate: 0.16
+  controller_pool_stagnation_patience: 8
+
+  stagnation_patience: 16
+  adv_noise_std: 0.03
