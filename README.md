@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.93: Configurable Training Batch Size (Current)**
+Current Version: **V5.94: Feature Registry Alignment + Formula Canonicalization (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,19 @@ Current Version: **V5.93: Configurable Training Batch Size (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.93: Configurable Training Batch Size (Current)**
+### **V5.94: Feature Registry Alignment + Formula Canonicalization (Current)**
+*在 V5.93 基础上，统一训练/verify/sim 的特征注册入口，并为训练评估补齐公式规范化去重。*
+- **Unified Feature Registry**: 新增 `model_core/features_registry.py`，将 raw/derived feature 的注册、依赖展开与合法性校验集中到单一入口，减少训练、verify、sim 的特征定义分叉。
+- **FeatureEngineer Refactor**: `model_core/factors.py` 改为按注册中心动态构建特征张量，已注册派生特征可在训练、verify、sim 与 realtime helper 中一致生效。
+- **Config Validation Upgrade**: `config_loader` 现在会在启动阶段校验 `input_features` 是否已注册，错误配置不再等到训练中途才失败。
+- **Realtime Feature Alignment**: `RealtimeDataProvider.build_feat_tensor*` 改为委托统一特征构建逻辑，老 helper 路径也能正确处理派生特征，不再静默零填充。
+- **Verify Warmup Cleanup**: `verify_strategy` 去掉写死 `200` 天回看，改为由特征预热交易日和训练 warmup 动态推导，降低无效 I/O，同时保持验证起点口径不变。
+- **Formula Canonicalization**: 新增 `model_core/formula_simplifier.py`，在训练评估前对公式做安全规范化；`eval_cache`、批内去重和 king 展示统一使用简化后公式，减少等价冗余公式重复评估。
+- **示例命令（默认配置训练，启用规范化去重）**: `python -m model_core.engine --config model_core/default_config.yaml`
+- **示例命令（验证 warmup 对齐）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2025-03-31`
+- **示例命令（运行特征注册与公式简化测试）**: `pytest tests/test_feature_registry.py tests/test_realtime_provider_feature_alignment.py tests/test_formula_simplifier.py -q`
+
+### **V5.93: Configurable Training Batch Size**
 *在 V5.92 基础上，补齐训练 `batch_size` 的配置化入口，并为大 batch 训练提供基础联动支持。*
 - **Configurable Batch Size**: `ModelConfig.BATCH_SIZE` 改为从 YAML 动态读取，训练侧不再依赖写死常量，支持按实验配置直接切换 batch。
 - **Config Validation Upgrade**: `config_loader` 新增 `batch_size` 正整数校验，错误配置在启动阶段直接失败，减少训练中途报错。

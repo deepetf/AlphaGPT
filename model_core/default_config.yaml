@@ -25,20 +25,20 @@
 #   - 调试: 100 ~ 500
 #   - 快速验证: 1000 ~ 2000
 #   - 深度搜索: 5000+
+train_steps: 100
 
 # batch_size
-# - ??: ???? step ????????????????????????
-# - ??: ??????????????????????
-# - ??:
-#   - ??: reward/?????????????? CPU/GPU/???
-#   - ??: ???????????????????????
-# - ??:
-#   - CPU ??: 64 ~ 256
-#   - ????: 256 ~ 1024
-#   - ???????????? robust_config ?? reward_std_floor?
-#     controller_*_floor_abs / controller_*_warn_rate??????? patience?
+# - 含义: 每个训练 step 同时采样、评估并用于一次策略梯度更新的公式数量。
+# - 注意: 这里不是“时间样本数”，而是“候选公式数”。
+# - 影响:
+#   - 调大: reward/梯度更平滑，但单步更慢、更占 CPU/GPU/内存。
+#   - 调小: 探索噪声更强，但更容易出现高方差和不稳定更新。
+# - 建议:
+#   - CPU 调试: 64 ~ 256
+#   - 常规训练: 256 ~ 1024
+#   - 若显著改动，建议同时复核 robust_config 里的 reward_std_floor、
+#     controller_*_floor_abs / controller_*_warn_rate，以及停滞相关 patience。
 batch_size: 512
-train_steps: 100
 
 # lr
 # - 含义: AdamW 学习率。
@@ -80,9 +80,11 @@ warmup_days: 85
 # 模型输入特征 (INPUT_FEATURES)
 # ============================================================================
 # 说明:
-# 1) 这些名称必须与 BASIC_FACTORS 中可用因子一致。
-# 2) 模型生成公式时仅能使用这里列出的基础因子。
-# 3) 增加特征会扩大搜索空间，可能提升上限，但训练更慢且更易不稳定。
+# 1) 这里只用于启用已经注册的 feature。
+# 2) 新增 raw feature 时，需先在 `ModelConfig.BASIC_FACTORS` 中注册。
+# 3) 新增 derived feature 时，需先在 `model_core/features_registry.py` 中注册。
+# 4) 模型生成公式时仅能使用这里列出的已启用特征。
+# 5) 增加特征会扩大搜索空间，可能提升上限，但训练更慢且更易不稳定。
 input_features:
   - CLOSE            # 转债收盘价
   - VOL              # 转债成交量
@@ -115,7 +117,7 @@ robust_config:
   # - 含义: 训练/验证切分日期(含时序 OOS 验证)。
   # - 用法: 该日期之前用于训练，之后用于验证。
   # - 建议: 使用业务上明确的 regime 切点；避免频繁改动。
-  train_test_split_date: "2024-06-01"
+  train_test_split_date: "2024-08-01"
 
   # rolling_window
   # - 含义: 计算滚动 Sharpe/稳定性指标的窗口长度(交易日)。
@@ -229,18 +231,18 @@ robust_config:
   # - 含义: 训练集/验证集 Sharpe 的加权系数。
   # - 用法: BaseScore = w_train * sharpe_train + w_val * sharpe_val
   # - 建议: val_weight >= train_weight 以抑制过拟合。
-  train_weight: 0.4
-  val_weight: 0.6
+  train_weight: 0.5
+  val_weight: 0.5
 
   # stability_w
   # - 含义: 稳定性奖励权重。
   # - 建议: 0.2~1.0。
-  stability_w: 0.5
+  stability_w: 0.4
 
   # ret_w
   # - 含义: 年化收益奖励权重。
   # - 建议: 4~12；越大越偏收益导向。
-  ret_w: 8.0
+  ret_w: 6.0
 
   # mdd_w
   # - 含义: 最大回撤惩罚权重。
@@ -269,7 +271,7 @@ robust_config:
   # penalty_flip_coef
   # - 含义: train/val Sharpe 异号时的惩罚系数。
   # - 用法: 软惩罚而非直接淘汰，保留学习信号。
-  penalty_flip_coef: 2.0
+  penalty_flip_coef: 2.5
 
   # penalty_struct / penalty_exec / penalty_sharpe / penalty_active /
   # penalty_days / penalty_low_var
@@ -291,7 +293,7 @@ robust_config:
   # metric_gap_w
   # - 含义: fail gap 惩罚强度，reward -= metric_gap_w * avg_gap
   # - 建议: 5~15；越大越强调“逼近阈值”。
-  metric_gap_w: 8.0
+  metric_gap_w: 6.0
 
   # metric_fail_reward_cap
   # - 含义: fail reward 上限，防止失败样本获得正激励。
@@ -301,7 +303,7 @@ robust_config:
   # metric_fail_reward_floor
   # - 含义: fail reward 下限，避免极端值主导梯度。
   # - 建议: -8~-15。
-  metric_fail_reward_floor: -10.0
+  metric_fail_reward_floor: -14.0
 
   # --------------------------------------------------------------------------
   # 熵控制与坍缩防护

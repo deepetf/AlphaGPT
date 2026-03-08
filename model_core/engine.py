@@ -30,6 +30,7 @@ from .formula_validator import (
     MAX_TERMINAL_DISCRETE,
     MAX_SIGN_LOG_DISTANCE,
 )
+from .formula_simplifier import formula_to_canonical_key, simplify_formula
 
 
 # 鍏ㄥ眬鍙橀噺锛岀敤浜庡瓙杩涚▼鍏变韩鍙鏁版嵁 (閬垮厤 Pickling 寮€閿€)
@@ -254,6 +255,8 @@ class AlphaEngine:
         self.best_score = -float('inf')
         self.best_formula = None
         self.best_formula_readable = None
+        self.best_formula_raw = None
+        self.best_formula_raw_readable = None
         self.best_sharpe = 0.0
         self.best_return = 0.0
         
@@ -814,37 +817,39 @@ class AlphaEngine:
                 seqs = torch.stack(tokens_list, dim=1)
                 
                 # 鍑嗗浠诲姟: 绔嬪嵆灏?token ID 杞负瀛楃涓诧紝娑堥櫎瑙ｇ爜涓嶄竴鑷撮闄?
-                formula_list = [self._tokens_to_strings(seq.tolist()) for seq in seqs]
+                raw_formula_list = [self._tokens_to_strings(seq.tolist()) for seq in seqs]
+                formula_list = [simplify_formula(formula) for formula in raw_formula_list]
+                formula_keys = [formula_to_canonical_key(formula) for formula in formula_list]
                 
                 # [V3.5] 鎵规鍘婚噸涓?LRU 缂撳瓨 (鏍稿績鎻愰€熼€昏緫)
                 unique_formula_to_indices = {}
-                for idx, f in enumerate(formula_list):
-                    # Canonical Key: 瀵?RPN 杩涜绠€鍗曡鑼冨寲 (鐩墠浠呬綔涓?tuple)
-                    f_tuple = tuple(f)
-                    if f_tuple not in unique_formula_to_indices:
-                        unique_formula_to_indices[f_tuple] = []
-                    unique_formula_to_indices[f_tuple].append(idx)
+                key_to_formula = {}
+                for idx, (f, f_key) in enumerate(zip(formula_list, formula_keys)):
+                    if f_key not in unique_formula_to_indices:
+                        unique_formula_to_indices[f_key] = []
+                        key_to_formula[f_key] = f
+                    unique_formula_to_indices[f_key].append(idx)
                 
                 num_unique_gen = len(unique_formula_to_indices)
                 
                 # 璇嗗埆涓嶅湪缂撳瓨涓殑鍞竴鍏紡
                 to_eval_formulas = []
                 f_idx_to_eval = {}
-                for f_tuple in unique_formula_to_indices:
-                    if f_tuple not in self.eval_cache:
-                        f_idx_to_eval[f_tuple] = len(to_eval_formulas)
-                        to_eval_formulas.append(list(f_tuple))
+                for f_key in unique_formula_to_indices:
+                    if f_key not in self.eval_cache:
+                        f_idx_to_eval[f_key] = len(to_eval_formulas)
+                        to_eval_formulas.append(key_to_formula[f_key])
                 
                 num_to_eval = len(to_eval_formulas)
                 
                 # 浠呭洖娴嬩粠鏈杩囦笖褰撳墠鎵规鍞竴鐨勫叕寮?
                 if to_eval_formulas:
                     new_results = list(executor.map(_worker_eval, to_eval_formulas))
-                    for f_tuple, eval_idx in f_idx_to_eval.items():
+                    for f_key, eval_idx in f_idx_to_eval.items():
                         # LRU Update
-                        if f_tuple in self.eval_cache:
-                            self.eval_cache.move_to_end(f_tuple)
-                        self.eval_cache[f_tuple] = new_results[eval_idx]
+                        if f_key in self.eval_cache:
+                            self.eval_cache.move_to_end(f_key)
+                        self.eval_cache[f_key] = new_results[eval_idx]
                     
                     # [V3.5] Cache 瀹归噺绠＄悊 (LRU 娣樻卑)
                     max_cache = RobustConfig.CACHE_MAX_SIZE
@@ -855,11 +860,11 @@ class AlphaEngine:
                 
                 # 缁勮 512 涓粨鏋?
                 results = []
-                for f in formula_list:
-                    res_tuple = self.eval_cache[tuple(f)]
+                for f_key in formula_keys:
+                    res_tuple = self.eval_cache[f_key]
                     results.append(res_tuple)
                     # 姣忔鍛戒腑閮界Щ鍒版湯灏?(LRU)
-                    self.eval_cache.move_to_end(tuple(f))
+                    self.eval_cache.move_to_end(f_key)
                 
                 # [V3.5] 鎻愰€熸寚鏍囪绠?
                 batch_hit_rate = (bs - num_unique_gen) / bs
@@ -876,6 +881,8 @@ class AlphaEngine:
                 
                 # 鑱氬悎缁撴灉
                 for i, (rew, best_info, status, detail) in enumerate(results):
+                    raw_formula = raw_formula_list[i]
+                    simplified_formula = formula_list[i]
                     final_status = status
                     raw_status_counts[status] += 1
                     if status == "STRUCT_INVALID":
@@ -924,12 +931,16 @@ class AlphaEngine:
                     if best_info:
                         # V2.2: best_info 鐜板寘鍚?(score, annualized_ret, sharpe_all, formula, metrics)
                         score_val, ret_val, sharpe_val, formula_str, metrics = best_info
+                        simplified_readable = self.decode_formula(formula_str)
+                        raw_readable = self.decode_formula(raw_formula)
                         
                         # 浼樺寲: 鍙湁鎻愬崌瓒呰繃闃堝€兼墠瑙嗕负 New King锛屽噺灏?I/O 闃诲
                         if score_val > self.best_score + RobustConfig.MIN_SCORE_IMPROVEMENT:
                             self.best_score = score_val
                             self.best_formula = formula_str  # 鐜板湪鏄瓧绗︿覆鍒楄〃
-                            self.best_formula_readable = self.decode_formula(formula_str)
+                            self.best_formula_readable = simplified_readable
+                            self.best_formula_raw = raw_formula
+                            self.best_formula_raw_readable = raw_readable
                             self.best_sharpe = sharpe_val
                             self.best_return = ret_val
                             step_new_king += 1
@@ -954,7 +965,9 @@ class AlphaEngine:
                                 'valid_ic_days': metrics.get('valid_ic_days', 0),
                                 'skipped_ic_days': metrics.get('skipped_ic_days', 0),
                                 'formula': formula_str,
-                                'readable': self.best_formula_readable
+                                'readable': self.best_formula_readable,
+                                'raw_formula': raw_formula,
+                                'raw_readable': raw_readable,
                             })
                             
                             # 淇濆瓨浜ゆ槗缁嗚妭鍒扮嫭绔嬫枃浠?
@@ -971,14 +984,16 @@ class AlphaEngine:
                         # 浠呭綋鍒嗘暟瓒冲楂樹笖鍏紡鐙壒鏃跺叆姹?
                         if status == "PASS" and score_val > 0:
                             pool_action = "PASS_POS"
-                            readable = self.decode_formula(formula_str)
+                            readable = simplified_readable
                             new_result = {
                                 'step': step,  # 璁板綍浜х敓姝ユ暟
                                 'score': score_val,
                                 'sharpe': sharpe_val,
                                 'annualized_ret': ret_val,
                                 'formula': formula_str,
-                                'readable': readable
+                                'readable': readable,
+                                'raw_formula': raw_formula,
+                                'raw_readable': raw_readable,
                             }
                             
                             # V2.3: Jaccard 鐩镐技搴﹁繃婊?
@@ -1033,6 +1048,10 @@ class AlphaEngine:
                             "pool_action": pool_action,
                             "final_status": final_status,
                             "is_new_king": bool(is_new_king),
+                            "formula": simplified_formula,
+                            "readable": self.decode_formula(simplified_formula),
+                            "raw_formula": raw_formula,
+                            "raw_readable": self.decode_formula(raw_formula),
                         })
 
                     # [V4.1.2] SimPass 瀹氫箟淇: 閫氱敤鐨?MetricPass 涓旀湭琚?SIM_REJECT (鍖呭惈 SIM_REPLACE)
@@ -1099,6 +1118,8 @@ class AlphaEngine:
                         "best_gap": float(self.best_score - c["score"]),
                         "pool_action": c["pool_action"],
                         "final_status": c["final_status"],
+                        "readable": c["readable"],
+                        "raw_readable": c["raw_readable"],
                     })
 
                 log_entry = {
@@ -1371,6 +1392,8 @@ class AlphaEngine:
             'best': {
                 'formula': self.best_formula,  # 鐜板湪鏄瓧绗︿覆鍒楄〃
                 'readable': self.best_formula_readable,
+                'raw_formula': self.best_formula_raw,
+                'raw_readable': self.best_formula_raw_readable,
                 'score': self.best_score,
                 'sharpe': self.best_sharpe,
                 'annualized_ret': self.best_return  # 骞村寲鏀剁泭鐜?

@@ -27,7 +27,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 sys.path.insert(0, project_root)
 
-from model_core.config import RobustConfig
+from model_core.config import ModelConfig, RobustConfig
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.factors import FeatureEngineer
@@ -119,7 +119,7 @@ class MockTrader:
 
 class StrategyVerifier:
     """绛栫暐楠岃瘉鍣?"""
-    WARMUP_DAYS = 65
+    FEATURE_WARMUP_TRADING_DAYS = 65
     
     def __init__(
         self,
@@ -166,10 +166,11 @@ class StrategyVerifier:
         logger.info("Loading data...")
         self.loader = CBDataLoader()
         loader_start_date = start_date
+        loader_backfill_days = self._resolve_loader_backfill_days()
         try:
             # Keep enough history before verify start for rolling features and warmup alignment.
             loader_start_date = (
-                pd.to_datetime(start_date) - pd.Timedelta(days=200)
+                pd.to_datetime(start_date) - pd.Timedelta(days=loader_backfill_days)
             ).strftime("%Y-%m-%d")
         except Exception:
             logger.warning(
@@ -177,10 +178,12 @@ class StrategyVerifier:
                 start_date,
             )
         logger.info(
-            "Verify loader start_date=%s (requested_start=%s, warmup_days=%d)",
+            "Verify loader start_date=%s (requested_start=%s, "
+            "feature_warmup_trading_days=%d, loader_backfill_days=%d)",
             loader_start_date,
             start_date,
-            self.WARMUP_DAYS,
+            self.FEATURE_WARMUP_TRADING_DAYS,
+            loader_backfill_days,
         )
         self.loader.load_data(start_date=loader_start_date)
         
@@ -200,7 +203,7 @@ class StrategyVerifier:
         warmup_start_date = self._resolve_warmup_start_date(
             all_dates=all_dates,
             anchor_date=actual_start_date,
-            warmup_days=self.WARMUP_DAYS,
+            warmup_days=self.FEATURE_WARMUP_TRADING_DAYS,
         )
         self._trim_loader_and_recompute(
             load_start_date=warmup_start_date,
@@ -222,13 +225,20 @@ class StrategyVerifier:
         logger.info(
             f"Loader window (aligned): {self.loader.dates_list[0]} to "
             f"{self.loader.dates_list[-1]} ({len(self.loader.dates_list)} days, "
-            f"warmup_days={self.WARMUP_DAYS})"
+            f"feature_warmup_trading_days={self.FEATURE_WARMUP_TRADING_DAYS})"
         )
         
         logger.info(f"Verification period: {self.dates[0]} to {self.dates[-1]} ({len(self.dates)} days)")
         
         # Load formula and strategy params
         self._load_strategy()
+
+    def _resolve_loader_backfill_days(self) -> int:
+        """Return natural-day backfill used to secure enough trading-day warmup rows."""
+        return max(
+            int(ModelConfig.WARMUP_DAYS),
+            int(self.FEATURE_WARMUP_TRADING_DAYS * 1.6) + 10,
+        )
 
     def _resolve_warmup_start_date(
         self,

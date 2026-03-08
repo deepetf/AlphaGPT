@@ -14,6 +14,8 @@ from sqlalchemy import create_engine, text
 
 from data_pipeline.config import Config
 from model_core.config import ModelConfig
+from model_core.factors import FeatureEngineer
+from model_core.features_registry import get_feature_spec, get_required_raw_feature_names
 
 logger = logging.getLogger(__name__)
 
@@ -463,6 +465,98 @@ class RealtimeDataProvider:
         logger.info(f"Loaded multi-day SQL data: days={len(dates)}, rows={len(df)}")
         return df
     
+    def _required_raw_features(self) -> List[str]:
+        return list(get_required_raw_feature_names(ModelConfig.INPUT_FEATURES))
+
+    def _get_raw_column_name(self, feature_name: str) -> Optional[str]:
+        spec = get_feature_spec(feature_name)
+        if spec is None or spec.kind != "raw":
+            return None
+        return spec.raw_column
+
+    def _resolve_actual_raw_column(self, columns, feature_name: str, raw_column: Optional[str]) -> Optional[str]:
+        if raw_column is not None and raw_column in columns:
+            return raw_column
+        if feature_name in columns:
+            return feature_name
+        return None
+
+    def _build_raw_tensors_from_frame(self, frame: pd.DataFrame) -> Dict[str, torch.Tensor]:
+        raw_tensors: Dict[str, torch.Tensor] = {}
+        for feature_name in self._required_raw_features():
+            raw_column = self._get_raw_column_name(feature_name)
+            if raw_column is None:
+                continue
+
+            actual_col = self._resolve_actual_raw_column(frame.columns, feature_name, raw_column)
+            if actual_col is None:
+                logger.warning(
+                    "Raw feature '%s' column '%s' not found in merged frame, using 0 filling.",
+                    feature_name,
+                    raw_column,
+                )
+                values = np.zeros(len(frame), dtype=np.float32)
+            else:
+                values = np.nan_to_num(frame[actual_col].values.astype(np.float32), nan=0.0)
+
+            raw_tensors[feature_name] = torch.tensor(
+                values.reshape(1, -1),
+                dtype=torch.float32,
+                device=ModelConfig.DEVICE,
+            )
+
+        return raw_tensors
+
+    def _build_raw_tensors_from_history_panel(
+        self,
+        multi_day_df: pd.DataFrame,
+        trading_days: List[str],
+        common_codes: List[str],
+        qmt_data: Dict[str, Dict[str, float]],
+    ) -> Dict[str, torch.Tensor]:
+        required_raw = self._required_raw_features()
+        n_days = len(trading_days)
+        n_assets = len(common_codes)
+        raw_arrays = {
+            feature_name: np.zeros((n_days, n_assets), dtype=np.float32)
+            for feature_name in required_raw
+        }
+        qmt_override_map = {
+            "OPEN": "open",
+            "HIGH": "high",
+            "CLOSE": "close",
+            "VOL": "vol",
+        }
+
+        for t_idx, trade_date in enumerate(trading_days):
+            day_df = multi_day_df[multi_day_df["trade_date"].astype(str) == trade_date]
+            day_df = day_df.set_index("code")
+            is_last_day = t_idx == n_days - 1
+
+            for a_idx, code in enumerate(common_codes):
+                if code not in day_df.index:
+                    continue
+                row = day_df.loc[code]
+
+                for feature_name in required_raw:
+                    raw_column = self._get_raw_column_name(feature_name)
+                    if raw_column is None:
+                        continue
+
+                    actual_col = self._resolve_actual_raw_column(day_df.columns, feature_name, raw_column)
+                    value = float(row.get(actual_col, 0.0)) if actual_col is not None else 0.0
+
+                    qmt_key = qmt_override_map.get(feature_name)
+                    if is_last_day and qmt_key and code in qmt_data and qmt_data[code].get(qmt_key, 0.0) > 0:
+                        value = float(qmt_data[code][qmt_key])
+
+                    raw_arrays[feature_name][t_idx, a_idx] = value
+
+        return {
+            feature_name: torch.tensor(values, dtype=torch.float32, device=ModelConfig.DEVICE)
+            for feature_name, values in raw_arrays.items()
+        }
+
     def build_feat_tensor_with_history(
         self, 
         date: str,
@@ -533,47 +627,23 @@ class RealtimeDataProvider:
                         'vol': float(row.get('vol', 0)),
                     }
         
-        # 5. 鏋勫缓 [Time, Assets, Features] 寮犻噺
-        factor_map = {internal: db_col for internal, db_col, _ in ModelConfig.BASIC_FACTORS}
-        n_days = len(trading_days)
-        n_assets = len(common_codes)
-        n_features = len(ModelConfig.INPUT_FEATURES)
-        
-        feat_array = np.zeros((n_days, n_assets, n_features), dtype=np.float32)
-        
-        for t_idx, trade_date in enumerate(trading_days):
-            day_df = multi_day_df[multi_day_df['trade_date'].astype(str) == trade_date]
-            day_df = day_df.set_index('code')
-            
-            is_last_day = (t_idx == n_days - 1)
-            
-            for a_idx, code in enumerate(common_codes):
-                if code not in day_df.index:
-                    continue
-                    
-                row = day_df.loc[code]
-                
-                for f_idx, feature_name in enumerate(ModelConfig.INPUT_FEATURES):
-                    db_col = factor_map.get(feature_name)
-                    if db_col is None:
-                        continue
-                    
-                    # 鑾峰彇鍊?
-                    value = float(row.get(db_col, 0)) if db_col in day_df.columns else 0.0
-                    
-                    # 鏈€鍚庝竴澶╃敤 QMT 鏁版嵁瑕嗙洊 (濡傛湁)
-                    if is_last_day and code in qmt_data:
-                        qmt_col = db_col.lower()
-                        if qmt_col in qmt_data[code] and qmt_data[code][qmt_col] > 0:
-                            value = qmt_data[code][qmt_col]
-                    
-                    feat_array[t_idx, a_idx, f_idx] = value
-        
-        # 澶勭悊 NaN
-        feat_array = np.nan_to_num(feat_array, nan=0.0)
-        feat_tensor = torch.tensor(feat_array, dtype=torch.float32, device=ModelConfig.DEVICE)
-        
-        logger.info(f"Built feat_tensor with history: {feat_tensor.shape} (days={n_days}, assets={n_assets}, features={n_features})")
+        raw_tensors = self._build_raw_tensors_from_history_panel(
+            multi_day_df=multi_day_df,
+            trading_days=trading_days,
+            common_codes=common_codes,
+            qmt_data=qmt_data,
+        )
+        feat_tensor = FeatureEngineer.build_feature_tensor(
+            raw_data=raw_tensors,
+            feature_names=list(ModelConfig.INPUT_FEATURES),
+            normalize=False,
+            warmup_rows=0,
+        )
+
+        logger.info(
+            f"Built feat_tensor with history: {feat_tensor.shape} "
+            f"(days={len(trading_days)}, assets={len(common_codes)}, features={len(ModelConfig.INPUT_FEATURES)})"
+        )
         return feat_tensor, common_codes
     
     # =========================================================================
@@ -625,39 +695,14 @@ class RealtimeDataProvider:
                     merged[col] = merged[qmt_col].fillna(merged.get(sql_col, 0))
                     merged.drop(columns=[qmt_col, sql_col], inplace=True, errors='ignore')
         
-        # 2. 鏋勫缓鐗瑰緛寮犻噺 (涓ユ牸鎸?INPUT_FEATURES 椤哄簭, 涓?StackVM 瀵归綈)
-        # 鍒涘缓 InternalName -> db_col 鏄犲皠
-        factor_map = {internal: db_col for internal, db_col, _ in ModelConfig.BASIC_FACTORS}
-        
-        feat_list = []
-        for feature_name in ModelConfig.INPUT_FEATURES:
-            # 浠?BASIC_FACTORS 鏌ユ壘瀵瑰簲鐨勬暟鎹簱鍒楀悕
-            db_col = factor_map.get(feature_name)
-            if db_col is None:
-                logger.warning(f"Feature '{feature_name}' not found in BASIC_FACTORS, using 0 filling.")
-                feat_list.append(np.zeros(len(merged)))
-                continue
-            
-            # 鍋ュ．鎬у鐞? 澶勭悊鍙兘鍥犲埆鍚嶅鑷寸殑鍒楀悕鍙樺寲
-            actual_col = db_col
-            if actual_col not in merged.columns:
-                # 灏濊瘯鏌ユ壘 internal_name (鍦?merged 涓彲鑳藉凡鏀逛负 internal_name)
-                if feature_name in merged.columns:
-                    actual_col = feature_name
-                else:
-                    logger.warning(f"Feature column '{db_col}' for '{feature_name}' not found, using 0 filling.")
-                    feat_list.append(np.zeros(len(merged)))
-                    continue
-            
-            values = merged[actual_col].values.astype(np.float32)
-            # 濉厖 NaN
-            values = np.nan_to_num(values, nan=0.0)
-            feat_list.append(values)
-        
-        # [Features, Assets] -> [Assets, Features]
-        feat_array = np.stack(feat_list, axis=0).T
-        feat_tensor = torch.tensor(feat_array, dtype=torch.float32, device=ModelConfig.DEVICE)
-        
+        raw_tensors = self._build_raw_tensors_from_frame(merged)
+        feat_tensor = FeatureEngineer.build_feature_tensor(
+            raw_data=raw_tensors,
+            feature_names=list(ModelConfig.INPUT_FEATURES),
+            normalize=False,
+            warmup_rows=0,
+        )[0]
+
         logger.info(f"Built feat_tensor: {feat_tensor.shape} (features: {len(ModelConfig.INPUT_FEATURES)})")
         return feat_tensor
 
