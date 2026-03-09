@@ -1,0 +1,30 @@
+selection:
+  top_k: 3
+  candidate_sources:
+    - best
+    - history
+    - diverse_top_50
+
+  min_sharpe_all: 2.4
+  min_sharpe_train: 2.1
+  min_sharpe_val: 2.5
+  min_balanced_sharpe: 2.1
+  min_stability: -0.4
+  max_drawdown: 0.20
+  max_train_val_gap: 1.0
+
+  jaccard_threshold: 0.75
+
+  weights:
+    sharpe_all: 0.30
+    balanced_sharpe: 0.25
+    stability: 0.20
+    annualized_ret: 0.15
+    max_drawdown: -0.10
+    train_val_gap: -0.20
+
+ai_review:
+  enabled: false
+  provider: gemini
+  model: gemini-2.0-flash
+  max_candidates: 10

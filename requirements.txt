@@ -1,14 +1,41 @@
-# AlphaGPT V2.1 Dependencies
+# AlphaGPT Dependencies
+#
+# 说明：
+# 1. 本文件按“当前项目代码实际 import”梳理，尽量覆盖训练、verify、sim、dashboard、AI review。
+# 2. 少数仅在特定环境使用的依赖也保留在此，便于一次性安装完整开发环境。
+# 3. QMT 的 `xtquant` 属于外部分发 SDK，通常不通过 pip 标准安装，因此未写入本文件。
 
-# Deep Learning
+# Core ML / numeric
 torch>=2.0.0
-
-# Data Processing
+numpy>=1.24.0
 pandas>=2.0.0
-numpy>=1.20.0
-pyarrow>=12.0.0  # Required for reading Parquet files
+pyarrow>=12.0.0
+tqdm>=4.65.0
 
-# Utils
-tqdm
-python-dotenv  # If used for ENV loading
-loguru         # Optional, kept for compatibility
+# Config / logging
+PyYAML>=6.0
+python-dotenv>=1.0.0
+loguru>=0.7.0
+
+# Database / data access
+SQLAlchemy>=2.0.0
+PyMySQL>=1.1.0
+asyncpg>=0.29.0
+aiohttp>=3.9.0
+chinese-calendar>=1.9.0
+
+# Dashboard / visualization
+streamlit>=1.30.0
+plotly>=5.18.0
+
+# Execution / Solana integration
+base58>=2.1.1
+solana>=0.35.0
+solders>=0.21.0
+
+# AI factor review
+openai>=1.0.0
+google-genai>=0.3.0
+
+# Testing
+pytest>=8.0.0

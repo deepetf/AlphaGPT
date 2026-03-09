@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.94: Feature Registry Alignment + Formula Canonicalization (Current)**
+Current Version: **V5.95: Factor Post-Selection + AI Review (Current)**
 
 当前版本run_sim CLI:
 
@@ -29,7 +29,18 @@ Current Version: **V5.94: Feature Registry Alignment + Formula Canonicalization 
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.94: Feature Registry Alignment + Formula Canonicalization (Current)**
+### **V5.95: Factor Post-Selection + AI Review (Current)**
+*在 V5.94 基础上，补充训练产出因子的二次筛选链路、AI 金融含义评审，以及 Windows 环境依赖与虚拟环境初始化说明。*
+- **Quant Top-Factor Selection**: 新增 `model_core/select_top_factors.py`，可从 `best_cb_formula.json` 的 `best/history/diverse_top_50` 合并候选，经过公式 canonical 去重、统一重评估、硬过滤、加权打分与相似度去重后，自动产出 `top3_factors.json`。
+- **Selection Config Template**: 新增 `model_core/top_factor_config.yaml`，集中管理二次筛选阈值、打分权重、相似度阈值和 AI review 默认配置。
+- **Top-3 Report Output**: 二次筛选支持输出 Markdown 报告 `top3_factors_report.md`，便于复核 Sharpe、年化收益、稳定性、回撤与 train/val 均衡性。
+- **AI Factor Review**: 新增 `model_core/factor_ai_review.py`，支持对候选因子进行金融含义、可解释性、阶段依赖和冗余风险的结构化评审。
+- **Dual Provider Support**: AI review 同时支持 `openai` 与 `gemini` provider，默认配置为 `gemini`；若启用 AI review，会额外输出 `factor_ai_reviews.json` 供后续报告或排序扩展使用。
+- **示例命令（仅量化二次筛选）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md`
+- **示例命令（启用 Gemini AI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider gemini --ai-model gemini-2.0-flash`
+- **示例命令（启用 OpenAI AI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider openai --ai-model gpt-5`
+
+### **V5.94: Feature Registry Alignment + Formula Canonicalization**
 *在 V5.93 基础上，统一训练/verify/sim 的特征注册入口，并为训练评估补齐公式规范化去重。*
 - **Unified Feature Registry**: 新增 `model_core/features_registry.py`，将 raw/derived feature 的注册、依赖展开与合法性校验集中到单一入口，减少训练、verify、sim 的特征定义分叉。
 - **FeatureEngineer Refactor**: `model_core/factors.py` 改为按注册中心动态构建特征张量，已注册派生特征可在训练、verify、sim 与 realtime helper 中一致生效。
@@ -37,9 +48,13 @@ Current Version: **V5.94: Feature Registry Alignment + Formula Canonicalization 
 - **Realtime Feature Alignment**: `RealtimeDataProvider.build_feat_tensor*` 改为委托统一特征构建逻辑，老 helper 路径也能正确处理派生特征，不再静默零填充。
 - **Verify Warmup Cleanup**: `verify_strategy` 去掉写死 `200` 天回看，改为由特征预热交易日和训练 warmup 动态推导，降低无效 I/O，同时保持验证起点口径不变。
 - **Formula Canonicalization**: 新增 `model_core/formula_simplifier.py`，在训练评估前对公式做安全规范化；`eval_cache`、批内去重和 king 展示统一使用简化后公式，减少等价冗余公式重复评估。
+- **Dependency Manifest Refresh**: 重新梳理并更新 `requirements.txt`，覆盖训练、verify、sim、dashboard、AI review 当前实际使用到的主要三方依赖，并明确 `xtquant` 不纳入标准 pip 安装清单。
+- **Windows Venv Bootstrap Script**: 新增 `setup_venv.ps1`，用于在项目根目录创建标准 Windows 虚拟环境 `.venv`、升级 `pip` 并安装 `requirements.txt`，便于替代旧的非标准 `.venv310`。
 - **示例命令（默认配置训练，启用规范化去重）**: `python -m model_core.engine --config model_core/default_config.yaml`
 - **示例命令（验证 warmup 对齐）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2025-03-31`
 - **示例命令（运行特征注册与公式简化测试）**: `pytest tests/test_feature_registry.py tests/test_realtime_provider_feature_alignment.py tests/test_formula_simplifier.py -q`
+- **示例命令（创建 Windows 虚拟环境并安装依赖）**: `.\setup_venv.ps1`
+- **示例命令（启用虚拟环境）**: `Set-ExecutionPolicy -Scope Process Bypass; .\.venv\Scripts\Activate.ps1`
 
 ### **V5.93: Configurable Training Batch Size**
 *在 V5.92 基础上，补齐训练 `batch_size` 的配置化入口，并为大 batch 训练提供基础联动支持。*
@@ -321,12 +336,62 @@ Current Version: **V5.94: Feature Registry Alignment + Formula Canonicalization 
 
 ## 🔧 Usage
 
+### 0. Environment Setup (Windows PowerShell)
+当前推荐使用项目根目录下的标准 Windows 虚拟环境 `.venv`。
+
+创建环境并安装依赖：
+```powershell
+.\setup_venv.ps1
+```
+
+如果只创建环境、暂不安装依赖：
+```powershell
+.\setup_venv.ps1 -SkipInstall
+```
+
+启用虚拟环境：
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+不激活也可直接使用解释器：
+```powershell
+.\.venv\Scripts\python.exe -m model_core.engine
+```
+
+说明：
+- `requirements.txt` 已按当前项目实际 import 重新梳理。
+- 旧的 `.venv310` 已移除，不再建议继续使用。
+- `xtquant` 为外部分发 SDK，需按 QMT 环境单独安装，不包含在 `requirements.txt` 中。
+
 ### 1. Training (Mining)
 启动多进程挖掘：
 ```bash
 python -m model_core.engine
 ```
 *自动保存表现最好的 “Kings” 到 `model_core/verified_trades/` 和 `best_cb_formula.json`。*
+
+### 1.1 Factor Post-Selection
+对训练产出的候选因子做二次筛选，综合考虑整体 Sharpe、训练/验证集均衡性、稳定性、年化收益、回撤和公式相似度：
+```bash
+python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md
+```
+
+启用 AI 金融含义评审（Gemini）：
+```bash
+python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider gemini --ai-model gemini-2.0-flash
+```
+
+启用 AI 金融含义评审（OpenAI）：
+```bash
+python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider openai --ai-model gpt-5
+```
+
+输出说明：
+- `model_core/top3_factors.json`: 量化二次筛选后的 Top-3 因子结果。
+- `model_core/top3_factors_report.md`: 人工复核用 Markdown 报告。
+- `model_core/factor_ai_reviews.json`: 启用 AI review 时的结构化评审结果。
 
 ### 2. Verification
 验证特定因子（如 King #8）的稳健性：

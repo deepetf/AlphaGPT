@@ -1,5 +1,19 @@
 # AlphaGPT Changelog
 
+## [V5.95] - 2026-03-09
+
+### Added
+- **Top-Factor Post Selection**: 新增 `model_core/select_top_factors.py` 与 `model_core/top_factor_config.yaml`，支持从训练输出中合并候选、公式去重、统一重评估、硬过滤、加权排序与相似度去重，自动产出 Top-3 因子结果。
+- **AI Factor Review**: 新增 `model_core/factor_ai_review.py`，支持对候选因子输出结构化金融含义评审，并可生成 Markdown 报告。
+- **Windows Venv Bootstrap**: 新增 `setup_venv.ps1`，用于创建标准 Windows 虚拟环境 `.venv`、升级 `pip` 并安装项目依赖。
+
+### Changed
+- **Dependency Manifest Refresh**: 重新整理 `requirements.txt`，按当前项目实际依赖覆盖训练、verify、sim、dashboard、AI review 和测试所需三方库。
+- **README Upgrade**: 更新 README 版本说明、环境初始化、训练后二次筛选与 AI 评审命令示例。
+
+### Fixed
+- **AI Review Fallback**: Gemini / OpenAI 评审失败时，二次筛选流程不再整体中断；会自动回退为占位评审并保留量化结果与报告输出。
+
 ## [V5.4] - 2026-02-17
 
 ### Changed
