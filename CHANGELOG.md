@@ -14,6 +14,7 @@
 
 ### Fixed
 - **Long Silent Runs During AI Review**: `select_top_factors` 不再在候选重评估和 AI review 阶段长时间静默；OpenAI / GLM-5 provider 增加超时，失败时继续走 fallback。
+- **Verify/Sim Config Wiring**: `tests/verify_strategy.py` 与 `strategy_manager/run_sim.py` 新增 `--config`，启动时先加载 `model_core` YAML，使公式校验、VM token 集和特征构建与训练使用同一份 `input_features`。
 
 ## [V5.95] - 2026-03-09
 

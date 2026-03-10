@@ -47,8 +47,11 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 - **Slow Feature Experiment Configs**: 新增 `model_core/config_slow_cs_replace.yaml` 与 `model_core/config_slow_cs_append.yaml`，分别用于 replace 主实验和 append 对照实验。
 - **GLM-5 Provider**: `factor_ai_review.py` 新增 `glm5` provider，支持通过 OpenAI 兼容 SDK 接入 ModelScope 的 `ZhipuAI/GLM-5`。
 - **AI Review Observability**: 二次筛选与 AI review 增加候选重评估进度、provider 启动信息和逐条 AI review 日志，并支持 `--ai-timeout-sec`。
+- **Verify/Sim Model Config Alignment**: `tests/verify_strategy.py` 与 `strategy_manager/run_sim.py` 新增 `--config`，可显式加载与训练一致的 `model_core` YAML，避免新 slow feature 在 verify/sim 中被判为 `UNKNOWN_TOKEN`。
 - **示例命令（slow feature replace 训练）**: `python -m model_core.engine --config model_core/config_slow_cs_replace.yaml`
 - **示例命令（GLM-5 AI review）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider glm5 --ai-model ZhipuAI/GLM-5 --ai-max-candidates 3 --ai-timeout-sec 30`
+- **示例命令（verify 使用 slow feature replace 配置）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2025-12-31 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
+- **示例命令（sim 使用 slow feature replace 配置）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
 - **示例命令（slow feature 相关测试）**: `pytest tests/test_feature_registry.py tests/test_slow_feature_cross_sectional_features.py tests/test_factor_ai_review.py -q`
 
 ### **V5.94: Feature Registry Alignment + Formula Canonicalization**

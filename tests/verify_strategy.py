@@ -28,6 +28,7 @@ project_root = os.path.dirname(current_dir)
 sys.path.insert(0, project_root)
 
 from model_core.config import ModelConfig, RobustConfig
+from model_core.config_loader import get_loaded_config_path, load_config
 from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.factors import FeatureEngineer
@@ -1881,6 +1882,12 @@ if __name__ == "__main__":
         help='strategy config path, default strategy_manager/strategies_config.json'
     )
     parser.add_argument(
+        '--config',
+        type=str,
+        default=None,
+        help='model_core yaml config path, default model_core/default_config.yaml'
+    )
+    parser.add_argument(
         '--strategy-id',
         type=str,
         default=None,
@@ -1911,6 +1918,12 @@ if __name__ == "__main__":
     )
     
     args = parser.parse_args()
+
+    load_config(args.config)
+    logger.info(
+        "Loaded model config for verify: %s",
+        get_loaded_config_path() or "model_core/default_config.yaml",
+    )
 
     def _run_one(selected_strategy_id: Optional[str]) -> Dict:
         verifier = StrategyVerifier(

@@ -24,6 +24,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data_pipeline.realtime_provider import RealtimeDataProvider
+from model_core.config_loader import get_loaded_config_path, load_config
 from strategy_manager.multi_sim_runner import MultiSimRunner
 from strategy_manager.sim_runner import SimulationRunner
 
@@ -386,6 +387,12 @@ def parse_args():
         default=None,
         help="path to strategy config json (default: strategy_manager/strategies_config.json)",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="model_core yaml config path (default: model_core/default_config.yaml)",
+    )
     parser.add_argument("--strategy-id", type=str, default=None, help="run only one strategy_id from config")
     parser.add_argument("--date", type=str, default=None, help="run date: YYYY-MM-DD")
     parser.add_argument("--start-date", type=str, default=None, help="replay start date")
@@ -423,7 +430,12 @@ def parse_args():
 def main():
     _ensure_console_utf8()
     args = parse_args()
+    load_config(args.config)
     logger = setup_logging()
+    logger.info(
+        "Loaded model config for sim: %s",
+        get_loaded_config_path() or "model_core/default_config.yaml",
+    )
 
     # No CLI args: use the requested default profile for daily live run.
     if len(sys.argv) == 1:
