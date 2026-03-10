@@ -115,7 +115,10 @@ def test_review_candidates_with_ai_dispatches_openai(monkeypatch):
 
     monkeypatch.setattr(
         "model_core.factor_ai_review.review_candidate_with_openai",
-        lambda candidate, model, api_key=None: {"review_decision": "keep", "summary": model},
+        lambda candidate, model, api_key=None, timeout_sec=None: {
+            "review_decision": "keep",
+            "summary": model,
+        },
     )
 
     reviews = review_candidates_with_ai(
@@ -140,7 +143,10 @@ def test_review_candidates_with_ai_dispatches_gemini(monkeypatch):
 
     monkeypatch.setattr(
         "model_core.factor_ai_review.review_candidate_with_gemini",
-        lambda candidate, model, api_key=None: {"review_decision": "watch", "summary": model},
+        lambda candidate, model, api_key=None, timeout_sec=None: {
+            "review_decision": "watch",
+            "summary": model,
+        },
     )
 
     reviews = review_candidates_with_ai(
@@ -154,6 +160,34 @@ def test_review_candidates_with_ai_dispatches_gemini(monkeypatch):
     assert reviews[0]["provider"] == "gemini"
     assert reviews[0]["model"] == "gemini-2.0-flash"
     assert reviews[0]["review"]["review_decision"] == "watch"
+
+
+def test_review_candidates_with_ai_dispatches_glm5(monkeypatch):
+    candidate = {
+        "formula": ["PURE_VALUE", "PREM_Z", "MIN"],
+        "readable": "PURE_VALUE PREM_Z MIN",
+        "selection_score": 1.23,
+    }
+
+    monkeypatch.setattr(
+        "model_core.factor_ai_review.review_candidate_with_glm5",
+        lambda candidate, model, api_key=None, timeout_sec=None: {
+            "review_decision": "keep",
+            "summary": model,
+        },
+    )
+
+    reviews = review_candidates_with_ai(
+        [candidate],
+        provider="glm5",
+        model="ZhipuAI/GLM-5",
+        max_candidates=1,
+    )
+
+    assert len(reviews) == 1
+    assert reviews[0]["provider"] == "glm5"
+    assert reviews[0]["model"] == "ZhipuAI/GLM-5"
+    assert reviews[0]["review"]["review_decision"] == "keep"
 
 
 def test_review_candidates_with_ai_falls_back_on_provider_error(monkeypatch):

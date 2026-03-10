@@ -19,6 +19,7 @@ class FeatureSpec:
     fill_method: Optional[str] = None
     deps: Tuple[str, ...] = ()
     compute_fn: Optional[ComputeFeatureFn] = None
+    apply_time_normalization: bool = True
 
 
 def _compute_log_moneyness(get_feature_tensor: Callable[[str], torch.Tensor]) -> torch.Tensor:
@@ -39,6 +40,39 @@ def _compute_log_moneyness(get_feature_tensor: Callable[[str], torch.Tensor]) ->
     return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
 
 
+def _cross_sectional_rank(tensor: torch.Tensor) -> torch.Tensor:
+    if tensor.dim() != 2:
+        return tensor
+    ranks = tensor.argsort(dim=1).argsort(dim=1).float()
+    denom = tensor.shape[1] - 1 + 1e-9
+    out = ranks / denom
+    return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+
+
+def _cross_sectional_robust_z(tensor: torch.Tensor) -> torch.Tensor:
+    if tensor.dim() != 2:
+        return tensor
+    median = tensor.median(dim=1, keepdim=True).values
+    mad = (tensor - median).abs().median(dim=1, keepdim=True).values + 1e-9
+    out = (tensor - median) / (mad * 1.4826)
+    out = torch.clamp(out, -5.0, 5.0)
+    return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+
+
+def _make_cs_rank_feature(dep_name: str) -> ComputeFeatureFn:
+    def _compute(get_feature_tensor: Callable[[str], torch.Tensor]) -> torch.Tensor:
+        return _cross_sectional_rank(get_feature_tensor(dep_name))
+
+    return _compute
+
+
+def _make_cs_robust_z_feature(dep_name: str) -> ComputeFeatureFn:
+    def _compute(get_feature_tensor: Callable[[str], torch.Tensor]) -> torch.Tensor:
+        return _cross_sectional_robust_z(get_feature_tensor(dep_name))
+
+    return _compute
+
+
 def _build_registry() -> Dict[str, FeatureSpec]:
     registry: Dict[str, FeatureSpec] = {}
 
@@ -56,6 +90,48 @@ def _build_registry() -> Dict[str, FeatureSpec]:
             kind="derived",
             deps=("CLOSE_STK", "CONV_PRICE"),
             compute_fn=_compute_log_moneyness,
+        ),
+        FeatureSpec(
+            name="PURE_VALUE_CS_RANK",
+            kind="derived",
+            deps=("PURE_VALUE",),
+            compute_fn=_make_cs_rank_feature("PURE_VALUE"),
+            apply_time_normalization=False,
+        ),
+        FeatureSpec(
+            name="PURE_VALUE_CS_ROBUST_Z",
+            kind="derived",
+            deps=("PURE_VALUE",),
+            compute_fn=_make_cs_robust_z_feature("PURE_VALUE"),
+            apply_time_normalization=False,
+        ),
+        FeatureSpec(
+            name="PREM_CS_RANK",
+            kind="derived",
+            deps=("PREM",),
+            compute_fn=_make_cs_rank_feature("PREM"),
+            apply_time_normalization=False,
+        ),
+        FeatureSpec(
+            name="PREM_CS_ROBUST_Z",
+            kind="derived",
+            deps=("PREM",),
+            compute_fn=_make_cs_robust_z_feature("PREM"),
+            apply_time_normalization=False,
+        ),
+        FeatureSpec(
+            name="REMAIN_SIZE_CS_RANK",
+            kind="derived",
+            deps=("REMAIN_SIZE",),
+            compute_fn=_make_cs_rank_feature("REMAIN_SIZE"),
+            apply_time_normalization=False,
+        ),
+        FeatureSpec(
+            name="CAP_MV_RATE_CS_RANK",
+            kind="derived",
+            deps=("CAP_MV_RATE",),
+            compute_fn=_make_cs_rank_feature("CAP_MV_RATE"),
+            apply_time_normalization=False,
         ),
     )
     for spec in derived_specs:

@@ -9,7 +9,7 @@ from model_core.factors import FeatureEngineer
 
 
 def test_validate_feature_names_accepts_registered_features():
-    validate_feature_names(["CLOSE", "LOG_MONEYNESS"])
+    validate_feature_names(["CLOSE", "LOG_MONEYNESS", "PURE_VALUE_CS_RANK"])
 
 
 def test_validate_feature_names_rejects_unknown_feature():
@@ -24,6 +24,13 @@ def test_validate_feature_names_rejects_unknown_feature():
 def test_required_raw_features_expand_derived_dependencies():
     required = get_required_raw_feature_names(["LOG_MONEYNESS"])
     assert required == ("CLOSE_STK", "CONV_PRICE")
+
+
+def test_required_raw_features_expand_slow_cross_sectional_dependencies():
+    required = get_required_raw_feature_names(
+        ["PURE_VALUE_CS_RANK", "PREM_CS_ROBUST_Z", "REMAIN_SIZE_CS_RANK"]
+    )
+    assert required == ("PURE_VALUE", "PREM", "REMAIN_SIZE")
 
 
 def test_feature_engineer_can_build_registered_derived_feature(monkeypatch):
@@ -48,3 +55,18 @@ def test_raw_feature_spec_keeps_source_metadata():
     assert spec is not None
     assert spec.kind == "raw"
     assert spec.raw_column == "close"
+
+
+def test_slow_cross_sectional_feature_specs_skip_time_normalization():
+    for name in (
+        "PURE_VALUE_CS_RANK",
+        "PURE_VALUE_CS_ROBUST_Z",
+        "PREM_CS_RANK",
+        "PREM_CS_ROBUST_Z",
+        "REMAIN_SIZE_CS_RANK",
+        "CAP_MV_RATE_CS_RANK",
+    ):
+        spec = get_feature_spec(name)
+        assert spec is not None
+        assert spec.kind == "derived"
+        assert spec.apply_time_normalization is False

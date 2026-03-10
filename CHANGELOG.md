@@ -1,5 +1,20 @@
 # AlphaGPT Changelog
 
+## [V5.96] - 2026-03-10
+
+### Added
+- **Slow Feature Cross-Sectional Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`，作为正式可配置输入特征接入训练/verify/sim 主链路。
+- **Slow Feature Experiment Configs**: 新增 `model_core/config_slow_cs_replace.yaml` 和 `model_core/config_slow_cs_append.yaml`，分别用于 replace 主实验与 append 对照实验。
+- **GLM-5 Provider**: AI review 新增 `glm5` provider，支持通过 OpenAI 兼容接口接入 ModelScope 的 `ZhipuAI/GLM-5`。
+
+### Changed
+- **Per-Feature Normalization Control**: `FeatureSpec` 新增 `apply_time_normalization`，允许特征级控制是否执行 rolling z-score；新增 slow feature 截面表达默认跳过 time-z。
+- **AI Review Observability**: 训练后二次筛选和 AI review 增加重评估进度、provider 启动信息、逐条 review 日志和客户端超时控制。
+- **Default Config Notes**: `default_config.yaml` 补充 slow feature 截面实验配置说明。
+
+### Fixed
+- **Long Silent Runs During AI Review**: `select_top_factors` 不再在候选重评估和 AI review 阶段长时间静默；OpenAI / GLM-5 provider 增加超时，失败时继续走 fallback。
+
 ## [V5.95] - 2026-03-09
 
 ### Added

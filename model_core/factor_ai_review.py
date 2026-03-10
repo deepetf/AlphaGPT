@@ -20,12 +20,28 @@ DEFAULT_AI_REVIEW_SCHEMA = {
 }
 
 
+def _resolve_request_timeout_sec(timeout_sec: Optional[float] = None) -> float:
+    if timeout_sec is not None:
+        return float(timeout_sec)
+    raw = os.getenv("AI_REVIEW_TIMEOUT_SEC", "60")
+    try:
+        return float(raw)
+    except ValueError:
+        return 60.0
+
+
 def _normalize_review_error(exc: Exception) -> str:
     message = " ".join(str(exc).split())
     upper = message.upper()
     if "429" in upper or "RESOURCE_EXHAUSTED" in upper or "QUOTA" in upper:
         return "AI review skipped: provider quota exhausted"
-    if "API KEY" in upper or "OPENAI_API_KEY" in upper or "GEMINI_API_KEY" in upper:
+    if (
+        "API KEY" in upper
+        or "OPENAI_API_KEY" in upper
+        or "GEMINI_API_KEY" in upper
+        or "MODELSCOPE_API_KEY" in upper
+        or "GLM5_API_KEY" in upper
+    ):
         return "AI review skipped: missing API key"
     if "JSON" in upper:
         return "AI review skipped: invalid JSON response"
@@ -159,6 +175,7 @@ def review_candidate_with_openai(
     *,
     model: str,
     api_key: Optional[str] = None,
+    timeout_sec: Optional[float] = None,
 ) -> Dict[str, Any]:
     try:
         from openai import OpenAI
@@ -171,7 +188,7 @@ def review_candidate_with_openai(
     if not api_key:
         raise RuntimeError("AI review requires OPENAI_API_KEY")
 
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(api_key=api_key, timeout=_resolve_request_timeout_sec(timeout_sec))
     system_prompt = build_system_prompt()
     user_prompt = build_user_prompt(candidate)
 
@@ -202,6 +219,7 @@ def review_candidate_with_gemini(
     *,
     model: str,
     api_key: Optional[str] = None,
+    timeout_sec: Optional[float] = None,
 ) -> Dict[str, Any]:
     api_key = api_key or os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -238,18 +256,63 @@ def review_candidate_with_gemini(
     return parse_review_response(text)
 
 
+def review_candidate_with_glm5(
+    candidate: Dict[str, Any],
+    *,
+    model: str,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    timeout_sec: Optional[float] = None,
+) -> Dict[str, Any]:
+    try:
+        from openai import OpenAI
+    except Exception as exc:
+        raise RuntimeError(
+            "AI review with GLM-5 requires the 'openai' package, and MODELSCOPE_API_KEY or GLM5_API_KEY."
+        ) from exc
+
+    api_key = api_key or os.getenv("MODELSCOPE_API_KEY") or os.getenv("GLM5_API_KEY")
+    if not api_key:
+        raise RuntimeError("AI review requires MODELSCOPE_API_KEY or GLM5_API_KEY")
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url=base_url or os.getenv("MODELSCOPE_BASE_URL") or "https://api-inference.modelscope.cn/v1",
+        timeout=_resolve_request_timeout_sec(timeout_sec),
+    )
+    completion = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": build_system_prompt()},
+            {"role": "user", "content": build_user_prompt(candidate)},
+        ],
+        response_format={"type": "json_object"},
+    )
+    text = completion.choices[0].message.content if completion.choices else ""
+    return parse_review_response(text)
+
+
 def review_candidate_with_provider(
     candidate: Dict[str, Any],
     *,
     provider: str,
     model: str,
     api_key: Optional[str] = None,
+    timeout_sec: Optional[float] = None,
 ) -> Dict[str, Any]:
     provider_norm = str(provider or "openai").strip().lower()
     if provider_norm == "openai":
-        return review_candidate_with_openai(candidate, model=model, api_key=api_key)
+        return review_candidate_with_openai(
+            candidate, model=model, api_key=api_key, timeout_sec=timeout_sec
+        )
     if provider_norm == "gemini":
-        return review_candidate_with_gemini(candidate, model=model, api_key=api_key)
+        return review_candidate_with_gemini(
+            candidate, model=model, api_key=api_key, timeout_sec=timeout_sec
+        )
+    if provider_norm == "glm5":
+        return review_candidate_with_glm5(
+            candidate, model=model, api_key=api_key, timeout_sec=timeout_sec
+        )
     raise ValueError(f"Unsupported AI review provider: {provider}")
 
 
@@ -260,13 +323,18 @@ def review_candidates_with_ai(
     model: str,
     max_candidates: int,
     api_key: Optional[str] = None,
+    timeout_sec: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     provider_norm = str(provider or "openai").strip().lower()
-    if provider_norm not in {"openai", "gemini"}:
+    if provider_norm not in {"openai", "gemini", "glm5"}:
         raise ValueError(f"Unsupported AI review provider: {provider}")
 
     reviews: List[Dict[str, Any]] = []
     for idx, candidate in enumerate(candidates[:max_candidates], start=1):
+        print(
+            f"[AI Review] {provider_norm} {idx}/{min(len(candidates), max_candidates)} "
+            f"| score={float(candidate.get('selection_score') or 0.0):.4f}"
+        )
         error_message: Optional[str] = None
         try:
             review = review_candidate_with_provider(
@@ -274,10 +342,12 @@ def review_candidates_with_ai(
                 provider=provider_norm,
                 model=model,
                 api_key=api_key,
+                timeout_sec=timeout_sec,
             )
         except Exception as exc:
             error_message = _normalize_review_error(exc)
             review = _build_fallback_review(exc)
+            print(f"[AI Review] fallback: {error_message}")
         reviews.append(
             {
                 "rank_hint": idx,

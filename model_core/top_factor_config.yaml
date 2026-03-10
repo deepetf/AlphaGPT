@@ -28,3 +28,6 @@ ai_review:
   provider: gemini
   model: gemini-2.0-flash
   max_candidates: 10
+  # glm5 兼容 OpenAI SDK，使用时可改为：
+  # provider: glm5
+  # model: ZhipuAI/GLM-5

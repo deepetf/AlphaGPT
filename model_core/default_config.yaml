@@ -85,6 +85,9 @@ warmup_days: 85
 # 3) 新增 derived feature 时，需先在 `model_core/features_registry.py` 中注册。
 # 4) 模型生成公式时仅能使用这里列出的已启用特征。
 # 5) 增加特征会扩大搜索空间，可能提升上限，但训练更慢且更易不稳定。
+# 6) 若要实验 slow feature 的截面表达，可参考：
+#    - `model_core/config_slow_cs_replace.yaml`
+#    - `model_core/config_slow_cs_append.yaml`
 input_features:
   - CLOSE            # 转债收盘价
   - VOL              # 转债成交量

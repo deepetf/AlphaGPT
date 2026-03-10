@@ -327,7 +327,18 @@ def run_selection(
 
     reevaluated: List[Dict[str, Any]] = []
     rejected_eval: List[Dict[str, Any]] = []
+    total_candidates = len(deduped_candidates)
+    print(
+        f"Reevaluating {total_candidates} deduped candidates "
+        f"(raw={len(raw_candidates)})..."
+    )
     for candidate in deduped_candidates:
+        idx = len(reevaluated) + len(rejected_eval) + 1
+        if idx == 1 or idx % 10 == 0 or idx == total_candidates:
+            print(
+                f"[Selection] evaluating {idx}/{total_candidates} "
+                f"| source={candidate['source']} step={candidate.get('step')}"
+            )
         enriched = reevaluate_candidate(candidate, ctx)
         if enriched is None:
             rejected_eval.append(
@@ -344,6 +355,10 @@ def run_selection(
         reevaluated.append(enriched)
 
     passed = [c for c in reevaluated if not c["filter_reasons"]]
+    print(
+        f"Selection pass summary: reevaluated={len(reevaluated)}, "
+        f"passed={len(passed)}, eval_rejected={len(rejected_eval)}"
+    )
     selected = select_diverse_top_k(
         passed,
         top_k=top_k,
@@ -406,6 +421,7 @@ def main() -> None:
     parser.add_argument("--ai-provider", type=str, default=None)
     parser.add_argument("--ai-model", type=str, default=None)
     parser.add_argument("--ai-max-candidates", type=int, default=None)
+    parser.add_argument("--ai-timeout-sec", type=float, default=None)
     args = parser.parse_args()
 
     selection_bundle = load_selection_config(args.selection_config)
@@ -421,11 +437,20 @@ def main() -> None:
 
     ai_reviews = None
     if args.enable_ai_review:
+        shortlist = result.get("shortlist", [])
+        max_ai_candidates = int(args.ai_max_candidates or ai_cfg.get("max_candidates", 10))
+        provider = str(args.ai_provider or ai_cfg.get("provider", "openai"))
+        model = str(args.ai_model or ai_cfg.get("model", "gpt-5"))
+        print(
+            f"Starting AI review: provider={provider}, model={model}, "
+            f"candidates={min(len(shortlist), max_ai_candidates)}"
+        )
         ai_reviews = review_candidates_with_ai(
-            result.get("shortlist", []),
-            provider=str(args.ai_provider or ai_cfg.get("provider", "openai")),
-            model=str(args.ai_model or ai_cfg.get("model", "gpt-5")),
-            max_candidates=int(args.ai_max_candidates or ai_cfg.get("max_candidates", 10)),
+            shortlist,
+            provider=provider,
+            model=model,
+            max_candidates=max_ai_candidates,
+            timeout_sec=args.ai_timeout_sec,
         )
         with open(args.ai_review_output, "w", encoding="utf-8") as f:
             json.dump(ai_reviews, f, ensure_ascii=False, indent=2)

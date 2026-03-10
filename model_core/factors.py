@@ -96,13 +96,16 @@ class FeatureEngineer:
         features = []
         feature_cache = {}
         for feat_name in feature_names:
+            spec = get_feature_spec(feat_name)
+            if spec is None:
+                raise KeyError(f"Feature '{feat_name}' is not registered")
             feat = FeatureEngineer._resolve_feature_tensor(
                 feat_name,
                 raw_data,
                 feature_cache,
                 feature_names,
             )
-            if normalize:
+            if normalize and spec.apply_time_normalization:
                 feat = FeatureEngineer._robust_normalize(feat, warmup_rows=warmup_rows)
             features.append(feat)
 
