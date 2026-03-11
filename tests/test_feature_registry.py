@@ -9,7 +9,9 @@ from model_core.factors import FeatureEngineer
 
 
 def test_validate_feature_names_accepts_registered_features():
-    validate_feature_names(["CLOSE", "LOG_MONEYNESS", "PURE_VALUE_CS_RANK"])
+    validate_feature_names(
+        ["CLOSE", "LOG_MONEYNESS", "PURE_VALUE_CS_RANK", "DBLOW_CS_RANK", "DBLOW_CS_ROBUST_Z"]
+    )
 
 
 def test_validate_feature_names_rejects_unknown_feature():
@@ -28,9 +30,15 @@ def test_required_raw_features_expand_derived_dependencies():
 
 def test_required_raw_features_expand_slow_cross_sectional_dependencies():
     required = get_required_raw_feature_names(
-        ["PURE_VALUE_CS_RANK", "PREM_CS_ROBUST_Z", "REMAIN_SIZE_CS_RANK"]
+        [
+            "PURE_VALUE_CS_RANK",
+            "PREM_CS_ROBUST_Z",
+            "REMAIN_SIZE_CS_RANK",
+            "DBLOW_CS_RANK",
+            "DBLOW_CS_ROBUST_Z",
+        ]
     )
-    assert required == ("PURE_VALUE", "PREM", "REMAIN_SIZE")
+    assert required == ("PURE_VALUE", "PREM", "REMAIN_SIZE", "DBLOW")
 
 
 def test_feature_engineer_can_build_registered_derived_feature(monkeypatch):
@@ -65,6 +73,8 @@ def test_slow_cross_sectional_feature_specs_skip_time_normalization():
         "PREM_CS_ROBUST_Z",
         "REMAIN_SIZE_CS_RANK",
         "CAP_MV_RATE_CS_RANK",
+        "DBLOW_CS_RANK",
+        "DBLOW_CS_ROBUST_Z",
     ):
         spec = get_feature_spec(name)
         assert spec is not None

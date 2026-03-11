@@ -19,4 +19,6 @@ input_features:
   - PREM_CS_ROBUST_Z
   - REMAIN_SIZE_CS_RANK
   - CAP_MV_RATE_CS_RANK
+  - DBLOW_CS_RANK
+  - DBLOW_CS_ROBUST_Z
 

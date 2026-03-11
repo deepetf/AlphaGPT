@@ -139,6 +139,20 @@ def _build_registry() -> Dict[str, FeatureSpec]:
             compute_fn=_make_cs_rank_feature("CAP_MV_RATE"),
             apply_time_normalization=False,
         ),
+        FeatureSpec(
+            name="DBLOW_CS_RANK",
+            kind="derived",
+            deps=("DBLOW",),
+            compute_fn=_make_cs_rank_feature("DBLOW"),
+            apply_time_normalization=False,
+        ),
+        FeatureSpec(
+            name="DBLOW_CS_ROBUST_Z",
+            kind="derived",
+            deps=("DBLOW",),
+            compute_fn=_make_cs_robust_z_feature("DBLOW"),
+            apply_time_normalization=False,
+        ),
     )
     for spec in derived_specs:
         registry[spec.name] = spec

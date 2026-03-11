@@ -3,7 +3,7 @@
 ## [V5.96] - 2026-03-10
 
 ### Added
-- **Slow Feature Cross-Sectional Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`，作为正式可配置输入特征接入训练/verify/sim 主链路。
+- **Slow Feature Cross-Sectional Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`、`DBLOW_CS_RANK`、`DBLOW_CS_ROBUST_Z`，作为正式可配置输入特征接入训练/verify/sim 主链路。
 - **Slow Feature Experiment Configs**: 新增 `model_core/config_slow_cs_replace.yaml` 和 `model_core/config_slow_cs_append.yaml`，分别用于 replace 主实验与 append 对照实验。
 - **GLM-5 Provider**: AI review 新增 `glm5` provider，支持通过 OpenAI 兼容接口接入 ModelScope 的 `ZhipuAI/GLM-5`。
 

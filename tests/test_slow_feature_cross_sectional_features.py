@@ -13,6 +13,8 @@ def test_slow_cross_sectional_features_preserve_cross_sectional_outputs(monkeypa
             "PREM_CS_ROBUST_Z",
             "REMAIN_SIZE_CS_RANK",
             "CAP_MV_RATE_CS_RANK",
+            "DBLOW_CS_RANK",
+            "DBLOW_CS_ROBUST_Z",
         ],
         raising=False,
     )
@@ -43,6 +45,13 @@ def test_slow_cross_sectional_features_preserve_cross_sectional_outputs(monkeypa
             [
                 [0.2, 0.1, 0.3],
                 [0.4, 0.6, 0.5],
+            ],
+            dtype=torch.float32,
+        ),
+        "DBLOW": torch.tensor(
+            [
+                [90.0, 80.0, 100.0],
+                [70.0, 90.0, 80.0],
             ],
             dtype=torch.float32,
         ),
@@ -78,17 +87,27 @@ def test_slow_cross_sectional_features_preserve_cross_sectional_outputs(monkeypa
         ],
         dtype=torch.float32,
     )
+    expected_dblow_rank = torch.tensor(
+        [
+            [0.5, 0.0, 1.0],
+            [0.0, 1.0, 0.5],
+        ],
+        dtype=torch.float32,
+    )
 
-    assert feat_tensor.shape == (2, 3, 6)
+    assert feat_tensor.shape == (2, 3, 8)
     assert torch.allclose(feat_tensor[:, :, 0], expected_pure_rank)
     assert torch.allclose(feat_tensor[:, :, 2], expected_prem_rank)
     assert torch.allclose(feat_tensor[:, :, 4], expected_remain_rank)
     assert torch.allclose(feat_tensor[:, :, 5], expected_cap_rank)
+    assert torch.allclose(feat_tensor[:, :, 6], expected_dblow_rank)
+    assert torch.isfinite(feat_tensor[:, :, 7]).all()
     assert torch.isfinite(feat_tensor).all()
     assert torch.all((feat_tensor[:, :, 0] >= 0.0) & (feat_tensor[:, :, 0] <= 1.0))
     assert torch.all((feat_tensor[:, :, 2] >= 0.0) & (feat_tensor[:, :, 2] <= 1.0))
     assert torch.all((feat_tensor[:, :, 4] >= 0.0) & (feat_tensor[:, :, 4] <= 1.0))
     assert torch.all((feat_tensor[:, :, 5] >= 0.0) & (feat_tensor[:, :, 5] <= 1.0))
+    assert torch.all((feat_tensor[:, :, 6] >= 0.0) & (feat_tensor[:, :, 6] <= 1.0))
 
 
 def test_slow_cross_sectional_features_skip_time_normalization_zeroing(monkeypatch):

@@ -37,7 +37,7 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 
 ### **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 *在 V5.95 基础上，新增 slow feature 截面输入特征，补充 GLM-5 provider，并完成 verify/sim 对模型配置文件的显式接线。*
-- **Slow Feature CS Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`，作为正式可配置输入特征接入注册中心。
+- **Slow Feature CS Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`、`DBLOW_CS_RANK`、`DBLOW_CS_ROBUST_Z`，作为正式可配置输入特征接入注册中心。
 - **Per-Feature Time-Z Control**: `FeatureSpec` 新增 `apply_time_normalization`，上述 slow feature 截面表达默认跳过 rolling z-score，避免语义被二次破坏。
 - **Time-Z Config Overrides**: 新增 `feature_normalization_overrides` 配置段，可通过 YAML 显式控制特征是否执行 rolling z-score；默认将 `PREM_Z`、`LOG_MONEYNESS`、`ALPHA_PCT_CHG_5` 设为跳过二次 time-z。
 - **Slow Feature Experiment Configs**: 新增 `model_core/config_slow_cs_replace.yaml` 与 `model_core/config_slow_cs_append.yaml`，分别用于 replace 主实验和 append 对照实验。
@@ -49,6 +49,7 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 - **示例命令（verify 使用 slow feature replace 配置）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2025-12-31 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
 - **示例命令（sim 使用 slow feature replace 配置）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
 - **示例配置（关闭二次 time-z）**: `feature_normalization_overrides: { PREM_Z: false, LOG_MONEYNESS: false, ALPHA_PCT_CHG_5: false }`
+- **示例配置（replace 配置加入 DBLOW 截面特征）**: `input_features: [..., CAP_MV_RATE_CS_RANK, DBLOW_CS_RANK, DBLOW_CS_ROBUST_Z]`
 - **示例命令（slow feature 相关测试）**: `pytest tests/test_feature_registry.py tests/test_slow_feature_cross_sectional_features.py tests/test_factor_ai_review.py -q`
 
 ### **V5.95: Factor Post-Selection + AI Review**
