@@ -21,7 +21,7 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
   # 4) Live（单日，QMT 行情）
   python strategy_manager/run_sim.py --mode live --date 2025-12-01 --state-backend sql --live-quote-source qmt
 
-  # 5) Strict replay（使用 slow feature replace 配置）
+  # 5) Live 和 Strict replay（使用 slow feature replace 配置）
   python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --state-backend sql --replay-source sql_eod --config model_core/config_slow_cs_replace.yaml
 
   # 6) Verify（使用 slow feature replace 配置）
@@ -39,6 +39,7 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 *在 V5.95 基础上，新增 slow feature 截面输入特征，补充 GLM-5 provider，并完成 verify/sim 对模型配置文件的显式接线。*
 - **Slow Feature CS Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`，作为正式可配置输入特征接入注册中心。
 - **Per-Feature Time-Z Control**: `FeatureSpec` 新增 `apply_time_normalization`，上述 slow feature 截面表达默认跳过 rolling z-score，避免语义被二次破坏。
+- **Time-Z Config Overrides**: 新增 `feature_normalization_overrides` 配置段，可通过 YAML 显式控制特征是否执行 rolling z-score；默认将 `PREM_Z`、`LOG_MONEYNESS`、`ALPHA_PCT_CHG_5` 设为跳过二次 time-z。
 - **Slow Feature Experiment Configs**: 新增 `model_core/config_slow_cs_replace.yaml` 与 `model_core/config_slow_cs_append.yaml`，分别用于 replace 主实验和 append 对照实验。
 - **GLM-5 Provider**: `factor_ai_review.py` 新增 `glm5` provider，支持通过 OpenAI 兼容 SDK 接入 ModelScope 的 `ZhipuAI/GLM-5`。
 - **AI Review Observability**: 二次筛选与 AI review 增加候选重评估进度、provider 启动信息和逐条 AI review 日志，并支持 `--ai-timeout-sec`。
@@ -47,6 +48,7 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 - **示例命令（GLM-5 AI review）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider glm5 --ai-model ZhipuAI/GLM-5 --ai-max-candidates 3 --ai-timeout-sec 30`
 - **示例命令（verify 使用 slow feature replace 配置）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2025-12-31 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
 - **示例命令（sim 使用 slow feature replace 配置）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
+- **示例配置（关闭二次 time-z）**: `feature_normalization_overrides: { PREM_Z: false, LOG_MONEYNESS: false, ALPHA_PCT_CHG_5: false }`
 - **示例命令（slow feature 相关测试）**: `pytest tests/test_feature_registry.py tests/test_slow_feature_cross_sectional_features.py tests/test_factor_ai_review.py -q`
 
 ### **V5.95: Factor Post-Selection + AI Review**

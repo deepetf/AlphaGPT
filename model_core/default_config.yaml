@@ -108,6 +108,19 @@ input_features:
   - VOL_STK_60       # 正股60日波动
   - PREM_Z           # 溢价率Z分数
 
+# feature_normalization_overrides
+# - 含义: 按特征覆盖是否执行 rolling z-score。
+# - 用法:
+#   - true: 强制做 time-z
+#   - false: 跳过 time-z，直接使用原特征或派生特征输出
+# - 说明:
+#   - 若未配置，则使用 features_registry.py 中的默认值。
+#   - 适合用于已经标准化过、已经是相对量、或希望保留原金融语义的特征。
+feature_normalization_overrides:
+  PREM_Z: false
+  LOG_MONEYNESS: false
+  ALPHA_PCT_CHG_5: false
+
 # ============================================================================
 # 稳健性配置 (RobustConfig)
 # ============================================================================

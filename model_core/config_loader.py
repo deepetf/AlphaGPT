@@ -67,6 +67,11 @@ def get_input_features() -> list:
     return get_config().get("input_features", [])
 
 
+def get_feature_normalization_overrides() -> Dict[str, bool]:
+    overrides = get_config().get("feature_normalization_overrides", {})
+    return overrides if isinstance(overrides, dict) else {}
+
+
 def get_robust_config() -> Dict[str, Any]:
     return get_config().get("robust_config", {})
 
@@ -92,6 +97,18 @@ def _validate_config(config: Dict[str, Any]) -> None:
     if not input_features:
         raise ValueError("配置缺少 'input_features' 或列表为空")
     validate_feature_names(input_features)
+
+    normalization_overrides = config.get("feature_normalization_overrides", {})
+    if normalization_overrides is None:
+        normalization_overrides = {}
+    if not isinstance(normalization_overrides, dict):
+        raise ValueError("feature_normalization_overrides must be a dict")
+    validate_feature_names(normalization_overrides.keys())
+    for feature_name, enabled in normalization_overrides.items():
+        if not isinstance(enabled, bool):
+            raise ValueError(
+                f"feature_normalization_overrides['{feature_name}'] must be boolean"
+            )
 
     if "robust_config" not in config:
         raise ValueError("配置缺少 'robust_config'")

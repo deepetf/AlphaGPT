@@ -9,6 +9,7 @@
 
 ### Changed
 - **Per-Feature Normalization Control**: `FeatureSpec` 新增 `apply_time_normalization`，允许特征级控制是否执行 rolling z-score；新增 slow feature 截面表达默认跳过 time-z。
+- **Normalization Overrides by YAML**: 新增 `feature_normalization_overrides` 配置段，允许通过 YAML 覆盖特征级 time-z 行为；默认将 `PREM_Z`、`LOG_MONEYNESS`、`ALPHA_PCT_CHG_5` 设为跳过二次标准化。
 - **AI Review Observability**: 训练后二次筛选和 AI review 增加重评估进度、provider 启动信息、逐条 review 日志和客户端超时控制。
 - **Default Config Notes**: `default_config.yaml` 补充 slow feature 截面实验配置说明。
 

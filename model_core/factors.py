@@ -8,6 +8,7 @@
 import torch
 
 from .config import ModelConfig
+from .config_loader import get_feature_normalization_overrides
 from .features_registry import (
     get_feature_spec,
     get_required_raw_feature_names,
@@ -95,6 +96,7 @@ class FeatureEngineer:
         feature_names = list(feature_names or ModelConfig.INPUT_FEATURES)
         features = []
         feature_cache = {}
+        normalization_overrides = get_feature_normalization_overrides() if normalize else {}
         for feat_name in feature_names:
             spec = get_feature_spec(feat_name)
             if spec is None:
@@ -105,7 +107,10 @@ class FeatureEngineer:
                 feature_cache,
                 feature_names,
             )
-            if normalize and spec.apply_time_normalization:
+            apply_time_normalization = normalization_overrides.get(
+                feat_name, spec.apply_time_normalization
+            )
+            if normalize and apply_time_normalization:
                 feat = FeatureEngineer._robust_normalize(feat, warmup_rows=warmup_rows)
             features.append(feat)
 

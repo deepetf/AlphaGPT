@@ -75,6 +75,10 @@ def _make_cs_robust_z_feature(dep_name: str) -> ComputeFeatureFn:
 
 def _build_registry() -> Dict[str, FeatureSpec]:
     registry: Dict[str, FeatureSpec] = {}
+    skip_time_norm_features = {
+        "PREM_Z",
+        "ALPHA_PCT_CHG_5",
+    }
 
     for internal_name, raw_column, fill_method in ModelConfig.BASIC_FACTORS:
         registry[internal_name] = FeatureSpec(
@@ -82,6 +86,7 @@ def _build_registry() -> Dict[str, FeatureSpec]:
             kind="raw",
             raw_column=raw_column,
             fill_method=fill_method,
+            apply_time_normalization=internal_name not in skip_time_norm_features,
         )
 
     derived_specs = (
@@ -90,6 +95,7 @@ def _build_registry() -> Dict[str, FeatureSpec]:
             kind="derived",
             deps=("CLOSE_STK", "CONV_PRICE"),
             compute_fn=_compute_log_moneyness,
+            apply_time_normalization=False,
         ),
         FeatureSpec(
             name="PURE_VALUE_CS_RANK",

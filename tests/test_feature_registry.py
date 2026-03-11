@@ -70,3 +70,33 @@ def test_slow_cross_sectional_feature_specs_skip_time_normalization():
         assert spec is not None
         assert spec.kind == "derived"
         assert spec.apply_time_normalization is False
+
+
+def test_pre_standardized_features_skip_time_normalization():
+    for name in ("PREM_Z", "LOG_MONEYNESS", "ALPHA_PCT_CHG_5"):
+        spec = get_feature_spec(name)
+        assert spec is not None
+        assert spec.apply_time_normalization is False
+
+
+def test_feature_normalization_override_can_force_time_z(monkeypatch):
+    monkeypatch.setattr(
+        "model_core.factors.get_feature_normalization_overrides",
+        lambda: {"PREM_Z": True},
+    )
+
+    raw = {
+        "PREM_Z": torch.tensor(
+            [[1.0, 3.0], [2.0, 4.0], [3.0, 5.0], [4.0, 6.0]],
+            dtype=torch.float32,
+        )
+    }
+
+    expected = FeatureEngineer._robust_normalize(raw["PREM_Z"], warmup_rows=60)
+    built = FeatureEngineer.build_feature_tensor(
+        raw_data=raw,
+        feature_names=["PREM_Z"],
+        normalize=True,
+        warmup_rows=60,
+    )[:, :, 0]
+    assert torch.allclose(built, expected)
