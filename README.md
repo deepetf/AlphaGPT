@@ -21,6 +21,12 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
   # 4) Live（单日，QMT 行情）
   python strategy_manager/run_sim.py --mode live --date 2025-12-01 --state-backend sql --live-quote-source qmt
 
+  # 5) Strict replay（使用 slow feature replace 配置）
+  python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --state-backend sql --replay-source sql_eod --config model_core/config_slow_cs_replace.yaml
+
+  # 6) Verify（使用 slow feature replace 配置）
+  python tests/verify_strategy.py --start 2025-01-01 --end 2025-12-31 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml
+
   可选定时跑 live：
 
   python strategy_manager/run_sim.py --mode live --schedule --hour 14 --minute 50 --state-backend sql --live-quote-source qmt
@@ -29,19 +35,8 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.95: Factor Post-Selection + AI Review (Current)**
-*在 V5.94 基础上，补充训练产出因子的二次筛选链路、AI 金融含义评审，以及 Windows 环境依赖与虚拟环境初始化说明。*
-- **Quant Top-Factor Selection**: 新增 `model_core/select_top_factors.py`，可从 `best_cb_formula.json` 的 `best/history/diverse_top_50` 合并候选，经过公式 canonical 去重、统一重评估、硬过滤、加权打分与相似度去重后，自动产出 `top3_factors.json`。
-- **Selection Config Template**: 新增 `model_core/top_factor_config.yaml`，集中管理二次筛选阈值、打分权重、相似度阈值和 AI review 默认配置。
-- **Top-3 Report Output**: 二次筛选支持输出 Markdown 报告 `top3_factors_report.md`，便于复核 Sharpe、年化收益、稳定性、回撤与 train/val 均衡性。
-- **AI Factor Review**: 新增 `model_core/factor_ai_review.py`，支持对候选因子进行金融含义、可解释性、阶段依赖和冗余风险的结构化评审。
-- **Dual Provider Support**: AI review 同时支持 `openai` 与 `gemini` provider，默认配置为 `gemini`；若启用 AI review，会额外输出 `factor_ai_reviews.json` 供后续报告或排序扩展使用。
-- **示例命令（仅量化二次筛选）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md`
-- **示例命令（启用 Gemini AI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider gemini --ai-model gemini-2.0-flash`
-- **示例命令（启用 OpenAI AI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider openai --ai-model gpt-5`
-
 ### **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
-*在 V5.95 基础上，新增 slow feature 截面输入特征，补充 GLM-5 provider，并增强训练后二次筛选的可观测性。*
+*在 V5.95 基础上，新增 slow feature 截面输入特征，补充 GLM-5 provider，并完成 verify/sim 对模型配置文件的显式接线。*
 - **Slow Feature CS Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`，作为正式可配置输入特征接入注册中心。
 - **Per-Feature Time-Z Control**: `FeatureSpec` 新增 `apply_time_normalization`，上述 slow feature 截面表达默认跳过 rolling z-score，避免语义被二次破坏。
 - **Slow Feature Experiment Configs**: 新增 `model_core/config_slow_cs_replace.yaml` 与 `model_core/config_slow_cs_append.yaml`，分别用于 replace 主实验和 append 对照实验。
@@ -53,6 +48,17 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 - **示例命令（verify 使用 slow feature replace 配置）**: `python tests/verify_strategy.py --start 2025-01-01 --end 2025-12-31 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
 - **示例命令（sim 使用 slow feature replace 配置）**: `python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml`
 - **示例命令（slow feature 相关测试）**: `pytest tests/test_feature_registry.py tests/test_slow_feature_cross_sectional_features.py tests/test_factor_ai_review.py -q`
+
+### **V5.95: Factor Post-Selection + AI Review**
+*在 V5.94 基础上，补充训练产出因子的二次筛选链路、AI 金融含义评审，以及 Windows 环境依赖与虚拟环境初始化说明。*
+- **Quant Top-Factor Selection**: 新增 `model_core/select_top_factors.py`，可从 `best_cb_formula.json` 的 `best/history/diverse_top_50` 合并候选，经过公式 canonical 去重、统一重评估、硬过滤、加权打分与相似度去重后，自动产出 `top3_factors.json`。
+- **Selection Config Template**: 新增 `model_core/top_factor_config.yaml`，集中管理二次筛选阈值、打分权重、相似度阈值和 AI review 默认配置。
+- **Top-3 Report Output**: 二次筛选支持输出 Markdown 报告 `top3_factors_report.md`，便于复核 Sharpe、年化收益、稳定性、回撤与 train/val 均衡性。
+- **AI Factor Review**: 新增 `model_core/factor_ai_review.py`，支持对候选因子进行金融含义、可解释性、阶段依赖和冗余风险的结构化评审。
+- **Dual Provider Support**: AI review 同时支持 `openai` 与 `gemini` provider，默认配置为 `gemini`；若启用 AI review，会额外输出 `factor_ai_reviews.json` 供后续报告或排序扩展使用。
+- **示例命令（仅量化二次筛选）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md`
+- **示例命令（启用 Gemini AI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider gemini --ai-model gemini-2.0-flash`
+- **示例命令（启用 OpenAI AI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --enable-ai-review --ai-provider openai --ai-model gpt-5`
 
 ### **V5.94: Feature Registry Alignment + Formula Canonicalization**
 *在 V5.93 基础上，统一训练/verify/sim 的特征注册入口，并为训练评估补齐公式规范化去重。*
