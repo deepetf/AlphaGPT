@@ -1,5 +1,21 @@
 # AlphaGPT Changelog
 
+## [V6.0] - 2026-03-12
+
+### Added
+- **Straight-Through Workflow Module**: 新增 `workflow/` 模块（`run_manifest.py`、`bundle_builder.py`、`bundle_loader.py`、`pipeline.py`、`pipeline_state.py`），打通 train/select/bundle/verify/sim 的统一编排入口。
+- **Training Run Manifest**: `model_core.engine` 新增 `--run-id`、`--artifacts-root`，训练阶段标准化输出到 `artifacts/runs/<run_id>/`，并生成 `manifest.json` 与 `resolved_model_config.yaml`。
+- **Bundle Artifacts**: 新增 bundle 产物 `strategy_bundle.json`、`formula_top1.json`、`generated_strategy_config.json`，用于 verify/sim 直连复用。
+- **Pipeline State Persistence**: `workflow.pipeline e2e` 落盘 `pipeline_status.json`，记录分阶段状态、命令、错误与输出，支持失败恢复。
+
+### Changed
+- **Verify Bundle Integration**: `tests/verify_strategy.py` 支持 `--bundle`，可自动推导配置并执行冲突校验。
+- **Sim Bundle Integration**: `strategy_manager/run_sim.py` 支持 `--bundle`，可自动使用 bundle 同目录策略配置。
+- **Commands/Docs Upgrade**: 新增 `Commands.MD` 直连操作手册与 `STP-PLAN.MD` 实施计划，并补全 e2e 单日/区间示例。
+
+### Fixed
+- **Workflow Resumability**: e2e 场景可通过 `--resume` 与 `--from-stage` 跳过已完成阶段，避免失败后全链路重跑。
+
 ## [V5.96] - 2026-03-10
 
 ### Added

@@ -31,6 +31,7 @@ from .formula_validator import (
     MAX_SIGN_LOG_DISTANCE,
 )
 from .formula_simplifier import formula_to_canonical_key, simplify_formula
+from workflow.run_manifest import prepare_training_run, update_training_manifest
 
 
 # 鍏ㄥ眬鍙橀噺锛岀敤浜庡瓙杩涚▼鍏变韩鍙鏁版嵁 (閬垮厤 Pickling 寮€閿€)
@@ -228,19 +229,24 @@ def _worker_eval(formula):
 
 
 class AlphaEngine:
-    def __init__(self, data_start_date=None):
+    def __init__(self, data_start_date=None, run_context=None):
         print("Initializing AlphaEngine...")
         # 鎵撳嵃閰嶇疆鏉ユ簮
         config_source = getattr(RobustConfig, '_config_path', 'default_config.yaml')
         print(f"Config source: {config_source}")
         print(f"Using Device: {ModelConfig.DEVICE}")
         print(f"Take Profit: {RobustConfig.TAKE_PROFIT}")
+        self.run_context = run_context or {}
+        if self.run_context:
+            print(f"Run ID: {self.run_context.get('run_id')}")
+            print(f"Artifacts Dir: {self.run_context.get('run_dir')}")
         
         # 1. 鍒濆鍖栧苟鍔犺浇鏁版嵁
         # 纭繚 engine 鎷ユ湁鍞竴鐨勬暟鎹姞杞藉櫒瀹炰緥
         self.loader = CBDataLoader()
         effective_data_start_date = data_start_date or "2022-08-01"
         print(f"Data start date: {effective_data_start_date}")
+        self.data_start_date = effective_data_start_date
         self.loader.load_data(start_date=effective_data_start_date)
         
         # 2. 初始化模型
@@ -270,6 +276,12 @@ class AlphaEngine:
         self.eval_cache = OrderedDict()
         
         print(f"Model vocab size: {self.model.vocab_size}")
+
+    @staticmethod
+    def _write_json(path: str, payload: dict) -> None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
     def _tokens_to_strings(self, tokens: list) -> list:
         """[鍐呴儴鏂规硶] 灏?token ID 鍒楄〃杞崲涓哄瓧绗︿覆鍒楄〃 (浠呯敤浜庤缁冩椂鐨勫嵆鏃惰浆鎹?"""
@@ -1333,8 +1345,12 @@ class AlphaEngine:
         from .vm import StackVM
         
         output_dir = os.path.dirname(os.path.abspath(__file__))
-        trades_dir = os.path.join(output_dir, 'king_trades')
-        os.makedirs(trades_dir, exist_ok=True)
+        trades_dirs = [os.path.join(output_dir, 'king_trades')]
+        train_dir = self.run_context.get("train_dir")
+        if train_dir:
+            trades_dirs.append(os.path.join(train_dir, 'king_trades'))
+        for trades_dir in trades_dirs:
+            os.makedirs(trades_dir, exist_ok=True)
         
         # 閲嶆柊鎵ц鍏紡鑾峰彇鍥犲瓙鍊?
         vm = StackVM()
@@ -1380,9 +1396,9 @@ class AlphaEngine:
             'trades': trades
         }
         
-        file_path = os.path.join(trades_dir, f'king_{king_num}.json')
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
+        for trades_dir in trades_dirs:
+            file_path = os.path.join(trades_dir, f'king_{king_num}.json')
+            self._write_json(file_path, result)
 
     def _save_results(self):
         output_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1408,8 +1424,12 @@ class AlphaEngine:
         }
         
         result_path = os.path.join(output_dir, 'best_cb_formula.json')
-        with open(result_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
+        self._write_json(result_path, result)
+        train_dir = self.run_context.get("train_dir")
+        artifact_result_path = None
+        if train_dir:
+            artifact_result_path = os.path.join(train_dir, 'best_cb_formula.json')
+            self._write_json(artifact_result_path, result)
         
         print(f"\nSaved to: {result_path}")
         print(f"   Total New Kings discovered: {len(self.king_history)}")
@@ -1418,7 +1438,33 @@ class AlphaEngine:
         print(f"   Best Annualized Return: {self.best_return:.2%}")
         print(f"   Best Formula: {self.best_formula_readable}")
         
-        torch.save(self.model.state_dict(), os.path.join(output_dir, 'alphagpt_cb.pt'))
+        model_path = os.path.join(output_dir, 'alphagpt_cb.pt')
+        torch.save(self.model.state_dict(), model_path)
+        artifact_model_path = None
+        if train_dir:
+            artifact_model_path = os.path.join(train_dir, 'alphagpt_cb.pt')
+            torch.save(self.model.state_dict(), artifact_model_path)
+
+        if self.run_context:
+            update_training_manifest(
+                self.run_context,
+                stage="train_completed",
+                artifacts={
+                    "best_formula_path": artifact_result_path or result_path,
+                    "legacy_best_formula_path": result_path,
+                    "model_weight_path": artifact_model_path or model_path,
+                    "legacy_model_weight_path": model_path,
+                    "king_trades_dir": os.path.join(train_dir, "king_trades") if train_dir else os.path.join(output_dir, "king_trades"),
+                },
+                summary={
+                    "best_score": float(self.best_score),
+                    "best_sharpe": float(self.best_sharpe),
+                    "best_annualized_ret": float(self.best_return),
+                    "best_formula_readable": self.best_formula_readable,
+                    "total_kings": int(len(self.king_history)),
+                    "data_start_date": self.data_start_date,
+                },
+            )
 
 if __name__ == "__main__":
     # 鍛戒护琛屽弬鏁拌В鏋?
@@ -1443,6 +1489,18 @@ if __name__ == "__main__":
         default=None,
         help='data start date (YYYY-MM-DD), default=2022-08-01'
     )
+    parser.add_argument(
+        '--run-id',
+        type=str,
+        default=None,
+        help='optional training run id for artifacts/runs/<run_id>'
+    )
+    parser.add_argument(
+        '--artifacts-root',
+        type=str,
+        default=None,
+        help='optional artifacts root, default=artifacts/runs'
+    )
     args = parser.parse_args()
     
     # 鍔犺浇閰嶇疆 (蹇呴』鍦ㄥ垱寤?AlphaEngine 涔嬪墠)
@@ -1457,8 +1515,22 @@ if __name__ == "__main__":
         print(f"Loaded custom config: {args.config}")
     else:
         print("Using default config: default_config.yaml")
+
+    run_context = prepare_training_run(
+        config=config,
+        config_path=args.config,
+        data_start_date=args.data_start_date,
+        run_id=args.run_id,
+        artifacts_root=args.artifacts_root,
+    )
+    print(f"Prepared training manifest: {run_context['manifest_path']}")
+    update_training_manifest(
+        run_context,
+        stage="train_running",
+        summary={"data_start_date": args.data_start_date or "2022-08-01"},
+    )
     
     # Windows 涓轰簡鏀寔 ProcessPool锛屽繀椤昏鏈夎繖涓?protect
-    eng = AlphaEngine(data_start_date=args.data_start_date)
+    eng = AlphaEngine(data_start_date=args.data_start_date, run_context=run_context)
     eng.train()
 

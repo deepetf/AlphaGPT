@@ -2,7 +2,10 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
+Current Version: **V6.0: Straight-Through Pipeline + Bundle Verify/Sim (Current)**
+
+命令速查文档：`Commands.MD`
+Git 版本与发布说明：`GIT-RELEASE.md`
 
 当前版本run_sim CLI:
 
@@ -35,7 +38,21 @@ Current Version: **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V5.96: Slow Feature CS Inputs + GLM-5 Review (Current)**
+### **V6.0: Straight-Through Pipeline + Bundle Verify/Sim (Current)**
+*在 V5.96 基础上，新增 train→select→bundle→verify→sim 的直连工作流，支持 bundle 驱动验证/模拟与 e2e 状态落盘恢复。*
+- **Run Manifest 标准化产物**: `model_core.engine` 新增 `--run-id/--artifacts-root`，训练自动产出 `artifacts/runs/<run_id>/manifest.json` 与 `resolved_model_config.yaml`。
+- **Bundle Builder**: 新增 `workflow.bundle_builder`，可从训练输出/selection 结果生成 `strategy_bundle.json`、`formula_top1.json`、`generated_strategy_config.json`。
+- **Verify Bundle Mode**: `tests/verify_strategy.py` 新增 `--bundle`，支持自动推导配置、参数覆盖与冲突校验。
+- **Sim Bundle Mode**: `strategy_manager/run_sim.py` 新增 `--bundle`，可直接复用 bundle 策略配置并支持单日/区间模拟。
+- **Unified Pipeline CLI**: 新增 `workflow.pipeline`（`train/select/bundle/verify/sim/e2e`）统一编排现有链路。
+- **E2E 状态落盘与恢复**: `workflow.pipeline e2e` 新增 `pipeline_status.json`、`--resume`、`--from-stage`，支持失败恢复与断点续跑。
+- **示例命令（一步直连 e2e，单日 sim）**: `python -m workflow.pipeline e2e --config model_core/config_slow_cs_replace.yaml --run-id slow_replace_exp01 --verify-start 2025-01-01 --verify-end 2025-12-31 --sim-date 2025-12-01`
+- **示例命令（一步直连 e2e，区间 sim）**: `python -m workflow.pipeline e2e --config model_core/config_slow_cs_replace.yaml --run-id slow_replace_exp01 --verify-start 2025-01-01 --verify-end 2025-12-31 --sim-start-date 2025-01-01 --sim-end-date 2025-12-31`
+- **示例命令（bundle 直连 verify）**: `python tests/verify_strategy.py --bundle artifacts/runs/slow_replace_exp01/bundle/strategy_bundle.json --start 2025-01-01 --end 2025-12-31`
+- **示例命令（bundle 直连 sim）**: `python strategy_manager/run_sim.py --bundle artifacts/runs/slow_replace_exp01/bundle/strategy_bundle.json --mode strict_replay --date 2025-12-01`
+- **示例命令（e2e 失败恢复）**: `python -m workflow.pipeline e2e --run-id slow_replace_exp01 --resume --from-stage verify --verify-start 2025-01-01 --verify-end 2025-12-31 --sim-date 2025-12-01`
+
+### **V5.96: Slow Feature CS Inputs + GLM-5 Review**
 *在 V5.95 基础上，新增 slow feature 截面输入特征，补充 GLM-5 provider，并完成 verify/sim 对模型配置文件的显式接线。*
 - **Slow Feature CS Inputs**: 新增 `PURE_VALUE_CS_RANK`、`PURE_VALUE_CS_ROBUST_Z`、`PREM_CS_RANK`、`PREM_CS_ROBUST_Z`、`REMAIN_SIZE_CS_RANK`、`CAP_MV_RATE_CS_RANK`、`DBLOW_CS_RANK`、`DBLOW_CS_ROBUST_Z`，作为正式可配置输入特征接入注册中心。
 - **Per-Feature Time-Z Control**: `FeatureSpec` 新增 `apply_time_normalization`，上述 slow feature 截面表达默认跳过 rolling z-score，避免语义被二次破坏。
