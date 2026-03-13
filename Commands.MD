@@ -1,10 +1,16 @@
-# AlphaGPT 命令文档（V6.0）
+# AlphaGPT 命令文档（V6.01）
 
 本文档基于当前 `README.md`、`model_core/engine.py`、`tests/verify_strategy.py`、`strategy_manager/run_sim.py` 与相关配置加载逻辑整理，覆盖当前版本最常用的三类命令：
 
 - 训练：`python -m model_core.engine`
 - 验证：`python tests/verify_strategy.py`
 - 模拟/严格回放：`python strategy_manager/run_sim.py`
+
+V6.01 补充说明：
+
+- `model_core/select_top_factors.py` 当前支持 `similarity_mode: hybrid`
+- hybrid 去重同时参考公式 Jaccard、平均持仓 Jaccard、日收益相关性
+- `factor_ai_review` 报告会单独输出 `Similarity rejected` 计数
 
 ## 1. 适用范围与命令入口
 
@@ -248,6 +254,18 @@ python -m model_core.engine --config model_core/config_slow_cs_replace.yaml --ru
 
 - 固定本次训练的实验编号
 - 将训练产物标准化落到 run 目录，便于后续 straight-through 流程接入
+
+### 3.5.7 slow replace 主实验（偏稳健基线）
+
+```bash
+python -m model_core.engine --config model_core/config_slow_cs_replace.yaml --run-id slow_replace_v601
+```
+
+适用场景：
+
+- 使用当前仓库已跟踪的 slow feature replace 配置做主实验
+- 与后续 `select / bundle / verify / sim` 保持特征口径一致
+- 配合 `artifacts/runs/<run_id>/` 产物目录做 straight-through 续接
 
 ## 4. VERIFY 命令：`python tests/verify_strategy.py`
 
@@ -872,6 +890,8 @@ python -m model_core.select_top_factors --input artifacts/runs/<run_id>/train/be
 - `--input` 推荐直接使用训练 run 目录中的 `train/best_cb_formula.json`
 - `--config` 推荐直接使用训练 run 目录中的 `resolved_model_config.yaml`
 - `--output` 与 `--report-output` 推荐直接落到 `artifacts/runs/<run_id>/selection/`
+- `top_factor_config.yaml` 当前支持 `similarity_mode: hybrid`（公式 Jaccard + 持仓 Jaccard + 日收益相关性）
+- hybrid 关键阈值：`jaccard_threshold`、`holding_jaccard_threshold`、`return_corr_threshold`
 
 典型用法：
 

@@ -376,6 +376,7 @@ def render_markdown_report(
     lines.append(f"- Raw candidates: {counts.get('raw_candidates', 0)}")
     lines.append(f"- Deduped candidates: {counts.get('deduped_candidates', 0)}")
     lines.append(f"- Hard-filter passed: {counts.get('hard_filter_passed', 0)}")
+    lines.append(f"- Similarity rejected: {counts.get('similarity_rejected', 0)}")
     lines.append(f"- Selected top-k: {counts.get('selected_top_k', 0)}")
     lines.append("")
     lines.append("## Top 3")

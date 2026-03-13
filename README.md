@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V6.0: Straight-Through Pipeline + Bundle Verify/Sim (Current)**
+Current Version: **V6.01: Hybrid Selection Similarity + Strategy Refresh (Current)**
 
 命令速查文档：`Commands.MD`
 Git 版本与发布说明：`GIT-RELEASE.md`
@@ -38,7 +38,18 @@ Git 版本与发布说明：`GIT-RELEASE.md`
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V6.0: Straight-Through Pipeline + Bundle Verify/Sim (Current)**
+### **V6.01: Hybrid Selection Similarity + Strategy Refresh (Current)**
+*在 V6.0 基础上，补强二次筛选的相似度去重口径，调整默认训练稳健性参数，并刷新当前策略配置。*
+- **Hybrid Similarity Selection**: `model_core/select_top_factors.py` 新增行为签名计算，候选去重支持 `similarity_mode: hybrid`，综合公式 Jaccard、平均持仓 Jaccard 与日收益相关性，降低“公式不同但行为高度重复”的冗余入选。
+- **Top-Factor Config Extension**: `model_core/top_factor_config.yaml` 新增 `holding_jaccard_threshold`、`return_corr_threshold`、`return_corr_abs`、`similarity_min_overlap_days` 与 `behavior_fallback_to_formula`，便于显式调节行为相似度门槛。
+- **AI Review Report Observability**: `model_core/factor_ai_review.py` 输出 Markdown 报告时新增 `Similarity rejected` 统计，便于区分“硬过滤失败”和“相似度淘汰”。
+- **Default Training Baseline Refresh**: `model_core/default_config.yaml` 默认输入中移除 `PURE_VALUE`，并上调 `stability_k` 与 `stability_w`，使默认训练更偏稳健筛选。
+- **Strategy Set Refresh**: `strategy_manager/strategies_config.json` 当前启用策略更新为 `king_slow`、`king_wo_pure`、`king_stable`、`king_mom`，用于 V6.01 组合验证。
+- **示例命令（二次筛选，启用 hybrid 相似度）**: `python -m model_core.select_top_factors --input artifacts/runs/slow_replace_recover_v1/train/best_cb_formula.json --output artifacts/runs/slow_replace_recover_v1/selection/top3_factors.json --report-output artifacts/runs/slow_replace_recover_v1/selection/top3_factors_report.md --selection-config model_core/top_factor_config.yaml --config artifacts/runs/slow_replace_recover_v1/resolved_model_config.yaml`
+- **示例命令（默认稳健基线训练）**: `python -m workflow.pipeline train --config model_core/default_config.yaml --data-start-date 2022-08-01 --run-id v601_default_baseline`
+- **示例命令（当前策略集 strict replay 区间验证）**: `python strategy_manager/run_sim.py --mode strict_replay --start-date 2025-01-01 --end-date 2025-12-31 --state-backend sql --replay-source sql_eod`
+
+### **V6.0: Straight-Through Pipeline + Bundle Verify/Sim**
 *在 V5.96 基础上，新增 train→select→bundle→verify→sim 的直连工作流，支持 bundle 驱动验证/模拟与 e2e 状态落盘恢复。*
 - **Run Manifest 标准化产物**: `model_core.engine` 新增 `--run-id/--artifacts-root`，训练自动产出 `artifacts/runs/<run_id>/manifest.json` 与 `resolved_model_config.yaml`。
 - **Bundle Builder**: 新增 `workflow.bundle_builder`，可从训练输出/selection 结果生成 `strategy_bundle.json`、`formula_top1.json`、`generated_strategy_config.json`。

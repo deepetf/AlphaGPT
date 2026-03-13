@@ -14,32 +14,82 @@
   },
 
   "strategies": [
-
+  
     {
-      "id": "king_dblow",
-      "name": "king_dblow",
+      "id": "king_slow",
+      "name": "king_slow",
       "enabled": true,
       "formula": [
         "DBLOW",
+        "VOL",
+        "SIGN",
+        "TS_STD20",
+        "PCT_CHG",
+        "TS_MAX20",
+        "TS_MAX20",
         "PREM_Z",
-        "DBLOW",
-        "CUT_NEG",
-        "TS_MOM20",
-        "TS_RET",
-        "DIV",
-        "VOLATILITY_STK",
-        "PCT_CHG_STK",
-        "DIV",
-        "LOG_MONEYNESS",
+        "TS_BIAS5",
+        "TS_STD20",
         "MUL",
+        "DIV",
+        "PURE_VALUE_CS_RANK",
         "MUL",
-        "TS_STD60",
-        "SUB"
+        "MIN"
+      ],
+      "params": {
+      }
+    },     
+
+    {
+      "id": "king_wo_pure",
+      "name": "king_wo_pure",
+      "enabled": true,
+      "formula": [
+          "CLOSE",
+          "DBLOW",
+          "SQRT",
+          "VOLATILITY_STK",
+          "VOLATILITY_STK",
+          "ADD",
+          "TS_STD20",
+          "TS_DELAY",
+          "PREM",
+          "VOL",
+          "TS_STD5",
+          "ADD",
+          "IF_POS",
+          "MIN",
+          "MIN"
       ],
       "params": {
       }
     },    
-    
+
+    {
+      "id": "king_stable",
+      "name": "king_stable",
+      "enabled": true,
+      "formula": [
+        "PURE_VALUE",
+        "TS_STD20",
+        "CS_DEMEAN",
+        "TS_MIN20",
+        "NEG",
+        "CS_RANK",
+        "PREM_Z",
+        "SQRT",
+        "TS_MIN20",
+        "VOL",
+        "TS_DELTA",
+        "VOL",
+        "MAX",
+        "IF_POS",
+        "IF_POS"
+      ],
+      "params": {
+      }
+    },     
+         
     {
       "id": "king_mom",
       "name": "king_mom",
@@ -65,6 +115,7 @@
       "params": {
       }
     }
+
 
   ]
 }

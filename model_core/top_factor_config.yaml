@@ -13,7 +13,20 @@ selection:
   max_drawdown: 0.20
   max_train_val_gap: 1.0
 
+  # 相似度去重模式: formula / behavior / hybrid
+  similarity_mode: hybrid
+  # 公式 token Jaccard 阈值
   jaccard_threshold: 0.75
+  # 平均持仓 Jaccard 阈值（仅 behavior / hybrid 生效）
+  holding_jaccard_threshold: 0.80
+  # 日收益相关性阈值（仅 behavior / hybrid 生效）
+  return_corr_threshold: 0.90
+  # true=使用 |corr|；false=使用 corr
+  return_corr_abs: true
+  # 计算行为相似度所需最少重叠交易日
+  similarity_min_overlap_days: 20
+  # behavior 模式行为签名不足时是否回退公式 Jaccard
+  behavior_fallback_to_formula: true
 
   weights:
     sharpe_all: 0.30

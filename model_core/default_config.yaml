@@ -100,7 +100,7 @@ input_features:
   - PCT_CHG_STK      # 正股日涨跌幅
   - PCT_CHG_5_STK    # 正股5日涨跌幅
   - LOG_MONEYNESS    # log(S/K)
-  - PURE_VALUE       # 纯债价值
+  #- PURE_VALUE       # 纯债价值
   - ALPHA_PCT_CHG_5  # 转债/正股5日相对强弱
   - CAP_MV_RATE      # 转债市值占比
   - TURNOVER         # 换手率
@@ -147,7 +147,7 @@ robust_config:
   # - 建议:
 #   - 稳健优先: 1.5~2.0
 #   - 收益优先: 1.0~1.3
-  stability_k: 1.5
+  stability_k: 1.8
 
   # --------------------------------------------------------------------------
   # 硬门槛 (Hard Thresholds)
@@ -253,7 +253,7 @@ robust_config:
   # stability_w
   # - 含义: 稳定性奖励权重。
   # - 建议: 0.2~1.0。
-  stability_w: 0.4
+  stability_w: 0.8
 
   # ret_w
   # - 含义: 年化收益奖励权重。
