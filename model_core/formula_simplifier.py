@@ -154,6 +154,110 @@ def ast_to_rpn(node: FormulaNode) -> list[str]:
     return out
 
 
+def ast_to_expression(node: FormulaNode) -> str:
+    if node.is_leaf:
+        return node.token
+
+    rendered_children = [ast_to_expression(child) for child in node.children]
+    if len(rendered_children) == 1:
+        return f"{node.token}({rendered_children[0]})"
+    return f"{node.token}(" + ", ".join(rendered_children) + ")"
+
+
+def expand_formula(formula: list[str]) -> str:
+    root = parse_rpn(formula)
+    return ast_to_expression(root)
+
+
+def ast_to_semantic_expression(node: FormulaNode) -> str:
+    if node.is_leaf:
+        return node.token
+
+    rendered_children = [ast_to_semantic_expression(child) for child in node.children]
+    token = node.token
+
+    if len(rendered_children) == 1:
+        child = rendered_children[0]
+        if token == "NEG":
+            return f"(-{child})"
+        if token == "ABS":
+            return f"abs({child})"
+        return f"{token.lower()}({child})"
+
+    if len(rendered_children) == 2:
+        left, right = rendered_children
+        if token == "ADD":
+            return f"({left} + {right})"
+        if token == "SUB":
+            return f"({left} - {right})"
+        if token == "MUL":
+            return f"({left} * {right})"
+        if token == "DIV":
+            return f"safe_div({left}, {right})"
+        if token == "MIN":
+            return f"min({left}, {right})"
+        if token == "MAX":
+            return f"max({left}, {right})"
+        if token == "IF_POS":
+            return f"({left} if {left} > 0 else {right})"
+
+    return f"{token.lower()}(" + ", ".join(rendered_children) + ")"
+
+
+def expand_formula_semantic(formula: list[str]) -> str:
+    root = parse_rpn(formula)
+    return ast_to_semantic_expression(root)
+
+
+def _is_nonnegative_expr(node: FormulaNode) -> bool:
+    if node.is_leaf:
+        return False
+    if node.token in {"ABS", "SQRT", "CUT_NEG", "TS_STD5", "TS_STD20", "TS_STD60"}:
+        return True
+    if node.token in {"MIN", "MAX"}:
+        return all(_is_nonnegative_expr(child) for child in node.children)
+    return False
+
+
+def _collect_structure_hints(node: FormulaNode, hints: list[str]) -> None:
+    for child in node.children:
+        _collect_structure_hints(child, hints)
+
+    if node.token == "ABS" and len(node.children) == 1 and node.children[0].token == "NEG":
+        inner = ast_to_expression(node.children[0].children[0]) if node.children[0].children else ast_to_expression(node.children[0])
+        hints.append(f"ABS(NEG({inner})) 在代数上可化简为 ABS({inner})。")
+
+    if node.token == "IF_POS" and len(node.children) == 2:
+        condition = node.children[0]
+        condition_expr = ast_to_expression(condition)
+        if _is_nonnegative_expr(condition):
+            hints.append(
+                f"IF_POS({condition_expr}, ...) 的条件输入按算子定义为非负量；其 else 分支通常只在 {condition_expr} = 0 时触发。"
+            )
+
+    if node.token == "MIN" and len(node.children) == 2:
+        left, right = node.children
+        if left.is_leaf and not right.is_leaf:
+            cap_expr = left.token
+        elif right.is_leaf and not left.is_leaf:
+            cap_expr = right.token
+        else:
+            cap_expr = ""
+        if cap_expr:
+            hints.append(f"MIN(..., {cap_expr}) 会对输出施加不高于 {cap_expr} 的上界截断。")
+
+
+def collect_structure_hints(formula: list[str]) -> list[str]:
+    root = parse_rpn(formula)
+    hints: list[str] = []
+    _collect_structure_hints(root, hints)
+    deduped: list[str] = []
+    for hint in hints:
+        if hint not in deduped:
+            deduped.append(hint)
+    return deduped
+
+
 def simplify_formula(formula: list[str]) -> list[str]:
     try:
         root = parse_rpn(formula)

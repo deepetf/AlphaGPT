@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import os
 from typing import Any, Dict, List, Optional
@@ -10,7 +11,11 @@ from .backtest import CBBacktest
 from .config import ModelConfig, RobustConfig
 from .config_loader import load_config
 from .data_loader import CBDataLoader
-from .factor_ai_review import render_markdown_report, review_candidates_with_ai
+from .factor_ai_review import (
+    DEFAULT_AI_REVIEW_CONFIG,
+    render_markdown_report,
+    review_candidates_with_ai,
+)
 from .formula_simplifier import formula_to_canonical_key, simplify_formula
 from .signal_utils import build_topk_weights, default_min_valid_count
 from .vm import StackVM
@@ -54,7 +59,8 @@ DEFAULT_SELECTION_CONFIG: Dict[str, Any] = {
             "max_drawdown": -0.10,
             "train_val_gap": -0.20,
         },
-    }
+    },
+    "ai_review": DEFAULT_AI_REVIEW_CONFIG,
 }
 
 
@@ -69,7 +75,7 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
 
 
 def load_selection_config(config_path: Optional[str] = None) -> Dict[str, Any]:
-    config = dict(DEFAULT_SELECTION_CONFIG)
+    config = copy.deepcopy(DEFAULT_SELECTION_CONFIG)
     target_path = config_path or DEFAULT_SELECTION_CONFIG_PATH
     if target_path and os.path.exists(target_path):
         with open(target_path, "r", encoding="utf-8") as f:
@@ -644,6 +650,7 @@ def main() -> None:
     parser.add_argument("--enable-ai-review", action="store_true")
     parser.add_argument("--ai-provider", type=str, default=None)
     parser.add_argument("--ai-model", type=str, default=None)
+    parser.add_argument("--ai-base-url", type=str, default=None)
     parser.add_argument("--ai-max-candidates", type=int, default=None)
     parser.add_argument("--ai-timeout-sec", type=float, default=None)
     args = parser.parse_args()
@@ -665,6 +672,7 @@ def main() -> None:
         max_ai_candidates = int(args.ai_max_candidates or ai_cfg.get("max_candidates", 10))
         provider = str(args.ai_provider or ai_cfg.get("provider", "openai"))
         model = str(args.ai_model or ai_cfg.get("model", "gpt-5"))
+        base_url = args.ai_base_url or ai_cfg.get("base_url")
         print(
             f"Starting AI review: provider={provider}, model={model}, "
             f"candidates={min(len(shortlist), max_ai_candidates)}"
@@ -674,7 +682,9 @@ def main() -> None:
             provider=provider,
             model=model,
             max_candidates=max_ai_candidates,
+            base_url=base_url,
             timeout_sec=args.ai_timeout_sec,
+            ai_review_config=ai_cfg,
         )
         with open(args.ai_review_output, "w", encoding="utf-8") as f:
             json.dump(ai_reviews, f, ensure_ascii=False, indent=2)

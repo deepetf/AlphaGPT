@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V6.01: Hybrid Selection Similarity + Strategy Refresh (Current)**
+Current Version: **V6.02: Structured AI Review + Select Provider (Current)**
 
 命令速查文档：`Commands.MD`
 Git 版本与发布说明：`GIT-RELEASE.md`
@@ -38,7 +38,19 @@ Git 版本与发布说明：`GIT-RELEASE.md`
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V6.01: Hybrid Selection Similarity + Strategy Refresh (Current)**
+### **V6.02: Structured AI Review + Select Provider (Current)**
+*在 V6.01 基础上，增强 AI review 的结构化评审约束、补充公式语义展开与结构提示，并接入 Select/OpenAI 兼容接口作为可配置评审 provider。*
+- **Structured AI Review Prompting**: `model_core/factor_ai_review.py` 将系统提示词、用户模板、输出 schema、决策规则、标签约束与风险约束配置化，评审逻辑不再依赖硬编码 prompt。
+- **Formula Expansion + Structure Hints**: `model_core/formula_simplifier.py` 新增 `expand_formula`、`expand_formula_semantic`、`collect_structure_hints`，用于把 RPN 公式展开成可读表达，并给 AI review 注入程序化结构事实。
+- **Review Output Normalization**: `model_core/factor_ai_review.py` 新增响应校验、标签归一化、过强措辞弱化、公式风险注入与基于分数/风险条数的 `keep/watch/drop` 决策回推，降低模型输出随意性。
+- **Select Provider Support**: `model_core/factor_ai_review.py` 与 `model_core/select_top_factors.py` 新增 `select` provider 和 `--ai-base-url`，兼容 NovAI/OpenAI 风格接口，默认配置可从 `top_factor_config.yaml` 读取。
+- **Selection Template Refresh**: `model_core/top_factor_config.yaml` 当前默认将 AI review provider 切换为 `select`，同时放宽部分二次筛选硬门槛，便于先扩候选再做结构化复核。
+- **Tests Coverage Expansion**: `tests/test_factor_ai_review.py` 补充 prompt 配置覆盖、结构提示、响应校验、决策归一化、风险修正和 `select` provider 分发测试；新增 `tests/test_factor_ai_review_integration.py` 作为真实接口集成脚本。
+- **示例命令（启用 Select/NovAI 评审）**: `python -m model_core.select_top_factors --input model_core/best_cb_formula.json --output model_core/top3_factors.json --report-output model_core/top3_factors_report.md --selection-config model_core/top_factor_config.yaml --enable-ai-review --ai-provider select --ai-model "[限时]deepseek-v3.2" --ai-base-url https://once.novai.su/v1 --ai-max-candidates 3 --ai-timeout-sec 60`
+- **示例命令（运行结构化 AI review 单元测试）**: `pytest tests/test_factor_ai_review.py -q`
+- **示例命令（真实接口集成验证）**: `python tests/test_factor_ai_review_integration.py --model "[次]gemini-3.1-pro-preview" --base-url https://once.novai.su/v1 --timeout-sec 180`
+
+### **V6.01: Hybrid Selection Similarity + Strategy Refresh**
 *在 V6.0 基础上，补强二次筛选的相似度去重口径，调整默认训练稳健性参数，并刷新当前策略配置。*
 - **Hybrid Similarity Selection**: `model_core/select_top_factors.py` 新增行为签名计算，候选去重支持 `similarity_mode: hybrid`，综合公式 Jaccard、平均持仓 Jaccard 与日收益相关性，降低“公式不同但行为高度重复”的冗余入选。
 - **Top-Factor Config Extension**: `model_core/top_factor_config.yaml` 新增 `holding_jaccard_threshold`、`return_corr_threshold`、`return_corr_abs`、`similarity_min_overlap_days` 与 `behavior_fallback_to_formula`，便于显式调节行为相似度门槛。

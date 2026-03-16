@@ -1,4 +1,4 @@
-# AlphaGPT 命令文档（V6.01）
+# AlphaGPT 命令文档（V6.02）
 
 本文档基于当前 `README.md`、`model_core/engine.py`、`tests/verify_strategy.py`、`strategy_manager/run_sim.py` 与相关配置加载逻辑整理，覆盖当前版本最常用的三类命令：
 
@@ -6,11 +6,13 @@
 - 验证：`python tests/verify_strategy.py`
 - 模拟/严格回放：`python strategy_manager/run_sim.py`
 
-V6.01 补充说明：
+V6.02 补充说明：
 
 - `model_core/select_top_factors.py` 当前支持 `similarity_mode: hybrid`
 - hybrid 去重同时参考公式 Jaccard、平均持仓 Jaccard、日收益相关性
 - `factor_ai_review` 报告会单独输出 `Similarity rejected` 计数
+- `factor_ai_review` 当前支持结构化 prompt/schema/rule 配置，并会注入 `expanded_formula`、`semantic_expanded_formula`、`structure_hints`
+- AI review provider 额外支持 `select`，可通过 `--ai-base-url` 指向 OpenAI 兼容接口
 
 ## 1. 适用范围与命令入口
 
@@ -892,6 +894,8 @@ python -m model_core.select_top_factors --input artifacts/runs/<run_id>/train/be
 - `--output` 与 `--report-output` 推荐直接落到 `artifacts/runs/<run_id>/selection/`
 - `top_factor_config.yaml` 当前支持 `similarity_mode: hybrid`（公式 Jaccard + 持仓 Jaccard + 日收益相关性）
 - hybrid 关键阈值：`jaccard_threshold`、`holding_jaccard_threshold`、`return_corr_threshold`
+- AI review 关键配置当前可通过 `top_factor_config.yaml` 下的 `ai_review.prompt`、`output_schema`、`decision_rule`、`label_constraints`、`risk_constraints` 覆盖
+- 若使用 OpenAI 兼容接口，可通过 `--ai-provider select --ai-base-url <url>` 显式指定接入点
 
 典型用法：
 
@@ -905,6 +909,17 @@ python -m model_core.select_top_factors --input artifacts/runs/slow_replace_exp0
 
 - 把训练结果完整沉淀到单个 run 目录
 - 为后续 `workflow.bundle_builder` 提供标准输入
+
+#### 9.1.2 启用 Select/NovAI 结构化 AI review
+
+```bash
+python -m model_core.select_top_factors --input artifacts/runs/slow_replace_exp01/train/best_cb_formula.json --output artifacts/runs/slow_replace_exp01/selection/top3_factors.json --report-output artifacts/runs/slow_replace_exp01/selection/top3_factors_report.md --selection-config model_core/top_factor_config.yaml --config artifacts/runs/slow_replace_exp01/resolved_model_config.yaml --enable-ai-review --ai-provider select --ai-model "[限时]deepseek-v3.2" --ai-base-url https://once.novai.su/v1 --ai-max-candidates 3 --ai-timeout-sec 60
+```
+
+适用场景：
+
+- 使用 OpenAI 兼容接口对 shortlist 做结构化金融含义复核
+- 需要把 prompt、schema、风险约束统一沉淀到 `top_factor_config.yaml`
 
 ### 9.2 策略打包：`python -m workflow.bundle_builder`
 
