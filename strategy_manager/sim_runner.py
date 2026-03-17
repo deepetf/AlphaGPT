@@ -405,7 +405,9 @@ class SimulationRunner:
         if not RobustConfig.SIM_MASKED_CS_ENABLED:
             return None
 
-        cs_mask = loader.valid_mask
+        cs_mask = getattr(loader, "cs_mask", None)
+        if cs_mask is None:
+            cs_mask = getattr(loader, "tradable_mask", loader.valid_mask)
         present_mask = getattr(loader, "present_mask", None)
         if RobustConfig.SIM_CS_REQUIRE_PRESENT and present_mask is not None:
             cs_mask = cs_mask & present_mask
@@ -413,7 +415,10 @@ class SimulationRunner:
 
     def _compose_selection_valid_mask(self, loader, date_idx: int) -> torch.Tensor:
         """Compose 1D tradable mask for final top-k selection on one day."""
-        mask = loader.valid_mask[date_idx]
+        tradable_mask = getattr(loader, "tradable_mask", None)
+        if tradable_mask is None:
+            tradable_mask = loader.valid_mask
+        mask = tradable_mask[date_idx]
         present_mask = getattr(loader, "present_mask", None)
         if RobustConfig.SIM_CS_REQUIRE_PRESENT and present_mask is not None:
             mask = mask & present_mask[date_idx]
@@ -767,7 +772,11 @@ class SimulationRunner:
             [Assets] 鏍煎紡鐨勫洜瀛愬€?(鍙栨渶鍚庝竴涓椂闂寸偣)
         """
         # feat_tensor 宸茬粡鏄?[Time, Assets, Features] 鏍煎紡
-        factor_values = self.vm.execute(self.formula, feat_tensor)
+        loader_cs_mask = getattr(getattr(self, "_bt_loader", None), "cs_mask", None)
+        cs_mask = None
+        if loader_cs_mask is not None and loader_cs_mask.shape[0] == feat_tensor.shape[0]:
+            cs_mask = loader_cs_mask.to(device=feat_tensor.device)
+        factor_values = self.vm.execute(self.formula, feat_tensor, cs_mask=cs_mask)
         if factor_values is None:
             raise ValueError("Formula execution failed: VM returned None")
         # return latest-day factor values

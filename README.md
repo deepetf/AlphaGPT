@@ -2,43 +2,30 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V6.02: Structured AI Review + Select Provider (Current)**
+Current Version: **V7.0: Leakage Guardrails + Snapshot-Locked Pipeline (Current)**
 
 命令速查文档：`Commands.MD`
 Git 版本与发布说明：`GIT-RELEASE.md`
-
-当前版本run_sim CLI:
-
-  # 0) 无参数启动（默认 live + SQL 状态 + dummy 行情）
-  python strategy_manager/run_sim.py
-
-  # 1) SQL 严格回放（单日）
-  python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --state-backend sql --replay-source sql_eod
-
-  # 2) SQL 严格回放（区间）
-  python strategy_manager/run_sim.py --mode strict_replay --start-date 2025-01-01 --end-date 2025-12-31 --state-backend sql --replay-source sql_eod
-
-  # 3) Live（单日，dummy 行情）
-  python strategy_manager/run_sim.py --mode live --date 2025-12-01 --state-backend sql --live-quote-source dummy
-
-  # 4) Live（单日，QMT 行情）
-  python strategy_manager/run_sim.py --mode live --date 2025-12-01 --state-backend sql --live-quote-source qmt
-
-  # 5) Live 和 Strict replay（使用 slow feature replace 配置）
-  python strategy_manager/run_sim.py --mode strict_replay --date 2025-12-01 --state-backend sql --replay-source sql_eod --config model_core/config_slow_cs_replace.yaml
-
-  # 6) Verify（使用 slow feature replace 配置）
-  python tests/verify_strategy.py --start 2025-01-01 --end 2025-12-31 --strategies-config strategy_manager/strategies_config.json --strategy-id your_strategy_id --config model_core/config_slow_cs_replace.yaml
-
-  可选定时跑 live：
-
-  python strategy_manager/run_sim.py --mode live --schedule --hour 14 --minute 50 --state-backend sql --live-quote-source qmt
 ---
 
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V6.02: Structured AI Review + Select Provider (Current)**
+### **V7.0: Leakage Guardrails + Snapshot-Locked Pipeline (Current)**
+*在 V6.02 基础上，完成未来数据泄露主问题修复、运行数据快照锁定，以及 A-E 阶段回归门禁。*
+- **Stage A / Cross-Sectional Leak Fix**: `model_core/data_loader.py`、`data_pipeline/sql_strict_loader.py`、`model_core/features_registry.py`、`model_core/vm.py`、`model_core/engine.py`、`model_core/select_top_factors.py` 完成 `listed_mask / data_mask / tradable_mask / cs_mask` 分层，CS 算子与派生特征统一要求 `cs_mask`，切断“未来新债以历史零列进入横截面”的主泄露。
+- **Stage B / Causal Feature Validity**: `model_core/factors.py` 与 `model_core/ops_registry.py` 重写时间特征有效性与 `TS_*` 因果传播；`model_core/vm.py` 运行时 CS 掩码升级为“基础宇宙 × 当前 operand 有效性”，闭环 `TS_* -> CS_*` 的 invalid propagation。
+- **Stage C / Workflow Alignment**: `strategy_manager/sim_runner.py`、`strategy_manager/cb_runner.py`、`tests/verify_strategy.py`、`model_core/engine.py`、`model_core/select_top_factors.py` 统一主链路 `tradable_mask / cs_mask` 口径，`train/select/verify/sim(strict_replay)` 使用一致的 CB 掩码语义。
+- **Stage D / Run Snapshot Lock**: `workflow/run_manifest.py` 新增 `data_snapshot`（`parquet_path/file_hash/schema_hash/row_count/asset_count/max_date/train_date_range/feature_config_hash/code_commit`），`workflow.pipeline` 在 `select/verify/sim` 阶段强制校验数据快照，禁止同一 `run_id` 静默换数据。
+- **Stage E / CI Guardrails**: 新增 `tests/test_stage_e_guardrails.py` 与 `.github/workflows/ci.yml`，把泄露修复核心回归纳入最小 CI 门禁，防止 `cs_mask` 和无效值语义回退。
+- **Repo Hygiene Update**: `.gitignore` 补充 `artifacts/`、`tests/simrun*` 等本地产物忽略规则，避免把回放与临时输出混入版本库。
+- **示例命令（训练，写入 run manifest 与数据快照）**: `python -m workflow.pipeline train --run-id slow_replace_recover_metric_ab_01 --config model_core/default_config.yaml --data-start-date 2022-08-01`
+- **示例命令（二次筛选，强制校验训练期数据快照）**: `python -m workflow.pipeline select --run-id slow_replace_recover_metric_ab_01 --selection-config model_core/top_factor_config.yaml --enable-ai-review`
+- **示例命令（bundle 驱动 verify，使用快照锁定 run）**: `python -m workflow.pipeline verify --run-id slow_replace_recover_metric_ab_01 --start 2025-01-01 --end 2025-12-31`
+- **示例命令（strict replay sim，推荐无未来泄露口径）**: `python -m workflow.pipeline sim --run-id slow_replace_recover_metric_ab_01 --mode strict_replay --date 2025-12-01 --replay-source sql_eod`
+- **示例命令（阶段 A-E 核心回归）**: `pytest tests/test_stage_a_masks.py tests/test_stage_b_feature_validity.py tests/test_stage_b_ts_ops.py tests/test_vm_masked_cs.py tests/test_vm_ts_cs_validity.py tests/test_feature_registry.py tests/test_slow_feature_cross_sectional_features.py tests/test_sim_runner.py tests/test_new_ops_phase1.py tests/test_warmup.py tests/test_formula_simplifier.py tests/test_run_manifest_snapshot.py tests/test_pipeline_snapshot_lock.py tests/test_stage_e_guardrails.py -q`
+
+### **V6.02: Structured AI Review + Select Provider**
 *在 V6.01 基础上，增强 AI review 的结构化评审约束、补充公式语义展开与结构提示，并接入 Select/OpenAI 兼容接口作为可配置评审 provider。*
 - **Structured AI Review Prompting**: `model_core/factor_ai_review.py` 将系统提示词、用户模板、输出 schema、决策规则、标签约束与风险约束配置化，评审逻辑不再依赖硬编码 prompt。
 - **Formula Expansion + Structure Hints**: `model_core/formula_simplifier.py` 新增 `expand_formula`、`expand_formula_semantic`、`collect_structure_hints`，用于把 RPN 公式展开成可读表达，并给 AI review 注入程序化结构事实。

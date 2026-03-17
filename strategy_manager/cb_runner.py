@@ -145,7 +145,8 @@ class CBStrategyRunner:
         
         # 3. 风控检查: Active Ratio + Min Valid Count
         # 检查当日有效标的数量
-        valid_mask = loader.valid_mask[latest_date_idx, :]
+        tradable_mask = getattr(loader, "tradable_mask", loader.valid_mask)
+        valid_mask = tradable_mask[latest_date_idx, :]
         valid_count = valid_mask.sum().item()
         total_assets = len(loader.assets_list)
         active_ratio = valid_count / total_assets if total_assets > 0 else 0
@@ -179,7 +180,11 @@ class CBStrategyRunner:
         
         try:
             # StackVM execute returns [Time, Assets]
-            factors = vm.execute(self.formula, feat_tensor_slice) # -> [Time, Assets]
+            factors = vm.execute(
+                self.formula,
+                feat_tensor_slice,
+                cs_mask=loader.cs_mask[: feat_tensor_slice.shape[0]].to('cpu'),
+            ) # -> [Time, Assets]
             
             if factors is None:
                 logger.error("Formula execution failed (returned None).")
@@ -200,8 +205,8 @@ class CBStrategyRunner:
             target_factors = factors[-1, :] # [Assets]
         
         # 应用有效性掩码
-        # loader.valid_mask is [Time, Assets]
-        today_mask = loader.valid_mask[latest_date_idx, :].to('cpu') # [Assets]
+        # tradable_mask is [Time, Assets]
+        today_mask = tradable_mask[latest_date_idx, :].to('cpu') # [Assets]
         
         min_required = default_min_valid_count(
             top_k=self.top_k,

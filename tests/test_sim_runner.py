@@ -240,6 +240,31 @@ class TestSimulationRunner:
         assert "valid_mask" in kwargs
         assert torch.equal(kwargs["valid_mask"], fake_valid_mask)
 
+    def test_compose_cs_mask_prefers_loader_cs_mask(self, runner_factory):
+        runner = runner_factory("cs_mask_compose", top_k=2, take_profit_ratio=0.0)
+
+        class FakeLoader:
+            valid_mask = torch.tensor([[True, True, True]], dtype=torch.bool)
+            tradable_mask = torch.tensor([[True, False, True]], dtype=torch.bool)
+            cs_mask = torch.tensor([[False, True, True]], dtype=torch.bool)
+            present_mask = torch.tensor([[True, True, False]], dtype=torch.bool)
+
+        mask = runner._compose_cs_mask(FakeLoader())
+        expected = torch.tensor([[False, True, False]], dtype=torch.bool)
+        assert torch.equal(mask, expected)
+
+    def test_compose_selection_valid_mask_prefers_tradable_mask(self, runner_factory):
+        runner = runner_factory("selection_mask_compose", top_k=2, take_profit_ratio=0.0)
+
+        class FakeLoader:
+            valid_mask = torch.tensor([[True, True, True]], dtype=torch.bool)
+            tradable_mask = torch.tensor([[True, False, True]], dtype=torch.bool)
+            present_mask = torch.tensor([[True, True, False]], dtype=torch.bool)
+
+        mask = runner._compose_selection_valid_mask(FakeLoader(), 0)
+        expected = torch.tensor([True, False, False], dtype=torch.bool)
+        assert torch.equal(mask, expected)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

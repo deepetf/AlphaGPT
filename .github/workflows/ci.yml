@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  leakage-guardrails:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile critical modules
+        run: >
+          python -m py_compile
+          workflow/run_manifest.py
+          workflow/pipeline.py
+          model_core/data_loader.py
+          model_core/factors.py
+          model_core/features_registry.py
+          model_core/vm.py
+          model_core/ops_registry.py
+          model_core/engine.py
+          model_core/select_top_factors.py
+          strategy_manager/sim_runner.py
+          tests/verify_strategy.py
+
+      - name: Run leakage regression suite
+        run: >
+          pytest
+          tests/test_stage_a_masks.py
+          tests/test_stage_b_feature_validity.py
+          tests/test_stage_b_ts_ops.py
+          tests/test_vm_masked_cs.py
+          tests/test_vm_ts_cs_validity.py
+          tests/test_feature_registry.py
+          tests/test_slow_feature_cross_sectional_features.py
+          tests/test_sim_runner.py
+          tests/test_new_ops_phase1.py
+          tests/test_warmup.py
+          tests/test_formula_simplifier.py
+          tests/test_run_manifest_snapshot.py
+          tests/test_pipeline_snapshot_lock.py
+          tests/test_stage_e_guardrails.py
+          -q

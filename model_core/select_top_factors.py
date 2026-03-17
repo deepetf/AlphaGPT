@@ -229,7 +229,7 @@ def _compute_behavior_signature(factors: torch.Tensor, ctx: Dict[str, Any]) -> D
 
     weights, valid_trading_day, _, daily_holdings = build_topk_weights(
         factors=factors,
-        valid_mask=loader.valid_mask,
+        valid_mask=loader.tradable_mask,
         top_k=bt.top_k,
         min_valid_count=default_min_valid_count(
             top_k=bt.top_k,
@@ -427,14 +427,14 @@ def reevaluate_candidate(candidate: Dict[str, Any], ctx: Dict[str, Any]) -> Opti
     vm: StackVM = ctx["vm"]
     bt: CBBacktest = ctx["bt"]
 
-    factors = vm.execute(candidate["formula"], loader.feat_tensor)
+    factors = vm.execute(candidate["formula"], loader.feat_tensor, cs_mask=loader.cs_mask)
     if factors is None:
         return None
 
     metrics = bt.evaluate_robust(
         factors=factors,
         target_ret=loader.target_ret,
-        valid_mask=loader.valid_mask,
+        valid_mask=loader.tradable_mask,
         split_idx=loader.split_idx,
         open_prices=ctx["open_prices"],
         high_prices=ctx["high_prices"],

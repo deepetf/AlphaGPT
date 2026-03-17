@@ -109,4 +109,23 @@ def test_feature_normalization_override_can_force_time_z(monkeypatch):
         normalize=True,
         warmup_rows=60,
     )[:, :, 0]
-    assert torch.allclose(built, expected)
+    assert torch.allclose(built, expected, equal_nan=True)
+
+
+def test_cross_sectional_feature_requires_cs_mask(monkeypatch):
+    monkeypatch.setattr(
+        "model_core.config.ModelConfig.INPUT_FEATURES",
+        ["DBLOW_CS_RANK"],
+        raising=False,
+    )
+
+    raw_data = {
+        "DBLOW": torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float32),
+    }
+
+    try:
+        FeatureEngineer.compute_features(raw_data, warmup_rows=0)
+    except ValueError as exc:
+        assert "cs_mask" in str(exc)
+    else:
+        raise AssertionError("cross-sectional feature should require cs_mask")

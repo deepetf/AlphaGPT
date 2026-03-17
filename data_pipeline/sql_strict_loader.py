@@ -64,6 +64,11 @@ class SQLStrictLoader:
         self.target_ret = None
         self.valid_mask = None
         self.present_mask = None
+        self.listed_mask = None
+        self.data_mask = None
+        self.tradable_mask = None
+        self.cs_mask = None
+        self.feature_valid_tensor = None
         self.split_idx = None
 
         self.dates_list: List[str] = []
@@ -224,14 +229,12 @@ class SQLStrictLoader:
 
             if fill_method == "ffill":
                 sub_df = sub_df.ffill()
-            elif fill_method == "zero":
-                sub_df = sub_df.fillna(0.0)
 
-            data_np = sub_df.fillna(0.0).values.astype(np.float32)
+            data_np = sub_df.values.astype(np.float32)
             raw_tensors[internal_name] = torch.tensor(data_np, device=ModelConfig.DEVICE)
 
             if internal_name in {"CLOSE", "OPEN", "HIGH"}:
-                raw_np = sub_df_raw.fillna(0.0).values.astype(np.float32)
+                raw_np = sub_df_raw.values.astype(np.float32)
                 exec_raw_tensors[internal_name] = torch.tensor(
                     raw_np, device=ModelConfig.DEVICE
                 )
@@ -239,23 +242,35 @@ class SQLStrictLoader:
         self.raw_data_cache = raw_tensors
         self.exec_raw_cache = exec_raw_tensors
 
-        # Build valid mask exactly aligned with CBDataLoader.
-        has_price = raw_tensors["CLOSE"] > 0
-        is_trading = raw_tensors["VOL"] > 0
-        not_expiring = raw_tensors["LEFT_YRS"] > 0.5
-        self.valid_mask = has_price & is_trading & not_expiring
+        close_raw_df = pivot_df[cols.factor_cols["CLOSE"]].copy().reindex(columns=assets)
+        self.listed_mask = torch.tensor(
+            close_raw_df.notna().values,
+            device=ModelConfig.DEVICE,
+            dtype=torch.bool,
+        )
+        self.data_mask = self.listed_mask & torch.isfinite(raw_tensors["CLOSE"])
+
+        has_price = torch.isfinite(raw_tensors["CLOSE"]) & (raw_tensors["CLOSE"] > 0)
+        is_trading = torch.isfinite(raw_tensors["VOL"]) & (raw_tensors["VOL"] > 0)
+        not_expiring = torch.isfinite(raw_tensors["LEFT_YRS"]) & (raw_tensors["LEFT_YRS"] > 0.5)
+        self.tradable_mask = self.listed_mask & has_price & is_trading & not_expiring
+        self.valid_mask = self.tradable_mask
+        self.cs_mask = self.tradable_mask
 
         # Build normalized features.
         warmup_rows = self._resolve_warmup_rows()
-        self.feat_tensor = FeatureEngineer.compute_features(
+        self.feat_tensor, self.feature_valid_tensor = FeatureEngineer.compute_features(
             self.raw_data_cache,
             warmup_rows=warmup_rows,
+            cross_sectional_mask=self.cs_mask,
+            return_validity=True,
         )
 
         # Build target return.
         close = raw_tensors["CLOSE"]
         ret_1d = (torch.roll(close, -1, dims=0) / (close + 1e-9)) - 1.0
         ret_1d[~self.valid_mask] = 0.0
+        ret_1d[~torch.isfinite(ret_1d)] = 0.0
         ret_1d[-1] = 0.0
         self.target_ret = ret_1d
 

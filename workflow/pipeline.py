@@ -5,7 +5,7 @@ import sys
 from typing import List, Optional, Tuple
 
 from .bundle_builder import load_manifest
-from .run_manifest import generate_run_id
+from .run_manifest import generate_run_id, validate_run_data_snapshot
 from .pipeline_state import (
     STAGE_ORDER,
     init_pipeline_status,
@@ -43,6 +43,10 @@ def _run_command(cmd: List[str]) -> None:
     printable = _command_str(cmd)
     print(f"[pipeline] running: {printable}")
     subprocess.run(cmd, cwd=_project_root(), check=True)
+
+
+def _validate_stage_data_snapshot(manifest_path: str, config_path: Optional[str] = None) -> None:
+    validate_run_data_snapshot(manifest_path, config_path=config_path)
 
 
 def _command_str(cmd: List[str]) -> str:
@@ -242,6 +246,7 @@ def cmd_train(args) -> None:
 
 def cmd_select(args) -> None:
     manifest_path, run_dir = _resolve_run_dir(args.run_id, args.manifest, args.artifacts_root)
+    _validate_stage_data_snapshot(manifest_path, args.config)
     cmd, output_path = _build_select_cmd(args, manifest_path, run_dir)
     _run_command(cmd)
     print(f"[pipeline] selection output={output_path}")
@@ -256,6 +261,7 @@ def cmd_bundle(args) -> None:
 
 def cmd_verify(args) -> None:
     manifest_path, run_dir = _resolve_run_dir(args.run_id, args.manifest, args.artifacts_root)
+    _validate_stage_data_snapshot(manifest_path, args.config)
     cmd, bundle_path = _build_verify_cmd(args, run_dir)
     _run_command(cmd)
     print(f"[pipeline] verify completed: bundle={bundle_path}")
@@ -263,6 +269,7 @@ def cmd_verify(args) -> None:
 
 def cmd_sim(args) -> None:
     manifest_path, run_dir = _resolve_run_dir(args.run_id, args.manifest, args.artifacts_root)
+    _validate_stage_data_snapshot(manifest_path, args.config)
     cmd, bundle_path = _build_sim_cmd(args, run_dir)
     _run_command(cmd)
     print(f"[pipeline] sim completed: bundle={bundle_path}")
@@ -328,6 +335,7 @@ def cmd_e2e(args) -> None:
             if should_skip_stage(run_dir, "select", args.resume):
                 print("[pipeline] skip completed stage: select")
             else:
+                _validate_stage_data_snapshot(manifest_path, None)
                 select_cmd, output_path = _build_select_cmd(select_args, manifest_path, run_dir)
                 update_stage_status(run_dir=run_dir, stage="select", status="running", command=_command_str(select_cmd))
                 _run_command(select_cmd)
@@ -395,6 +403,7 @@ def cmd_e2e(args) -> None:
             if should_skip_stage(run_dir, "verify", args.resume):
                 print("[pipeline] skip completed stage: verify")
             else:
+                _validate_stage_data_snapshot(manifest_path, None)
                 verify_cmd, verify_bundle_path = _build_verify_cmd(verify_args, run_dir)
                 update_stage_status(run_dir=run_dir, stage="verify", status="running", command=_command_str(verify_cmd))
                 _run_command(verify_cmd)
@@ -427,6 +436,7 @@ def cmd_e2e(args) -> None:
             if should_skip_stage(run_dir, "sim", args.resume):
                 print("[pipeline] skip completed stage: sim")
             else:
+                _validate_stage_data_snapshot(manifest_path, None)
                 sim_cmd, sim_bundle_path = _build_sim_cmd(sim_args, run_dir)
                 update_stage_status(run_dir=run_dir, stage="sim", status="running", command=_command_str(sim_cmd))
                 _run_command(sim_cmd)

@@ -285,8 +285,15 @@ class StrategyVerifier:
             trimmed_raw[key] = tensor[time_slice]
         self.loader.raw_data_cache = trimmed_raw
 
-        # 2) Trim valid mask and date list.
+        # 2) Trim masks and date list.
         self.loader.valid_mask = self.loader.valid_mask[time_slice]
+        if getattr(self.loader, "listed_mask", None) is not None:
+            self.loader.listed_mask = self.loader.listed_mask[time_slice]
+        if getattr(self.loader, "data_mask", None) is not None:
+            self.loader.data_mask = self.loader.data_mask[time_slice]
+        if getattr(self.loader, "tradable_mask", None) is not None:
+            self.loader.tradable_mask = self.loader.tradable_mask[time_slice]
+            self.loader.cs_mask = self.loader.tradable_mask
         self.loader.dates_list = dates[time_slice]
 
         # 3) Recompute features on trimmed window with explicit warmup anchor.
@@ -299,9 +306,11 @@ class StrategyVerifier:
                     "feature_warmup_anchor_date not found in trimmed dates, fallback warmup_rows=0: %s",
                     feature_warmup_anchor_date,
                 )
-        self.loader.feat_tensor = FeatureEngineer.compute_features(
+        self.loader.feat_tensor, self.loader.feature_valid_tensor = FeatureEngineer.compute_features(
             self.loader.raw_data_cache,
             warmup_rows=warmup_rows,
+            cross_sectional_mask=getattr(self.loader, "cs_mask", self.loader.valid_mask),
+            return_validity=True,
         )
         logger.info(
             "Recomputed features with warmup_rows=%d (anchor=%s, range=%s~%s)",
@@ -315,6 +324,7 @@ class StrategyVerifier:
         close = self.loader.raw_data_cache["CLOSE"]
         ret_1d = (torch.roll(close, -1, dims=0) / (close + 1e-9)) - 1.0
         ret_1d[~self.loader.valid_mask] = 0.0
+        ret_1d[~torch.isfinite(ret_1d)] = 0.0
         ret_1d[-1] = 0.0
         self.loader.target_ret = ret_1d
 
@@ -999,7 +1009,7 @@ class StrategyVerifier:
         # Execute formula on full data
         vm = StackVM()
         feat_tensor = self.loader.feat_tensor.to('cpu')
-        factors = vm.execute(self.formula, feat_tensor)
+        factors = vm.execute(self.formula, feat_tensor, cs_mask=self.loader.cs_mask.to('cpu'))
         if factors is None:
             ok, _, reason = validate_formula(self.formula)
             reason_msg = reason if not ok else "VM returned None"

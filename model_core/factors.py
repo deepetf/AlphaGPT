@@ -5,6 +5,8 @@
 主链路共享同一套特征定义与计算逻辑。
 """
 
+from typing import Optional
+
 import torch
 
 from .config import ModelConfig
@@ -29,6 +31,7 @@ class FeatureEngineer:
         raw_data: dict,
         feature_cache: dict,
         configured_features: list,
+        cross_sectional_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         if feat_name in feature_cache:
             return feature_cache[feat_name]
@@ -56,7 +59,10 @@ class FeatureEngineer:
                     raw_data,
                     feature_cache,
                     configured_features,
+                    cross_sectional_mask=cross_sectional_mask,
                 )
+                ,
+                lambda: cross_sectional_mask,
             )
         else:
             raise KeyError(
@@ -80,7 +86,9 @@ class FeatureEngineer:
         feature_names: list | None = None,
         normalize: bool = True,
         warmup_rows: int = 0,
-    ) -> torch.Tensor:
+        cross_sectional_mask: Optional[torch.Tensor] = None,
+        return_validity: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """
         从原始数据中构建特征张量。
 
@@ -95,6 +103,7 @@ class FeatureEngineer:
         """
         feature_names = list(feature_names or ModelConfig.INPUT_FEATURES)
         features = []
+        validities = []
         feature_cache = {}
         normalization_overrides = get_feature_normalization_overrides() if normalize else {}
         for feat_name in feature_names:
@@ -106,24 +115,42 @@ class FeatureEngineer:
                 raw_data,
                 feature_cache,
                 feature_names,
+                cross_sectional_mask=cross_sectional_mask,
             )
             apply_time_normalization = normalization_overrides.get(
                 feat_name, spec.apply_time_normalization
             )
             if normalize and apply_time_normalization:
-                feat = FeatureEngineer._robust_normalize(feat, warmup_rows=warmup_rows)
+                feat, feature_valid = FeatureEngineer._robust_normalize(
+                    feat,
+                    warmup_rows=warmup_rows,
+                    return_validity=True,
+                )
+            else:
+                feature_valid = torch.isfinite(feat)
             features.append(feat)
+            validities.append(feature_valid)
 
         feat_tensor = torch.stack(features, dim=2)
+        validity_tensor = torch.stack(validities, dim=2)
+        if return_validity:
+            return feat_tensor, validity_tensor
         return feat_tensor
 
     @staticmethod
-    def compute_features(raw_data: dict, warmup_rows: int = 0) -> torch.Tensor:
+    def compute_features(
+        raw_data: dict,
+        warmup_rows: int = 0,
+        cross_sectional_mask: Optional[torch.Tensor] = None,
+        return_validity: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         return FeatureEngineer.build_feature_tensor(
             raw_data=raw_data,
             feature_names=list(ModelConfig.INPUT_FEATURES),
             normalize=True,
             warmup_rows=warmup_rows,
+            cross_sectional_mask=cross_sectional_mask,
+            return_validity=return_validity,
         )
 
     @classmethod
@@ -139,31 +166,57 @@ class FeatureEngineer:
         t: torch.Tensor,
         window: int = 60,
         warmup_rows: int = 0,
-    ) -> torch.Tensor:
+        min_valid_obs: Optional[int] = None,
+        return_validity: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """
-        滚动稳健标准化。
+        严格因果的滚动标准化。
+
+        规则:
+        - 仅使用 <= t 的历史样本
+        - 仅使用窗口内有限值参与统计
+        - 当前样本非有限值时，输出无效
+        - 有效样本数不足时，输出无效
         """
+        del warmup_rows
         if t.dim() != 2:
+            feature_valid = torch.isfinite(t)
+            if return_validity:
+                return t, feature_valid
             return t
 
         T, _ = t.shape
-        if T < window:
-            return torch.zeros_like(t)
+        min_valid_obs = int(min_valid_obs or window)
+        if T == 0:
+            feature_valid = torch.zeros_like(t, dtype=torch.bool)
+            if return_validity:
+                return t, feature_valid
+            return t
 
-        padding = t[0].unsqueeze(0).repeat(window - 1, 1)
+        padding = torch.full((window - 1, t.shape[1]), float("nan"), device=t.device, dtype=t.dtype)
         padded = torch.cat([padding, t], dim=0)
-
         unfolded = padded.unfold(0, window, 1)
-        roll_mean = unfolded.mean(dim=-1)
-        roll_std = unfolded.std(dim=-1) + 1e-9
 
-        norm = (t - roll_mean) / roll_std
+        hist_valid = torch.isfinite(unfolded)
+        valid_count = hist_valid.sum(dim=-1)
+        safe_windows = torch.where(hist_valid, unfolded, torch.zeros_like(unfolded))
+        roll_sum = safe_windows.sum(dim=-1)
+        roll_mean = roll_sum / valid_count.clamp_min(1).to(t.dtype)
 
-        zero_rows = max(0, window - warmup_rows)
-        if zero_rows > 0:
-            norm[:zero_rows] = 0.0
+        centered = torch.where(hist_valid, unfolded - roll_mean.unsqueeze(-1), torch.zeros_like(unfolded))
+        denom = (valid_count - 1).clamp_min(1).to(t.dtype)
+        roll_var = centered.pow(2).sum(dim=-1) / denom
+        roll_std = torch.sqrt(roll_var).clamp_min(1e-9)
 
-        return torch.clamp(norm, -5.0, 5.0)
+        current_valid = torch.isfinite(t)
+        feature_valid = current_valid & (valid_count >= min_valid_obs)
+        norm = torch.full_like(t, float("nan"))
+        norm[feature_valid] = ((t - roll_mean) / roll_std)[feature_valid]
+        norm = torch.clamp(norm, -5.0, 5.0)
+
+        if return_validity:
+            return norm, feature_valid
+        return norm
 
 
 class DerivedFeatures:

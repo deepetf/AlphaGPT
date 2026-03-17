@@ -7,8 +7,10 @@ import torch
 
 from .config import ModelConfig
 
-
-ComputeFeatureFn = Callable[[Callable[[str], torch.Tensor]], torch.Tensor]
+ComputeFeatureFn = Callable[
+    [Callable[[str], torch.Tensor], Callable[[], Optional[torch.Tensor]]],
+    torch.Tensor,
+]
 
 
 @dataclass(frozen=True)
@@ -22,53 +24,102 @@ class FeatureSpec:
     apply_time_normalization: bool = True
 
 
-def _compute_log_moneyness(get_feature_tensor: Callable[[str], torch.Tensor]) -> torch.Tensor:
+def _compute_log_moneyness(
+    get_feature_tensor: Callable[[str], torch.Tensor],
+    get_cs_mask: Callable[[], Optional[torch.Tensor]],
+) -> torch.Tensor:
+    del get_cs_mask
     stock_close = get_feature_tensor("CLOSE_STK")
     conv_price = get_feature_tensor("CONV_PRICE")
 
-    valid = (stock_close > 0) & (conv_price > 0)
-    ratio = torch.where(
-        valid,
-        stock_close / (conv_price + 1e-9),
-        torch.ones_like(stock_close),
+    valid = (
+        torch.isfinite(stock_close)
+        & torch.isfinite(conv_price)
+        & (stock_close > 0)
+        & (conv_price > 0)
     )
-    out = torch.where(
-        valid,
-        torch.log(torch.clamp(ratio, min=1e-12)),
-        torch.zeros_like(stock_close),
-    )
-    return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+    out = torch.full_like(stock_close, float("nan"))
+    ratio = stock_close[valid] / (conv_price[valid] + 1e-9)
+    out[valid] = torch.log(torch.clamp(ratio, min=1e-12))
+    return out
 
 
-def _cross_sectional_rank(tensor: torch.Tensor) -> torch.Tensor:
+def _resolve_cs_mask(
+    tensor: torch.Tensor,
+    base_mask: Optional[torch.Tensor],
+) -> torch.Tensor:
+    if tensor.dim() != 2:
+        raise ValueError(f"cross-sectional feature requires 2D tensor, got {tuple(tensor.shape)}")
+
+    mask = torch.isfinite(tensor)
+    if base_mask is not None:
+        if tuple(base_mask.shape) != tuple(tensor.shape):
+            raise ValueError(
+                f"cross-sectional mask shape mismatch: mask={tuple(base_mask.shape)}, "
+                f"tensor={tuple(tensor.shape)}"
+            )
+        mask = mask & base_mask.to(device=tensor.device, dtype=torch.bool)
+    return mask
+
+
+def _cross_sectional_rank(tensor: torch.Tensor, base_mask: Optional[torch.Tensor]) -> torch.Tensor:
     if tensor.dim() != 2:
         return tensor
-    ranks = tensor.argsort(dim=1).argsort(dim=1).float()
-    denom = tensor.shape[1] - 1 + 1e-9
-    out = ranks / denom
-    return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
-
-
-def _cross_sectional_robust_z(tensor: torch.Tensor) -> torch.Tensor:
-    if tensor.dim() != 2:
-        return tensor
-    median = tensor.median(dim=1, keepdim=True).values
-    mad = (tensor - median).abs().median(dim=1, keepdim=True).values + 1e-9
-    out = (tensor - median) / (mad * 1.4826)
-    out = torch.clamp(out, -5.0, 5.0)
-    return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+    mask = _resolve_cs_mask(tensor, base_mask)
+    out = torch.full_like(tensor, float("nan"))
+    eps = 1e-9
+    for row_idx in range(tensor.shape[0]):
+        row_mask = mask[row_idx]
+        valid_count = int(row_mask.sum().item())
+        if valid_count <= 1:
+            continue
+        row = tensor[row_idx, row_mask]
+        order = torch.argsort(row)
+        ranks = torch.empty(valid_count, device=tensor.device, dtype=torch.float32)
+        ranks[order] = torch.arange(valid_count, device=tensor.device, dtype=torch.float32)
+        out[row_idx, row_mask] = ranks / (valid_count - 1 + eps)
+    return out
 
 
 def _make_cs_rank_feature(dep_name: str) -> ComputeFeatureFn:
-    def _compute(get_feature_tensor: Callable[[str], torch.Tensor]) -> torch.Tensor:
-        return _cross_sectional_rank(get_feature_tensor(dep_name))
+    def _compute(
+        get_feature_tensor: Callable[[str], torch.Tensor],
+        get_cs_mask: Callable[[], Optional[torch.Tensor]],
+    ) -> torch.Tensor:
+        base_mask = get_cs_mask()
+        if base_mask is None:
+            raise ValueError(f"cross-sectional feature '{dep_name}_CS_RANK' requires cs_mask")
+        return _cross_sectional_rank(get_feature_tensor(dep_name), base_mask)
 
     return _compute
 
 
+def _cross_sectional_robust_z(tensor: torch.Tensor, base_mask: Optional[torch.Tensor]) -> torch.Tensor:
+    if tensor.dim() != 2:
+        return tensor
+    mask = _resolve_cs_mask(tensor, base_mask)
+    out = torch.full_like(tensor, float("nan"))
+    for row_idx in range(tensor.shape[0]):
+        row_mask = mask[row_idx]
+        if not torch.any(row_mask):
+            continue
+        row = tensor[row_idx, row_mask]
+        median = row.median()
+        mad = (row - median).abs().median() + 1e-9
+        z = (row - median) / (mad * 1.4826)
+        out[row_idx, row_mask] = torch.clamp(z, -5.0, 5.0)
+    return out
+
+
 def _make_cs_robust_z_feature(dep_name: str) -> ComputeFeatureFn:
-    def _compute(get_feature_tensor: Callable[[str], torch.Tensor]) -> torch.Tensor:
-        return _cross_sectional_robust_z(get_feature_tensor(dep_name))
+    def _compute(
+        get_feature_tensor: Callable[[str], torch.Tensor],
+        get_cs_mask: Callable[[], Optional[torch.Tensor]],
+    ) -> torch.Tensor:
+        base_mask = get_cs_mask()
+        if base_mask is None:
+            raise ValueError(f"cross-sectional feature '{dep_name}_CS_ROBUST_Z' requires cs_mask")
+        return _cross_sectional_robust_z(get_feature_tensor(dep_name), base_mask)
 
     return _compute
 

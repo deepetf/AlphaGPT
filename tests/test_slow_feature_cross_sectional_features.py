@@ -57,7 +57,12 @@ def test_slow_cross_sectional_features_preserve_cross_sectional_outputs(monkeypa
         ),
     }
 
-    feat_tensor = FeatureEngineer.compute_features(raw_data, warmup_rows=0)
+    cs_mask = torch.ones((2, 3), dtype=torch.bool)
+    feat_tensor = FeatureEngineer.compute_features(
+        raw_data,
+        warmup_rows=0,
+        cross_sectional_mask=cs_mask,
+    )
 
     expected_pure_rank = torch.tensor(
         [
@@ -127,7 +132,12 @@ def test_slow_cross_sectional_features_skip_time_normalization_zeroing(monkeypat
         ),
     }
 
-    feat_tensor = FeatureEngineer.compute_features(raw_data, warmup_rows=0)
+    cs_mask = torch.ones((2, 3), dtype=torch.bool)
+    feat_tensor = FeatureEngineer.compute_features(
+        raw_data,
+        warmup_rows=0,
+        cross_sectional_mask=cs_mask,
+    )
 
     assert not torch.allclose(feat_tensor[0], torch.zeros_like(feat_tensor[0]))
     assert torch.isfinite(feat_tensor).all()

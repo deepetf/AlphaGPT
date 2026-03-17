@@ -40,13 +40,14 @@ _global_bt = None
 _global_feat = None
 _global_ret = None
 _global_mask = None
+_global_cs_mask = None
 _global_split_idx = None  # 璁粌/楠岃瘉鍒囧垎绱㈠紩
 # 姝㈢泩鎵€闇€浠锋牸鏁版嵁
 _global_open = None
 _global_high = None
 _global_prev_close = None
 
-def _init_worker(feat_tensor, target_ret, valid_mask, split_idx, 
+def _init_worker(feat_tensor, target_ret, valid_mask, cs_mask, split_idx, 
                  open_prices=None, high_prices=None, prev_close=None, config_path=None):
     """瀛愯繘绋嬪垵濮嬪寲鍑芥暟"""
     # 鍏抽敭淇: 瀛愯繘绋嬮渶瑕侀噸鏂板姞杞藉姩鎬侀厤缃紝鍚﹀垯 INPUT_FEATURES 涓虹┖瀵艰嚧鏍￠獙澶辫触
@@ -57,7 +58,7 @@ def _init_worker(feat_tensor, target_ret, valid_mask, split_idx,
         except Exception as e:
             print(f"[Worker] Failed to load config from {config_path}: {e}")
 
-    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
+    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_cs_mask, _global_split_idx
     global _global_open, _global_high, _global_prev_close
     
     # 鍏抽敭浼樺寲: 寮哄埗鍗曠嚎绋嬭繍琛岋紝闃叉澶氳繘绋?CPU 绔炰簤 (Oversubscription)
@@ -70,6 +71,7 @@ def _init_worker(feat_tensor, target_ret, valid_mask, split_idx,
     _global_feat = feat_tensor.to('cpu')
     _global_ret = target_ret.to('cpu')
     _global_mask = valid_mask.to('cpu')
+    _global_cs_mask = cs_mask.to('cpu')
     _global_split_idx = split_idx
     
     # 姝㈢泩浠锋牸鏁版嵁
@@ -83,7 +85,7 @@ def _worker_eval(formula):
     
     浣跨敤 evaluate_robust 鑾峰彇澶氱淮鎸囨爣锛屽苟璁＄畻缁煎悎濂栧姳銆?
     """
-    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_split_idx
+    global _global_vm, _global_bt, _global_feat, _global_ret, _global_mask, _global_cs_mask, _global_split_idx
     global _global_open, _global_high, _global_prev_close
     
     try:
@@ -96,7 +98,7 @@ def _worker_eval(formula):
         
         # 1. 鎵ц鍏紡
         try:
-            res = _global_vm.execute(formula, _global_feat)
+            res = _global_vm.execute(formula, _global_feat, cs_mask=_global_cs_mask)
             if res is None:
                 return RobustConfig.PENALTY_EXEC, None, "EXEC_NONE", "Returned None"
         except Exception as e:
@@ -333,7 +335,8 @@ class AlphaEngine:
         # 鍑嗗鍏变韩鏁版嵁 (杞负 CPU Tensor)
         cpu_feat = self.loader.feat_tensor.to('cpu')
         cpu_ret = self.loader.target_ret.to('cpu')
-        cpu_mask = self.loader.valid_mask.to('cpu')
+        cpu_mask = self.loader.tradable_mask.to('cpu')
+        cpu_cs_mask = self.loader.cs_mask.to('cpu')
         split_idx = self.loader.split_idx
         
         # 姝㈢泩浠锋牸鏁版嵁鍑嗗
@@ -377,7 +380,17 @@ class AlphaEngine:
         with ProcessPoolExecutor(
             max_workers=num_workers, 
             initializer=_init_worker,
-            initargs=(cpu_feat, cpu_ret, cpu_mask, split_idx, cpu_open, cpu_high, cpu_prev_close, config_path)
+            initargs=(
+                cpu_feat,
+                cpu_ret,
+                cpu_mask,
+                cpu_cs_mask,
+                split_idx,
+                cpu_open,
+                cpu_high,
+                cpu_prev_close,
+                config_path,
+            )
         ) as executor:
             
             pbar = tqdm(range(ModelConfig.TRAIN_STEPS))
@@ -1354,7 +1367,7 @@ class AlphaEngine:
         
         # 閲嶆柊鎵ц鍏紡鑾峰彇鍥犲瓙鍊?
         vm = StackVM()
-        factors = vm.execute(formula, self.loader.feat_tensor)
+        factors = vm.execute(formula, self.loader.feat_tensor, cs_mask=self.loader.cs_mask)
         
         if factors is None:
             return

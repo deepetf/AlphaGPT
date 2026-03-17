@@ -3,7 +3,7 @@ Operator registry and built-in operators.
 """
 
 import torch
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 class OpsRegistry:
@@ -58,41 +58,120 @@ class OpsRegistry:
 register_op = OpsRegistry.register
 
 
-def _ts_nan_to_num(x: torch.Tensor) -> torch.Tensor:
-    return torch.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
+def _invalid_like(x: torch.Tensor) -> torch.Tensor:
+    return torch.full_like(x, float("nan"))
+
+
+def _ts_window_view(x: torch.Tensor, window: int) -> Optional[torch.Tensor]:
+    if x.dim() != 2:
+        return None
+    if x.shape[0] == 0:
+        return None
+    padding = torch.full(
+        (window - 1, x.shape[1]),
+        float("nan"),
+        device=x.device,
+        dtype=x.dtype,
+    )
+    padded = torch.cat([padding, x], dim=0)
+    return padded.unfold(0, window, 1)
 
 
 def _ts_lag(x: torch.Tensor, n: int) -> torch.Tensor:
-    """Lag helper with roll + zero boundary to avoid lookahead leakage."""
+    """Lag helper with NaN boundary to avoid lookahead leakage."""
     if x.dim() != 2:
-        return torch.zeros_like(x)
+        return _invalid_like(x)
     if n <= 0:
-        return _ts_nan_to_num(x)
+        return x
 
     t = x.shape[0]
     if t <= n:
-        return torch.zeros_like(x)
+        return _invalid_like(x)
 
     result = torch.roll(x, n, dims=0)
-    result[:n] = 0
-    return _ts_nan_to_num(result)
+    result[:n] = float("nan")
+    return result
 
 
-def _ts_rolling_reduce(x: torch.Tensor, window: int, reducer: Callable[[torch.Tensor], torch.Tensor]) -> torch.Tensor:
-    """Rolling helper using left padding + unfold; first window-1 rows are zeroed."""
+def _ts_rolling_mean(
+    x: torch.Tensor,
+    window: int,
+    min_valid_obs: Optional[int] = None,
+) -> torch.Tensor:
     if x.dim() != 2:
-        return torch.zeros_like(x)
+        return _invalid_like(x)
 
-    t = x.shape[0]
-    if t < window:
-        return torch.zeros_like(x)
+    min_valid_obs = int(min_valid_obs or window)
+    unfolded = _ts_window_view(x, window)
+    if unfolded is None:
+        return _invalid_like(x)
 
-    padding = x[0].unsqueeze(0).repeat(window - 1, 1)
-    padded = torch.cat([padding, x], dim=0)
-    unfolded = padded.unfold(0, window, 1)
-    out = reducer(unfolded)
-    out[: window - 1] = 0
-    return _ts_nan_to_num(out)
+    valid = torch.isfinite(unfolded)
+    valid_count = valid.sum(dim=-1)
+    safe = torch.where(valid, unfolded, torch.zeros_like(unfolded))
+    roll_sum = safe.sum(dim=-1)
+    out = torch.full_like(x, float("nan"))
+    enough = valid_count >= min_valid_obs
+    out[enough] = (roll_sum / valid_count.clamp_min(1).to(x.dtype))[enough]
+    return out
+
+
+def _ts_rolling_std(
+    x: torch.Tensor,
+    window: int,
+    min_valid_obs: Optional[int] = None,
+) -> torch.Tensor:
+    if x.dim() != 2:
+        return _invalid_like(x)
+
+    min_valid_obs = int(min_valid_obs or window)
+    unfolded = _ts_window_view(x, window)
+    if unfolded is None:
+        return _invalid_like(x)
+
+    valid = torch.isfinite(unfolded)
+    valid_count = valid.sum(dim=-1)
+    safe = torch.where(valid, unfolded, torch.zeros_like(unfolded))
+    roll_sum = safe.sum(dim=-1)
+    roll_mean = roll_sum / valid_count.clamp_min(1).to(x.dtype)
+    centered = torch.where(valid, unfolded - roll_mean.unsqueeze(-1), torch.zeros_like(unfolded))
+    denom = (valid_count - 1).clamp_min(1).to(x.dtype)
+    roll_var = centered.pow(2).sum(dim=-1) / denom
+
+    out = torch.full_like(x, float("nan"))
+    enough = valid_count >= max(2, min_valid_obs)
+    out[enough] = torch.sqrt(roll_var.clamp_min(0.0))[enough]
+    return out
+
+
+def _ts_rolling_extreme(
+    x: torch.Tensor,
+    window: int,
+    mode: str,
+    min_valid_obs: Optional[int] = None,
+) -> torch.Tensor:
+    if x.dim() != 2:
+        return _invalid_like(x)
+
+    min_valid_obs = int(min_valid_obs or window)
+    unfolded = _ts_window_view(x, window)
+    if unfolded is None:
+        return _invalid_like(x)
+
+    valid = torch.isfinite(unfolded)
+    valid_count = valid.sum(dim=-1)
+    out = torch.full_like(x, float("nan"))
+    enough = valid_count >= min_valid_obs
+
+    if mode == "max":
+        safe = torch.where(valid, unfolded, torch.full_like(unfolded, float("-inf")))
+        values = safe.max(dim=-1).values
+    else:
+        safe = torch.where(valid, unfolded, torch.full_like(unfolded, float("inf")))
+        values = safe.min(dim=-1).values
+
+    out[enough] = values[enough]
+    return out
 
 
 # --- Arithmetic operators ---
@@ -113,13 +192,14 @@ def op_mul(a, b):
 @register_op("DIV", 2, "safe division")
 def op_div(a, b):
     eps = 1e-6
+    valid = torch.isfinite(a) & torch.isfinite(b)
     safe_b = torch.where(
         torch.abs(b) < eps,
         torch.where(b >= 0, torch.full_like(b, eps), torch.full_like(b, -eps)),
         b,
     )
-    out = a / safe_b
-    out = torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+    out = torch.full_like(a, float("nan"))
+    out[valid] = (a / safe_b)[valid]
     return torch.clamp(out, -1e6, 1e6)
 
 
@@ -135,12 +215,18 @@ def op_abs(x):
 
 @register_op("LOG", 1, "safe log")
 def op_log(x):
-    return torch.log(torch.clamp(x, min=1e-9))
+    out = torch.full_like(x, float("nan"))
+    valid = torch.isfinite(x) & (x > 0)
+    out[valid] = torch.log(torch.clamp(x[valid], min=1e-9))
+    return out
 
 
 @register_op("SQRT", 1, "safe sqrt")
 def op_sqrt(x):
-    return torch.sqrt(torch.clamp(x, min=0))
+    out = torch.full_like(x, float("nan"))
+    valid = torch.isfinite(x) & (x >= 0)
+    out[valid] = torch.sqrt(torch.clamp(x[valid], min=0))
+    return out
 
 
 @register_op("SIGN", 1, "sign")
@@ -157,83 +243,83 @@ def op_ts_delay(x):
 @register_op("TS_DELTA", 1, "first difference")
 def op_ts_delta(x):
     prev = _ts_lag(x, 1)
-    out = x - prev
-    if out.dim() == 2 and out.shape[0] > 0:
-        out[0] = 0
-    return _ts_nan_to_num(out)
+    valid = torch.isfinite(x) & torch.isfinite(prev)
+    out = torch.full_like(x, float("nan"))
+    out[valid] = (x - prev)[valid]
+    return out
 
 
 @register_op("TS_RET", 1, "one-step return")
 def op_ts_ret(x):
     prev = _ts_lag(x, 1)
-    out = (x - prev) / (prev + 1e-9)
-    if out.dim() == 2 and out.shape[0] > 0:
-        out[0] = 0
-    return _ts_nan_to_num(out)
+    valid = torch.isfinite(x) & torch.isfinite(prev)
+    out = torch.full_like(x, float("nan"))
+    out[valid] = ((x - prev) / (prev + 1e-9))[valid]
+    return out
 
 
 @register_op("TS_MOM10", 1, "10-day momentum difference")
 def op_ts_mom10(x):
     if x.dim() != 2 or x.shape[0] <= 10:
-        return torch.zeros_like(x)
+        return _invalid_like(x)
     prev = _ts_lag(x, 10)
-    out = x - prev
-    out[:10] = 0
-    return _ts_nan_to_num(out)
+    valid = torch.isfinite(x) & torch.isfinite(prev)
+    out = torch.full_like(x, float("nan"))
+    out[valid] = (x - prev)[valid]
+    return out
 
 
 @register_op("TS_MOM20", 1, "20-day momentum difference")
 def op_ts_mom20(x):
     if x.dim() != 2 or x.shape[0] <= 20:
-        return torch.zeros_like(x)
+        return _invalid_like(x)
     prev = _ts_lag(x, 20)
-    out = x - prev
-    out[:20] = 0
-    return _ts_nan_to_num(out)
+    valid = torch.isfinite(x) & torch.isfinite(prev)
+    out = torch.full_like(x, float("nan"))
+    out[valid] = (x - prev)[valid]
+    return out
 
 
 @register_op("TS_MEAN5", 1, "5-day rolling mean")
 def op_ts_mean5(x):
-    return _ts_rolling_reduce(x, 5, lambda u: u.mean(dim=-1))
+    return _ts_rolling_mean(x, 5)
 
 
 @register_op("TS_STD5", 1, "5-day rolling std")
 def op_ts_std5(x):
-    return _ts_rolling_reduce(x, 5, lambda u: u.std(dim=-1, unbiased=True))
+    return _ts_rolling_std(x, 5)
 
 
 @register_op("TS_STD20", 1, "20-day rolling std")
 def op_ts_std20(x):
-    return _ts_rolling_reduce(x, 20, lambda u: u.std(dim=-1, unbiased=True))
+    return _ts_rolling_std(x, 20)
 
 
 @register_op("TS_STD60", 1, "60-day rolling std")
 def op_ts_std60(x):
-    return _ts_rolling_reduce(x, 60, lambda u: u.std(dim=-1, unbiased=True))
+    return _ts_rolling_std(x, 60)
 
 
 @register_op("TS_MAX20", 1, "20-day rolling max")
 def op_ts_max20(x):
-    return _ts_rolling_reduce(x, 20, lambda u: u.max(dim=-1).values)
+    return _ts_rolling_extreme(x, 20, mode="max")
 
 
 @register_op("TS_MIN20", 1, "20-day rolling min")
 def op_ts_min20(x):
-    return _ts_rolling_reduce(x, 20, lambda u: u.min(dim=-1).values)
+    return _ts_rolling_extreme(x, 20, mode="min")
 
 
 @register_op("TS_BIAS5", 1, "(x - MA5) / MA5")
 def op_ts_bias5(x):
     if x.dim() != 2:
-        return torch.zeros_like(x)
-    t = x.shape[0]
-    if t < 5:
-        return torch.zeros_like(x)
+        return _invalid_like(x)
 
-    ma5 = _ts_rolling_reduce(x, 5, lambda u: u.mean(dim=-1))
-    out = (x - ma5) / (ma5 + 1e-9)
-    out[:4] = 0
-    return _ts_nan_to_num(out)
+    ma5 = _ts_rolling_mean(x, 5)
+    valid = torch.isfinite(x) & torch.isfinite(ma5)
+    out = torch.full_like(x, float("nan"))
+    out[valid] = ((x - ma5) / (ma5 + 1e-9))[valid]
+    return out
 
 
 # --- Cross-sectional operators ---

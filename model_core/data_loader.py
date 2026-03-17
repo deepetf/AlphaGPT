@@ -9,7 +9,12 @@ class CBDataLoader:
         self.raw_data_cache = None
         self.feat_tensor = None
         self.target_ret = None
-        self.valid_mask = None  # [Time, Assets] 标记是否可交易
+        self.valid_mask = None  # [Time, Assets] 兼容字段，当前等同于 tradable_mask
+        self.listed_mask = None
+        self.data_mask = None
+        self.tradable_mask = None
+        self.cs_mask = None
+        self.feature_valid_tensor = None
         self.split_idx = None   # 训练/验证切分索引 (基于 RobustConfig)
         
     def load_data(self, start_date: str = '2022-08-01'):
@@ -114,22 +119,32 @@ class CBDataLoader:
             # Fill NaN based on method
             if fill_method == 'ffill':
                 sub_df = sub_df.ffill()  # pandas 2.x 兼容
-            elif fill_method == 'zero':
-                sub_df = sub_df.fillna(0.0)
             
             # Convert to Tensor [Time, Assets]
-            # fillna(0) for remaining NaNs (e.g. before listing)
-            data_np = sub_df.fillna(0.0).values.astype(np.float32)
+            # 缺失值与上市前空值保留为 NaN，避免在主链路中伪装成有效 0
+            data_np = sub_df.values.astype(np.float32)
             raw_tensors[internal_name] = torch.tensor(data_np, device=ModelConfig.DEVICE)
         
         print(f"Loaded {len(raw_tensors)} factors: {list(raw_tensors.keys())}")
         
-        # 3. Construct Valid Mask (Filter)
-        # 必须同时满足: 有收盘价(已上市) & 成交量>0(没停牌) & 剩余年限>0.5年(排除临期债)
-        has_price = raw_tensors['CLOSE'] > 0
-        is_trading = raw_tensors['VOL'] > 0
-        not_expiring = raw_tensors['LEFT_YRS'] > 0.5  # 排除剩余年限不足半年的转债
-        valid_mask = has_price & is_trading & not_expiring
+        # 3. Construct Masks
+        # listed_mask: 标的在该日是否真实存在于原始数据中（禁止由填充值“创建”）
+        close_raw_df = pivot_df['close'].copy().reindex(columns=assets)
+        listed_mask = torch.tensor(
+            close_raw_df.notna().values,
+            device=ModelConfig.DEVICE,
+            dtype=torch.bool,
+        )
+
+        # data_mask: 当前阶段以 CLOSE 原始可用性作为基础数据存在性口径
+        data_mask = listed_mask & torch.isfinite(raw_tensors['CLOSE'])
+
+        # tradable_mask: 业务可交易口径
+        has_price = torch.isfinite(raw_tensors['CLOSE']) & (raw_tensors['CLOSE'] > 0)
+        is_trading = torch.isfinite(raw_tensors['VOL']) & (raw_tensors['VOL'] > 0)
+        not_expiring = torch.isfinite(raw_tensors['LEFT_YRS']) & (raw_tensors['LEFT_YRS'] > 0.5)
+        tradable_mask = listed_mask & has_price & is_trading & not_expiring
+        valid_mask = tradable_mask
         
         # 4. 计算预热偏移量（在 compute_features 前计算，传入 warmup_rows）
         effective_start_str = effective_start.strftime('%Y-%m-%d')
@@ -143,7 +158,12 @@ class CBDataLoader:
         # 注意: 必须在裁剪前计算，让 _robust_normalize 的滚动窗口利用预热段数据
         # warmup_offset 告知标准化器有多少行真实预热数据，以减少或跳过前 window 行的零化
         print(f"Computing features (warmup_offset={warmup_offset})...")
-        feat_tensor = FeatureEngineer.compute_features(raw_tensors, warmup_rows=warmup_offset)
+        feat_tensor, feature_valid_tensor = FeatureEngineer.compute_features(
+            raw_tensors,
+            warmup_rows=warmup_offset,
+            cross_sectional_mask=tradable_mask,
+            return_validity=True,
+        )
         
         # 5. Compute Target Return (T+1)
         # 我们预测的是 T+1 的收益率 (close_T+1 / close_T - 1)
@@ -151,6 +171,7 @@ class CBDataLoader:
         ret_1d = (torch.roll(close, -1, dims=0) / (close + 1e-9)) - 1.0
         # 对无效数据的收益率置 0
         ret_1d[~valid_mask] = 0.0
+        ret_1d[~torch.isfinite(ret_1d)] = 0.0
         # 最后一行也是无效的
         ret_1d[-1] = 0.0
 
@@ -163,8 +184,12 @@ class CBDataLoader:
             )
             # 裁剪所有张量和日期列表
             feat_tensor = feat_tensor[warmup_offset:]
+            feature_valid_tensor = feature_valid_tensor[warmup_offset:]
             ret_1d = ret_1d[warmup_offset:]
             valid_mask = valid_mask[warmup_offset:]
+            listed_mask = listed_mask[warmup_offset:]
+            data_mask = data_mask[warmup_offset:]
+            tradable_mask = tradable_mask[warmup_offset:]
             for k in raw_tensors:
                 raw_tensors[k] = raw_tensors[k][warmup_offset:]
             all_dates_list = all_dates_list[warmup_offset:]
@@ -189,8 +214,12 @@ class CBDataLoader:
             drop_count = (~ever_valid).sum().item()
             keep_indices = ever_valid.nonzero(as_tuple=True)[0]
             feat_tensor = feat_tensor[:, keep_indices, :]
+            feature_valid_tensor = feature_valid_tensor[:, keep_indices, :]
             ret_1d = ret_1d[:, keep_indices]
             valid_mask = valid_mask[:, keep_indices]
+            listed_mask = listed_mask[:, keep_indices]
+            data_mask = data_mask[:, keep_indices]
+            tradable_mask = tradable_mask[:, keep_indices]
             for k in raw_tensors:
                 raw_tensors[k] = raw_tensors[k][:, keep_indices]
             assets = [assets[i] for i in keep_indices.tolist()]
@@ -200,8 +229,13 @@ class CBDataLoader:
         self.assets_list = assets
         self.raw_data_cache = raw_tensors
         self.feat_tensor = feat_tensor
+        self.feature_valid_tensor = feature_valid_tensor
         self.target_ret = ret_1d
         self.valid_mask = valid_mask
+        self.listed_mask = listed_mask
+        self.data_mask = data_mask
+        self.tradable_mask = tradable_mask
+        self.cs_mask = tradable_mask
         self.dates_list = all_dates_list
         print(f"Valid mask: {self.valid_mask.sum().item()} / {self.valid_mask.numel()} valid samples")
         

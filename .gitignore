@@ -66,3 +66,16 @@ execution/portfolio/
 tests/artifacts/
 ConsoleLog.txt
 model_core/ConsoleLog.txt
+
+# Local artifacts / temp outputs
+artifacts/
+diff_*.txt
+test_qmt_output*.txt
+tests/simrun*
+strategy_manager/sim_live_nav_history.csv
+
+# Windows copy / backup files
+* - 副本*
+
+# Local scratch files
+tests/from openai import OpenAI

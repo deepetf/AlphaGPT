@@ -58,15 +58,13 @@ class StackVM:
                     args.reverse()  # 恢复参数顺序
                     
                     # 执行算子
-                    if token_name in self._cs_ops and cs_mask is not None:
+                    if token_name in self._cs_ops:
+                        if cs_mask is None:
+                            raise ValueError(f"cross-sectional op '{token_name}' requires cs_mask")
                         res = self._apply_masked_cs(token_name, args[0], cs_mask)
                     else:
                         func = self.ops_map[token_name]
                         res = func(*args)
-                    
-                    # 处理异常值
-                    if torch.isnan(res).any() or torch.isinf(res).any():
-                        res = torch.nan_to_num(res, nan=0.0, posinf=1.0, neginf=-1.0)
                     
                     stack.append(res)
                 else:
@@ -79,6 +77,8 @@ class StackVM:
             else:
                 return None
                 
+        except (TypeError, ValueError):
+            raise
         except Exception:
             return None
 
@@ -88,6 +88,8 @@ class StackVM:
         支持:
         - [Assets]：扩展到所有时点
         - [Time, Assets]：直接使用
+
+        运行时真实 CS 掩码 = 基础 universe mask × 当前 operand 有效性。
         """
         if not isinstance(cs_mask, torch.Tensor):
             raise TypeError(f"cs_mask must be torch.Tensor, got {type(cs_mask)}")
@@ -106,7 +108,7 @@ class StackVM:
                 raise ValueError(f"cs_mask shape mismatch: mask={tuple(mask.shape)}, x={(t, a)}")
         else:
             raise ValueError(f"cs_mask must be 1D/2D, got dim={mask.dim()}")
-        return mask
+        return mask & torch.isfinite(x)
 
     def _apply_masked_cs(self, op_name: str, x: torch.Tensor, cs_mask: torch.Tensor) -> torch.Tensor:
         mask = self._resolve_cs_mask(x, cs_mask)
@@ -123,7 +125,7 @@ class StackVM:
 
     @staticmethod
     def _masked_cs_rank(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        out = torch.zeros_like(x)
+        out = torch.full_like(x, float("nan"))
         t, _ = x.shape
         eps = 1e-9
         for i in range(t):
@@ -140,7 +142,7 @@ class StackVM:
 
     @staticmethod
     def _masked_cs_demean(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        out = torch.zeros_like(x)
+        out = torch.full_like(x, float("nan"))
         t, _ = x.shape
         for i in range(t):
             row_mask = mask[i]
@@ -152,7 +154,7 @@ class StackVM:
 
     @staticmethod
     def _masked_cs_robust_z(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        out = torch.zeros_like(x)
+        out = torch.full_like(x, float("nan"))
         t, _ = x.shape
         for i in range(t):
             row_mask = mask[i]

@@ -557,6 +557,21 @@ class RealtimeDataProvider:
             for feature_name, values in raw_arrays.items()
         }
 
+    @staticmethod
+    def _build_tradable_mask_from_raw_tensors(
+        raw_tensors: Dict[str, torch.Tensor],
+    ) -> Optional[torch.Tensor]:
+        close = raw_tensors.get("CLOSE")
+        vol = raw_tensors.get("VOL")
+        if close is None or vol is None:
+            return None
+
+        mask = torch.isfinite(close) & (close > 0) & torch.isfinite(vol) & (vol > 0)
+        left_yrs = raw_tensors.get("LEFT_YRS")
+        if left_yrs is not None:
+            mask = mask & torch.isfinite(left_yrs) & (left_yrs > 0.5)
+        return mask
+
     def build_feat_tensor_with_history(
         self, 
         date: str,
@@ -638,6 +653,7 @@ class RealtimeDataProvider:
             feature_names=list(ModelConfig.INPUT_FEATURES),
             normalize=False,
             warmup_rows=0,
+            cross_sectional_mask=self._build_tradable_mask_from_raw_tensors(raw_tensors),
         )
 
         logger.info(
@@ -701,6 +717,7 @@ class RealtimeDataProvider:
             feature_names=list(ModelConfig.INPUT_FEATURES),
             normalize=False,
             warmup_rows=0,
+            cross_sectional_mask=self._build_tradable_mask_from_raw_tensors(raw_tensors),
         )[0]
 
         logger.info(f"Built feat_tensor: {feat_tensor.shape} (features: {len(ModelConfig.INPUT_FEATURES)})")

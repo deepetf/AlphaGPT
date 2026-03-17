@@ -103,7 +103,7 @@ def main():
     # Execute formula
     print("[3/5] Executing formula...")
     vm = StackVM()
-    factors = vm.execute(formula, loader.feat_tensor.to('cpu'))
+    factors = vm.execute(formula, loader.feat_tensor.to('cpu'), cs_mask=loader.cs_mask.to('cpu'))
     
     # Create runner
     print("[4/5] Initializing runner...")
