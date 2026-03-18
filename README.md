@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V7.0: Leakage Guardrails + Snapshot-Locked Pipeline (Current)**
+Current Version: **V7.01: Full-Days Training Metrics + Config Unification (Current)**
 
 命令速查文档：`Commands.MD`
 Git 版本与发布说明：`GIT-RELEASE.md`
@@ -11,7 +11,18 @@ Git 版本与发布说明：`GIT-RELEASE.md`
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V7.0: Leakage Guardrails + Snapshot-Locked Pipeline (Current)**
+### **V7.01: Full-Days Training Metrics + Config Unification (Current)**
+*在 V7.0 基础上，训练评分切换到 full-days 连续持仓口径，并完成最小有效标的门槛配置收口。*
+- **Full-Days Training Metrics**: `model_core/backtest.py` 新增连续持仓收益路径；训练评分主指标改为基于全样本连续持仓序列计算 `sharpe_train/sharpe_val/sharpe_all/annualized_ret`，同时保留 `*_valid_days` 诊断指标用于对照稀疏信号。
+- **Sparse Formula Guardrail**: `model_core/engine.py` 新增 `min_valid_day_ratio` 硬过滤与 `METRIC_VALID_RATIO`，训练日志/king 输出增加 `ValidRatio`、`SharpeFull T/V`、`SharpeSparse T/V`，用于直接识别“只在极少数交易日有效”的公式。
+- **Training Console Visibility**: `model_core/engine.py` 的 `TRAINING CONFIGURATION` 段新增 `Min VDays` 与 `Min VRatio` 输出，便于训练启动时确认当前稀疏性门槛。
+- **Signal Min-Count Unification**: `model_core/config.py`、`model_core/config_loader.py`、`model_core/signal_utils.py` 统一 `signal_min_valid_count` 为主字段；`min_valid_count` 降级为兼容别名并在加载时自动映射/告警，主链路不再保留 `max(30, top_k * 2)` 行为硬编码。
+- **Regression Coverage**: 新增 `tests/test_backtest_full_days_metrics.py` 与 `tests/test_config_min_valid_count_alias.py`，覆盖 full-days 指标、无信号日延续持仓、`valid_day_ratio` 稀疏过滤、以及旧字段兼容映射。
+- **示例命令（V7.01 训练，启用 full-days 评分与稀疏过滤）**: `python -m workflow.pipeline train --run-id slow_replace_recover_metric_v703 --config model_core/slow_metric_config_v703.yaml --data-start-date 2022-08-01`
+- **示例命令（查看训练启动配置中的稀疏性门槛）**: `python -m model_core.engine --config model_core/slow_metric_config_v703.yaml --data-start-date 2022-08-01`
+- **示例命令（V7.01 核心回归测试）**: `pytest tests/test_backtest_full_days_metrics.py tests/test_config_min_valid_count_alias.py -q`
+
+### **V7.0: Leakage Guardrails + Snapshot-Locked Pipeline**
 *在 V6.02 基础上，完成未来数据泄露主问题修复、运行数据快照锁定，以及 A-E 阶段回归门禁。*
 - **Stage A / Cross-Sectional Leak Fix**: `model_core/data_loader.py`、`data_pipeline/sql_strict_loader.py`、`model_core/features_registry.py`、`model_core/vm.py`、`model_core/engine.py`、`model_core/select_top_factors.py` 完成 `listed_mask / data_mask / tradable_mask / cs_mask` 分层，CS 算子与派生特征统一要求 `cs_mask`，切断“未来新债以历史零列进入横截面”的主泄露。
 - **Stage B / Causal Feature Validity**: `model_core/factors.py` 与 `model_core/ops_registry.py` 重写时间特征有效性与 `TS_*` 因果传播；`model_core/vm.py` 运行时 CS 掩码升级为“基础宇宙 × 当前 operand 有效性”，闭环 `TS_* -> CS_*` 的 invalid propagation。
