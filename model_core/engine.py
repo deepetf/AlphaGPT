@@ -150,6 +150,13 @@ def _worker_eval(formula):
             if fail_status == "PASS":
                 fail_status, fail_reason = "METRIC_DAYS", f"tr={metrics['valid_days_train']},val={metrics['valid_days_val']}"
 
+        min_valid_day_ratio = float(RobustConfig.MIN_VALID_DAY_RATIO)
+        if min_valid_day_ratio > 0 and metrics['valid_day_ratio'] < min_valid_day_ratio:
+            ratio_gap = (min_valid_day_ratio - metrics['valid_day_ratio']) / max(min_valid_day_ratio, 1e-9)
+            gaps.append(max(0.0, float(ratio_gap)))
+            if fail_status == "PASS":
+                fail_status, fail_reason = "METRIC_VALID_RATIO", f"ratio={metrics['valid_day_ratio']:.3f}"
+
         has_metric_gap_fail = len(gaps) > 0
         avg_gap = (sum(gaps) / len(gaps)) if has_metric_gap_fail else 0.0
         metric_fail_mode = RobustConfig.METRIC_FAIL_REWARD_MODE
@@ -497,6 +504,7 @@ class AlphaEngine:
                 step_stats = Counter()
                 raw_status_counts = Counter()
                 pre_metric_counts = Counter()
+                step_valid_day_ratios = []
                 # [V4.1] 瀹氫箟涓夌骇鎴愬姛璁℃暟
                 counts = {"HardPass": 0, "MetricPass": 0, "SimPass": 0}
                 bs = ModelConfig.BATCH_SIZE
@@ -956,6 +964,7 @@ class AlphaEngine:
                     if best_info:
                         # V2.2: best_info 鐜板寘鍚?(score, annualized_ret, sharpe_all, formula, metrics)
                         score_val, ret_val, sharpe_val, formula_str, metrics = best_info
+                        step_valid_day_ratios.append(float(metrics.get('valid_day_ratio', 0.0)))
                         simplified_readable = self.decode_formula(formula_str)
                         raw_readable = self.decode_formula(raw_formula)
                         
@@ -979,9 +988,15 @@ class AlphaEngine:
                                 'sharpe': sharpe_val,
                                 'sharpe_train': metrics.get('sharpe_train', 0),
                                 'sharpe_val': metrics.get('sharpe_val', 0),
+                                'sharpe_train_valid_days': metrics.get('sharpe_train_valid_days', 0),
+                                'sharpe_val_valid_days': metrics.get('sharpe_val_valid_days', 0),
+                                'sharpe_all_valid_days': metrics.get('sharpe_all_valid_days', 0),
                                 'max_drawdown': metrics.get('max_drawdown', 0),
                                 'stability': metrics.get('stability_metric', 0),
                                 'annualized_ret': ret_val,  # 骞村寲鏀剁泭鐜?
+                                'annualized_ret_valid_days': metrics.get('annualized_ret_valid_days', 0),
+                                'valid_signal_days': metrics.get('valid_signal_days', 0),
+                                'valid_day_ratio': metrics.get('valid_day_ratio', 0),
                                 # IC/IR 鎸囨爣
                                 'ic_mean': metrics.get('ic_mean', 0),
                                 'ic_std': metrics.get('ic_std', 0),
@@ -1003,7 +1018,14 @@ class AlphaEngine:
                             ir_val = metrics.get('ic_ir')
                             ir_str = f"{ir_val:.2f}" if ir_val is not None else "None"
                             
-                            tqdm.write(f"[!] New King #{king_num}: Score {score_val:.2f} | Sharpe T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | IC {ic_val:.3f} (IR {ir_str}) | MDD {metrics.get('max_drawdown', 0):.1%} | {self.best_formula_readable}")
+                            tqdm.write(
+                                f"[!] New King #{king_num}: Score {score_val:.2f} | "
+                                f"SharpeFull T/V {metrics.get('sharpe_train', 0):.2f}/{metrics.get('sharpe_val', 0):.2f} | "
+                                f"SharpeSparse T/V {metrics.get('sharpe_train_valid_days', 0):.2f}/{metrics.get('sharpe_val_valid_days', 0):.2f} | "
+                                f"ValidRatio {metrics.get('valid_day_ratio', 0):.1%} | "
+                                f"IC {ic_val:.3f} (IR {ir_str}) | MDD {metrics.get('max_drawdown', 0):.1%} | "
+                                f"{self.best_formula_readable}"
+                            )
 
                         # V2.3: 鏀堕泦澶氭牱鎬у叕寮?(Diversity Pool)
                         # 浠呭綋鍒嗘暟瓒冲楂樹笖鍏紡鐙壒鏃跺叆姹?
@@ -1015,6 +1037,7 @@ class AlphaEngine:
                                 'score': score_val,
                                 'sharpe': sharpe_val,
                                 'annualized_ret': ret_val,
+                                'valid_day_ratio': metrics.get('valid_day_ratio', 0),
                                 'formula': formula_str,
                                 'readable': readable,
                                 'raw_formula': raw_formula,
@@ -1118,6 +1141,7 @@ class AlphaEngine:
                     metric_fail_std = 0.0
                 metric_gap_avg = float(np.mean(step_gaps)) if step_gaps else 0.0
                 metric_gap_p90 = float(np.percentile(step_gaps, 90)) if step_gaps else 0.0
+                avg_valid_day_ratio = float(np.mean(step_valid_day_ratios)) if step_valid_day_ratios else 0.0
                 valid_formula_rate = 1.0 - (raw_status_counts["STRUCT_INVALID"] / bs)
                 decode_mask_empty_rate = decode_mask_empty_count / float(bs * max_len)
                 decode_mask_empty_sample_count = int(empty_sample_hit.sum().item())
@@ -1163,6 +1187,7 @@ class AlphaEngine:
                     "metric_fail_reward_p90": metric_fail_reward_p90,
                     "metric_gap_avg": metric_gap_avg,
                     "metric_gap_p90": metric_gap_p90,
+                    "avg_valid_day_ratio": avg_valid_day_ratio,
                     "valid_formula_rate": valid_formula_rate,
                     "decode_mask_empty_count": decode_mask_empty_count,
                     "decode_mask_empty_rate": decode_mask_empty_rate,
@@ -1211,6 +1236,7 @@ class AlphaEngine:
                         f"Ctl {controller_mode}:{controller_reason} | "
                         f"FailAbs[S:{struct_abs}, L:{lowvar_abs}, M:{metric_abs}, R:{sim_abs}] | "
                         f"Gap(avg/p50/p90) {avg_gap:.2f}/{p50_gap:.2f}/{p90_gap:.2f} | "
+                        f"VRatio(avg) {avg_valid_day_ratio:.1%} | "
                         f"RStd {reward_std:.2f} | "
                         f"MFailRew(avg/p90/std) {metric_fail_reward_avg:.2f}/{metric_fail_reward_p90:.2f}/{metric_fail_std:.2f} | "
                         f"Valid {valid_formula_rate:.1%} | "

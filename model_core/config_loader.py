@@ -152,6 +152,10 @@ def _validate_config(config: Dict[str, Any]) -> None:
     if rc["train_weight"] + rc["val_weight"] != 1.0:
         raise ValueError("train_weight + val_weight 应等于 1.0")
 
+    min_valid_day_ratio = float(rc.get("min_valid_day_ratio", 0.0))
+    if not (0.0 <= min_valid_day_ratio <= 1.0):
+        raise ValueError("min_valid_day_ratio 应在 0 ~ 1 范围内")
+
 
 def reset_config() -> None:
     global _config_cache, _loaded_config_path

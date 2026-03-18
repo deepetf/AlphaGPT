@@ -35,6 +35,79 @@ class CBBacktest:
             top_k=top_k,
             override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
         )
+
+    @staticmethod
+    def _carry_forward_weights(weights: torch.Tensor, valid_trading_day: torch.Tensor) -> torch.Tensor:
+        """
+        连续持仓口径:
+        - 有新信号日: 使用当日新权重
+        - 无新信号日: 延续上一日持仓
+        - 初始无仓: 权重为 0
+        """
+        if weights.dim() != 2 or valid_trading_day.dim() != 1:
+            raise ValueError("weights must be 2D and valid_trading_day must be 1D")
+        if weights.shape[0] != valid_trading_day.shape[0]:
+            raise ValueError("weights and valid_trading_day length mismatch")
+
+        continuous = torch.zeros_like(weights)
+        for t in range(weights.shape[0]):
+            if valid_trading_day[t]:
+                continuous[t] = weights[t]
+            elif t > 0:
+                continuous[t] = continuous[t - 1]
+        return continuous
+
+    def _compute_net_returns(
+        self,
+        weights: torch.Tensor,
+        target_ret: torch.Tensor,
+        open_prices: torch.Tensor = None,
+        high_prices: torch.Tensor = None,
+        prev_close: torch.Tensor = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        给定权重路径，计算全样本净收益与换手。
+        """
+        device = weights.device
+        t_count = weights.shape[0]
+
+        prev_weights = torch.roll(weights, 1, dims=0)
+        prev_weights[0] = 0
+        turnover = torch.abs(weights - prev_weights).sum(dim=1)
+        tx_cost = turnover * self.fee_rate * 2
+
+        effective_ret = target_ret.clone()
+        tp_extra_cost = torch.zeros(t_count, device=device)
+
+        if self.take_profit > 0 and open_prices is not None and high_prices is not None and prev_close is not None:
+            valid_price_mask = (
+                (prev_close > 0) & (prev_close < 10000) &
+                (open_prices > 0) & (open_prices < 10000) &
+                (high_prices > 0) & (high_prices < 10000)
+            )
+
+            tp_trigger_price = prev_close * (1 + self.take_profit)
+            holding_mask = weights > 0
+
+            open_gap_up = (open_prices >= tp_trigger_price) & valid_price_mask
+            gap_up_mask = open_gap_up & holding_mask
+
+            intraday_tp = (high_prices >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
+            intra_tp_mask = intraday_tp & holding_mask
+
+            open_ret = (open_prices / prev_close) - 1.0
+            effective_ret[gap_up_mask] = open_ret[gap_up_mask]
+            effective_ret[intra_tp_mask] = self.take_profit
+
+            daily_k = holding_mask.sum(dim=1).float()
+            gap_up_count = gap_up_mask.sum(dim=1).float()
+            intra_tp_count = intra_tp_mask.sum(dim=1).float()
+            safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
+            tp_extra_cost += (gap_up_count + intra_tp_count) * 2 * self.fee_rate / safe_k
+
+        gross_ret = (weights * effective_ret).sum(dim=1)
+        net_ret = gross_ret - tx_cost - tp_extra_cost
+        return net_ret, turnover
     
     def evaluate(self, factors: torch.Tensor, target_ret: torch.Tensor, 
                  valid_mask: torch.Tensor,
@@ -71,74 +144,13 @@ class CBBacktest:
             rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
         )
         
-        # 5. 计算换手率
-        prev_weights = torch.roll(weights, 1, dims=0)
-        prev_weights[0] = 0
-        turnover = torch.abs(weights - prev_weights).sum(dim=1)  # [T]
-        
-        # 6. 计算交易成本
-        tx_cost = turnover * self.fee_rate * 2
-        
-        # 7. 止盈收益调整
-        # 简化逻辑:
-        #   - 触发止盈 → 当日收益锁定为止盈收益
-        #   - 买回影响的是费用，不影响当日收益（按收盘价买回，次日生效）
-        effective_ret = target_ret.clone()
-        tp_extra_cost = torch.zeros(T, device=device)
-        
-        if self.take_profit > 0 and open_prices is not None and high_prices is not None and prev_close is not None:
-            # 数据有效性检查：过滤无效价格
-            valid_price_mask = (
-                (prev_close > 0) & (prev_close < 10000) &
-                (open_prices > 0) & (open_prices < 10000) &
-                (high_prices > 0) & (high_prices < 10000)
-            )
-            
-            tp_trigger_price = prev_close * (1 + self.take_profit)
-            
-            # --- 向量化计算 ---
-            # 1. 确定持仓 (Time, Assets)
-            holding_mask = weights > 0
-            
-            # 2. 识别触发止盈的交易 (仅针对持仓)
-            # 开盘跳空止盈
-            open_gap_up = (open_prices >= tp_trigger_price) & valid_price_mask
-            gap_up_mask = open_gap_up & holding_mask
-            
-            # 盘中止盈
-            intraday_tp = (high_prices >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
-            intra_tp_mask = intraday_tp & holding_mask
-            
-            # 3. 更新收益率
-            # 开盘跳空: 使用开盘收益率
-            open_ret = (open_prices / prev_close) - 1.0
-            effective_ret[gap_up_mask] = open_ret[gap_up_mask]
-            
-            # 盘止盈: 锁定 take_profit
-            effective_ret[intra_tp_mask] = self.take_profit
-            
-            # 4. 计算额外费用
-            # 逻辑: holding_mask 为 True 意味着且仅意味着该标的在 Top-K 中 (因为 weights 是由 Top-K 生成)
-            # 因此所有止盈触发的标的都需要买回 (rebuy_mask == gap_up_mask/intra_tp_mask)
-            # 费用 = 触发数量 * 2 (卖+买) * fee_rate / k
-            
-            # 计算每日持仓数量 k (Time,)
-            daily_k = holding_mask.sum(dim=1).float()
-            
-            # 每日止盈触发数量
-            gap_up_count = gap_up_mask.sum(dim=1).float()
-            intra_tp_count = intra_tp_mask.sum(dim=1).float()
-            total_tp_count = gap_up_count + intra_tp_count
-            
-            # 避免 k=0 的除零错误 (虽然 holding_mask 为空时 count 也是 0)
-            safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
-            
-            # 累计额外费用
-            tp_extra_cost += total_tp_count * 2 * self.fee_rate / safe_k
-        
-        # 8. 计算组合收益
-        gross_ret = (weights * effective_ret).sum(dim=1)  # [T]
-        net_ret = gross_ret - tx_cost - tp_extra_cost  # [T]
+        net_ret, turnover = self._compute_net_returns(
+            weights=weights,
+            target_ret=target_ret,
+            open_prices=open_prices,
+            high_prices=high_prices,
+            prev_close=prev_close,
+        )
         
         # 8. 仅对有效交易日计算 Sharpe
         valid_net_ret = net_ret[valid_trading_day]
@@ -204,15 +216,7 @@ class CBBacktest:
             rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
         )
         
-        # 换手率和交易成本
-        prev_weights = torch.roll(weights, 1, dims=0)
-        prev_weights[0] = 0
-        turnover = torch.abs(weights - prev_weights).sum(dim=1)
-        tx_cost = turnover * self.fee_rate * 2
-        
-        # 组合收益
-        gross_ret = (weights * target_ret).sum(dim=1)
-        net_ret = gross_ret - tx_cost
+        net_ret, turnover = self._compute_net_returns(weights=weights, target_ret=target_ret)
         
         # 仅对有效交易日计算指标
         valid_net_ret = net_ret[valid_trading_day]
@@ -287,52 +291,21 @@ class CBBacktest:
             rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
         )
         
-        # 换手和交易成本
-        prev_weights = torch.roll(weights, 1, dims=0)
-        prev_weights[0] = 0
-        turnover = torch.abs(weights - prev_weights).sum(dim=1)
-        tx_cost = turnover * self.fee_rate * 2
-        
-        # 止盈收益调整（含买回逻辑）
-        effective_ret = target_ret.clone()
-        tp_extra_cost = torch.zeros(T, device=device)
-        
-        if self.take_profit > 0 and open_prices is not None and high_prices is not None and prev_close is not None:
-            # 数据有效性检查：过滤无效价格
-            valid_price_mask = (
-                (prev_close > 0) & (prev_close < 10000) &
-                (open_prices > 0) & (open_prices < 10000) &
-                (high_prices > 0) & (high_prices < 10000)
-            )
-            tp_trigger_price = prev_close * (1 + self.take_profit)
-            
-            # --- 向量化计算 ---
-            # 1. 确定持仓
-            holding_mask = weights > 0
-            
-            # 2. 识别触发止盈的交易
-            open_gap_up = (open_prices >= tp_trigger_price) & valid_price_mask
-            gap_up_mask = open_gap_up & holding_mask
-            
-            intraday_tp = (high_prices >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
-            intra_tp_mask = intraday_tp & holding_mask
-            
-            # 3. 更新收益率
-            open_ret = (open_prices / prev_close) - 1.0
-            effective_ret[gap_up_mask] = open_ret[gap_up_mask]
-            effective_ret[intra_tp_mask] = self.take_profit
-            
-            # 4. 计算额外费用
-            daily_k = holding_mask.sum(dim=1).float()
-            
-            gap_up_count = gap_up_mask.sum(dim=1).float()
-            intra_tp_count = intra_tp_mask.sum(dim=1).float()
-            
-            safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
-            tp_extra_cost += (gap_up_count + intra_tp_count) * 2 * self.fee_rate / safe_k
-        
-        gross_ret = (weights * effective_ret).sum(dim=1)
-        net_ret = gross_ret - tx_cost - tp_extra_cost
+        net_ret, turnover = self._compute_net_returns(
+            weights=weights,
+            target_ret=target_ret,
+            open_prices=open_prices,
+            high_prices=high_prices,
+            prev_close=prev_close,
+        )
+        continuous_weights = self._carry_forward_weights(weights, valid_trading_day)
+        net_ret_full, _ = self._compute_net_returns(
+            weights=continuous_weights,
+            target_ret=target_ret,
+            open_prices=open_prices,
+            high_prices=high_prices,
+            prev_close=prev_close,
+        )
         
         # 2. 分段计算 Sharpe
         # Train: [0, split_idx), Val: [split_idx, T)
@@ -343,9 +316,13 @@ class CBBacktest:
         
         train_ret = net_ret[train_mask]
         val_ret = net_ret[val_mask]
-        
-        sharpe_train = self._calc_sharpe(train_ret)
-        sharpe_val = self._calc_sharpe(val_ret)
+        train_ret_full = net_ret_full[:split_idx]
+        val_ret_full = net_ret_full[split_idx:]
+
+        sharpe_train_valid_days = self._calc_sharpe(train_ret)
+        sharpe_val_valid_days = self._calc_sharpe(val_ret)
+        sharpe_train = self._calc_sharpe(train_ret_full)
+        sharpe_val = self._calc_sharpe(val_ret_full)
         
         # 3. 滚动稳定性
         valid_net_ret = net_ret[valid_trading_day]
@@ -365,15 +342,21 @@ class CBBacktest:
         
         # 6. 年化收益率 (Annualized Return)
         if len(valid_net_ret) > 0:
-            cum_ret = (1 + valid_net_ret).prod() - 1
-            n_days = len(valid_net_ret)
-            # 年化: (1 + 累计收益)^(252/交易天数) - 1
-            annualized_ret = ((1 + cum_ret) ** (252.0 / n_days) - 1).item() if hasattr(cum_ret, 'item') else ((1 + cum_ret) ** (252.0 / n_days) - 1)
+            cum_ret_valid = (1 + valid_net_ret).prod() - 1
+            n_days_valid = len(valid_net_ret)
+            annualized_ret_valid_days = ((1 + cum_ret_valid) ** (252.0 / n_days_valid) - 1).item() if hasattr(cum_ret_valid, 'item') else ((1 + cum_ret_valid) ** (252.0 / n_days_valid) - 1)
+        else:
+            annualized_ret_valid_days = 0.0
+
+        if len(net_ret_full) > 0:
+            cum_ret_full = (1 + net_ret_full).prod() - 1
+            annualized_ret = ((1 + cum_ret_full) ** (252.0 / len(net_ret_full)) - 1).item() if hasattr(cum_ret_full, 'item') else ((1 + cum_ret_full) ** (252.0 / len(net_ret_full)) - 1)
         else:
             annualized_ret = 0.0
         
         # 7. 全局 Sharpe
-        sharpe_all = self._calc_sharpe(valid_net_ret)
+        sharpe_all_valid_days = self._calc_sharpe(valid_net_ret)
+        sharpe_all = self._calc_sharpe(net_ret_full)
         
         # 8. IC/IR 指标计算
         ic_metrics = self._compute_ic_metrics(factors, target_ret, valid_mask)
@@ -382,13 +365,19 @@ class CBBacktest:
             'sharpe_train': sharpe_train,
             'sharpe_val': sharpe_val,
             'sharpe_all': sharpe_all,
+            'sharpe_train_valid_days': sharpe_train_valid_days,
+            'sharpe_val_valid_days': sharpe_val_valid_days,
+            'sharpe_all_valid_days': sharpe_all_valid_days,
             'stability_metric': stability_metric,
             'sharpe_std': sharpe_std,
             'max_drawdown': max_drawdown,
             'active_ratio': active_ratio,
             'annualized_ret': annualized_ret,  # 年化收益率
+            'annualized_ret_valid_days': annualized_ret_valid_days,
             'valid_days_train': int(train_mask.sum().item()),
             'valid_days_val': int(val_mask.sum().item()),
+            'valid_signal_days': int(valid_trading_day.sum().item()),
+            'valid_day_ratio': float(valid_trading_day.float().mean().item()) if T > 0 else 0.0,
             # IC/IR 指标
             'ic_mean': ic_metrics['ic_mean'],
             'ic_std': ic_metrics['ic_std'],

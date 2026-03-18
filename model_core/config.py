@@ -110,6 +110,10 @@ class ConfigMeta(type):
         return cls._rc.get('min_valid_days', 20)
 
     @property
+    def MIN_VALID_DAY_RATIO(cls) -> float:
+        return cls._rc.get('min_valid_day_ratio', 0.0)
+
+    @property
     def TRAIN_WEIGHT(cls) -> float:
         return cls._rc.get('train_weight', 0.4)
 
@@ -444,4 +448,3 @@ class ModelConfig:
 
     # 进化控制
     MIN_SCORE_IMPROVEMENT = 0.01
-

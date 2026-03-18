@@ -1,0 +1,146 @@
+  train_steps: 100
+  batch_size: 512
+  lr: 0.0001
+  weight_decay: 0.01
+  grad_clip_norm: 1.0
+  grad_norm_log_interval: 20
+  warmup_days: 85
+
+  input_features:
+    - CLOSE
+    - VOL
+    - DBLOW
+    - PCT_CHG
+    - PCT_CHG_5
+    - VOLATILITY_STK
+    - PCT_CHG_STK
+    - PCT_CHG_5_STK
+    - LOG_MONEYNESS
+    - ALPHA_PCT_CHG_5
+    - TURNOVER
+    - IV
+    - VOL_STK_60
+    - PREM_Z
+    - PURE_VALUE_CS_RANK
+    - PURE_VALUE_CS_ROBUST_Z
+    - PREM_CS_RANK
+    - PREM_CS_ROBUST_Z
+    - REMAIN_SIZE_CS_RANK
+    - CAP_MV_RATE_CS_RANK
+    - DBLOW_CS_RANK
+    - DBLOW_CS_ROBUST_Z
+
+  feature_normalization_overrides:
+    PREM_Z: false
+    LOG_MONEYNESS: false
+    ALPHA_PCT_CHG_5: false
+
+  robust_config:
+    train_test_split_date: "2024-07-01"
+    rolling_window: 60
+    stability_k: 1.8
+
+    min_sharpe_val: 0.08
+    min_active_ratio: 0.30
+    min_valid_days: 20
+    min_valid_day_ratio: 0.15
+    min_valid_count: 30
+
+    top_k: 5
+    fee_rate: 0.001
+    take_profit: 0.06
+
+    signal_clean_enabled: true
+    signal_winsor_q: 0.01
+    signal_clip: 5.0
+    signal_rank_output: true
+    signal_min_valid_count: 30
+
+    sim_masked_cs_enabled: true
+    sim_cs_require_present: true
+    sim_exec_price_raw_priority: true
+
+    train_weight: 0.60
+    val_weight: 0.40
+    stability_w: 0.80
+    ret_w: 6.0
+    mdd_w: 11.0
+    len_w: 0.12
+    scale: 5.0
+
+    min_score_improvement: 0.002
+
+    penalty_flip_coef: 3.2
+    penalty_struct: -5.0
+    penalty_exec: -5.0
+    penalty_sharpe: -5.0
+    penalty_active: -4.0
+    penalty_days: -2.5
+    penalty_low_var: -5.5
+
+    metric_fail_reward_mode: soft
+    metric_gap_w: 4.0
+    metric_fail_reward_cap: 0.0
+    metric_fail_reward_floor: -12.0
+
+    entropy_beta_start: 0.04
+    entropy_beta_end: 0.015
+
+    reward_std_floor: 0.12
+    reward_std_patience: 8
+
+    stagnation_patience: 18
+    stagnation_entropy_boost: 0.015
+    collapse_entropy_boost: 0.015
+
+    warm_restart_enabled: true
+    warm_restart_patience: 25
+    warm_restart_min_spr: 0.02
+    warm_restart_max_near_gap: 2.0
+    warm_restart_max_times: 2
+    warm_restart_beta: 0.06
+    warm_restart_lock_steps: 10
+
+    similar_replace_ratio: 1.1
+    similar_replace_ratio_after_warm_restart: 1.03
+    similar_replace_relax_steps: 12
+
+    entropy_controller_mode: metric
+    entropy_lock_beta: 0.05
+    entropy_lock_steps: 4
+    entropy_warn_boost: 0.01
+
+    controller_hard_floor_rate: 0.01
+    controller_hard_floor_abs: 1.0
+    controller_hard_warn_rate: 0.05
+
+    controller_metric_floor_rate: 0.001
+    controller_metric_floor_abs: 1.0
+    controller_metric_warn_rate: 0.006
+
+    controller_sim_floor_rate: 0.002
+    controller_sim_floor_abs: 1.0
+    controller_sim_warn_rate: 0.01
+
+    controller_pool_floor_rate: 0.05
+    controller_pool_floor_abs: 0.5
+    controller_pool_warn_rate: 0.10
+    controller_pool_stagnation_patience: 8
+
+    adv_noise_std: 0.05
+
+    diversity_pool_size: 50
+    jaccard_threshold: 0.8
+
+    density_window: 6
+    max_ts_in_window: 4
+    density_penalty: -2.0
+
+    decode_ts_density_soft_enabled: true
+    decode_ts_density_penalty_l1: 0.3
+    decode_ts_density_penalty_l2: 0.8
+    decode_ts_density_penalty_l3: 1.5
+
+    decode_reachability_enabled: true
+    decode_lookahead_enabled: true
+    max_stack_depth: 7
