@@ -204,7 +204,7 @@ class ConfigMeta(type):
 
     @property
     def MIN_VALID_COUNT(cls) -> int:
-        return cls._rc.get('min_valid_count', 30)
+        return cls.SIGNAL_MIN_VALID_COUNT
 
     @property
     def SIGNAL_CLEAN_ENABLED(cls) -> bool:
@@ -224,7 +224,7 @@ class ConfigMeta(type):
 
     @property
     def SIGNAL_MIN_VALID_COUNT(cls) -> int:
-        return cls._rc.get('signal_min_valid_count', cls.MIN_VALID_COUNT)
+        return cls._rc.get('signal_min_valid_count', cls._rc.get('min_valid_count', 30))
 
     @property
     def SIM_MASKED_CS_ENABLED(cls) -> bool:

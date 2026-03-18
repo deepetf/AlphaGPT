@@ -102,10 +102,10 @@ robust_config:
   #   引用位置: model_core/engine.py -> _worker_eval()
   min_valid_days: 20
   
-  # min_valid_count:
-  #   定义: 实盘模式下最少有效标的数量 (熔断阈值)
-  #   引用位置: model_core/config.py (预留)
-  min_valid_count: 30
+  # signal_min_valid_count:
+  #   定义: 信号生成/选股时最少有效标的数量
+  #   引用位置: model_core/signal_utils.py -> default_min_valid_count()
+  signal_min_valid_count: 30
   
   # top_k:
   #   定义: 策略每日选股数量

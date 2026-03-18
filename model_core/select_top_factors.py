@@ -234,6 +234,7 @@ def _compute_behavior_signature(factors: torch.Tensor, ctx: Dict[str, Any]) -> D
         min_valid_count=default_min_valid_count(
             top_k=bt.top_k,
             override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+            floor=RobustConfig.MIN_VALID_COUNT,
         ),
         clean_enabled=RobustConfig.SIGNAL_CLEAN_ENABLED,
         winsor_q=RobustConfig.SIGNAL_WINSOR_Q,

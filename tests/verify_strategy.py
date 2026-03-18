@@ -33,7 +33,7 @@ from model_core.data_loader import CBDataLoader
 from model_core.backtest import CBBacktest
 from model_core.factors import FeatureEngineer
 from model_core.formula_validator import validate_formula
-from model_core.signal_utils import build_topk_weights
+from model_core.signal_utils import build_topk_weights, default_min_valid_count
 from model_core.vm import StackVM
 from strategy_manager.strategy_config import load_strategies_config
 from strategy_manager.cb_runner import CBStrategyRunner
@@ -530,7 +530,11 @@ class StrategyVerifier:
         logger.info(f"FEE_RATE: {self.fee_rate} (single-sided, total={self.fee_rate*2})")
         logger.info(f"INITIAL_CASH: {self.initial_cash}")
         logger.info(f"MIN_ACTIVE_RATIO: {RobustConfig.MIN_ACTIVE_RATIO}")
-        min_valid_count = max(30, int(self.top_k) * 2)
+        min_valid_count = default_min_valid_count(
+            top_k=self.top_k,
+            override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+            floor=RobustConfig.MIN_VALID_COUNT,
+        )
         logger.info(f"MIN_VALID_COUNT (Computed): {min_valid_count}")
         logger.info(f"TRAIN_TEST_SPLIT_DATE: {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
         logger.info(f"TAKE_PROFIT_RATIO: {self.take_profit_ratio}")

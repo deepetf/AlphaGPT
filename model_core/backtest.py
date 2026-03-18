@@ -34,6 +34,7 @@ class CBBacktest:
         self.min_valid_count = default_min_valid_count(
             top_k=top_k,
             override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+            floor=RobustConfig.MIN_VALID_COUNT,
         )
 
     @staticmethod

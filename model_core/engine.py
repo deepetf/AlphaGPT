@@ -326,6 +326,8 @@ class AlphaEngine:
         print(f"   - Split Date:  {RobustConfig.TRAIN_TEST_SPLIT_DATE}")
         print(f"   - Top-K:       {RobustConfig.TOP_K}")
         print(f"   - Fee Rate:    {RobustConfig.FEE_RATE:.4f} ({RobustConfig.FEE_RATE*100:.2f}% single-side)")
+        print(f"   - Min VDays:   {int(RobustConfig.MIN_VALID_DAYS)}")
+        print(f"   - Min VRatio:  {float(RobustConfig.MIN_VALID_DAY_RATIO):.1%}")
         print(f"   - Entropy beta:{RobustConfig.ENTROPY_BETA_START} -> {RobustConfig.ENTROPY_BETA_END} (linear decay)")
         print(f"   - Optimizer:   AdamW(lr={ModelConfig.LR}, wd={ModelConfig.WEIGHT_DECAY})")
         print(f"   - Grad Clip:   {ModelConfig.GRAD_CLIP_NORM} (log every {ModelConfig.GRAD_NORM_LOG_INTERVAL} steps)")

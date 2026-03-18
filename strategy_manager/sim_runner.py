@@ -836,6 +836,7 @@ class SimulationRunner:
             min_required = default_min_valid_count(
                 top_k=self.top_k,
                 override=RobustConfig.SIGNAL_MIN_VALID_COUNT,
+                floor=RobustConfig.MIN_VALID_COUNT,
             )
 
         indices, scores, effective_valid = select_top_k_indices(

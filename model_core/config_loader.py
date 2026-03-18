@@ -5,6 +5,7 @@
 """
 
 import os
+import warnings
 from typing import Any, Dict, Optional
 
 import yaml
@@ -41,8 +42,10 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
             custom_config = yaml.safe_load(f)
 
         if custom_config:
+            _normalize_min_valid_count_alias(custom_config)
             config = _deep_merge(config, custom_config)
 
+    _normalize_min_valid_count_alias(config)
     _validate_config(config)
 
     _config_cache = config
@@ -155,6 +158,33 @@ def _validate_config(config: Dict[str, Any]) -> None:
     min_valid_day_ratio = float(rc.get("min_valid_day_ratio", 0.0))
     if not (0.0 <= min_valid_day_ratio <= 1.0):
         raise ValueError("min_valid_day_ratio 应在 0 ~ 1 范围内")
+
+
+def _normalize_min_valid_count_alias(config: Dict[str, Any]) -> None:
+    rc = config.get("robust_config")
+    if not isinstance(rc, dict):
+        return
+
+    signal_min_valid_count = rc.get("signal_min_valid_count")
+    legacy_min_valid_count = rc.get("min_valid_count")
+
+    if signal_min_valid_count is None and legacy_min_valid_count is not None:
+        rc["signal_min_valid_count"] = legacy_min_valid_count
+        warnings.warn(
+            "robust_config.min_valid_count 已弃用，请改用 signal_min_valid_count；当前已自动映射。",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return
+
+    if signal_min_valid_count is not None and legacy_min_valid_count is not None:
+        if int(signal_min_valid_count) != int(legacy_min_valid_count):
+            warnings.warn(
+                "检测到 min_valid_count 与 signal_min_valid_count 同时存在且不一致；将优先使用 signal_min_valid_count。",
+                UserWarning,
+                stacklevel=2,
+            )
+        rc["min_valid_count"] = rc["signal_min_valid_count"]
 
 
 def reset_config() -> None:

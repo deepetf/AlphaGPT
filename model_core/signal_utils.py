@@ -10,10 +10,15 @@ import torch
 NEG_INF = float("-inf")
 
 
-def default_min_valid_count(top_k: int, override: Optional[int] = None) -> int:
+def default_min_valid_count(
+    top_k: int,
+    override: Optional[int] = None,
+    floor: Optional[int] = None,
+) -> int:
     if override is not None and int(override) > 0:
         return int(override)
-    return max(30, int(top_k) * 2)
+    min_floor = int(floor) if floor is not None else 0
+    return max(min_floor, int(top_k) * 2)
 
 
 def preprocess_signal_row(

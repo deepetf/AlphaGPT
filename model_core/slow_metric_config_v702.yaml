@@ -1,3 +1,4 @@
+
   train_steps: 100
   batch_size: 512
   lr: 0.0001
@@ -40,10 +41,9 @@
     rolling_window: 60
     stability_k: 1.8
 
-    min_sharpe_val: 0.08
+    min_sharpe_val: 0.10
     min_active_ratio: 0.30
     min_valid_days: 20
-    min_valid_day_ratio: 0.15
     top_k: 5
     fee_rate: 0.001
     take_profit: 0.06
@@ -58,17 +58,17 @@
     sim_cs_require_present: true
     sim_exec_price_raw_priority: true
 
-    train_weight: 0.60
-    val_weight: 0.40
-    stability_w: 0.80
-    ret_w: 6.0
-    mdd_w: 11.0
+    train_weight: 0.70
+    val_weight: 0.30
+    stability_w: 1.00
+    ret_w: 4.5
+    mdd_w: 12.0
     len_w: 0.12
     scale: 5.0
 
     min_score_improvement: 0.002
 
-    penalty_flip_coef: 3.2
+    penalty_flip_coef: 4.0
     penalty_struct: -5.0
     penalty_exec: -5.0
     penalty_sharpe: -5.0
@@ -77,7 +77,7 @@
     penalty_low_var: -5.5
 
     metric_fail_reward_mode: soft
-    metric_gap_w: 4.0
+    metric_gap_w: 5.0
     metric_fail_reward_cap: 0.0
     metric_fail_reward_floor: -12.0
 
@@ -103,7 +103,7 @@
     similar_replace_ratio_after_warm_restart: 1.03
     similar_replace_relax_steps: 12
 
-    entropy_controller_mode: metric
+    entropy_controller_mode: pool
     entropy_lock_beta: 0.05
     entropy_lock_steps: 4
     entropy_warn_boost: 0.01
