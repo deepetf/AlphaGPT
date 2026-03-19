@@ -197,6 +197,12 @@ robust_config:
   # - 建议: 0~0.08；需与 verify/sim 口径保持一致。
   take_profit: 0.06
 
+  # min_list_days
+  # - 含义: 最小上市天数要求；小于该值的标的不进入交易型宇宙。
+  # - 用法: 并入 tradable_mask / valid_mask / cs_mask，保持 train/verify/sim 一致。
+  # - 建议: 3；设为 0 表示关闭该过滤。
+  min_list_days: 3
+
   # signal_clean_enabled
   # - 含义: 是否启用信号清洗流程。
   # - 用法: 建议开启，提升鲁棒性。
@@ -221,7 +227,7 @@ robust_config:
   # signal_min_valid_count
   # - 含义: 信号输出前要求的最小有效标的数。
   # - 说明: 当前唯一主字段；旧字段 min_valid_count 仅作兼容别名。
-  signal_min_valid_count: 30
+  signal_min_valid_count: 20
 
   # sim_masked_cs_enabled
   # - 含义: 是否在 sim/live 选股中，对 CS_* 算子使用“统一可交易宇宙”掩码。

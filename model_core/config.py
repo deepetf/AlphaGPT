@@ -114,6 +114,10 @@ class ConfigMeta(type):
         return cls._rc.get('min_valid_day_ratio', 0.0)
 
     @property
+    def MIN_LIST_DAYS(cls) -> int:
+        return int(cls._rc.get('min_list_days', 0))
+
+    @property
     def TRAIN_WEIGHT(cls) -> float:
         return cls._rc.get('train_weight', 0.4)
 
@@ -443,7 +447,8 @@ class ModelConfig:
         ('IV', 'IV', 'ffill'),
         ('VOL_STK_60', 'stock_vol60d', 'ffill'),
         ('PREM_Z', 'convprem_zscore', 'ffill'),
-        ('LEFT_YRS', 'left_years', 'ffill') # 必须有，用于过滤临期债
+        ('LEFT_YRS', 'left_years', 'ffill'), # 必须有，用于过滤临期债
+        ('LIST_DAYS', 'list_days', 'ffill'), # 必须有（启用时），用于过滤上市不足天数
     ]
 
     # 进化控制

@@ -156,6 +156,31 @@ class TestSimulationRunner:
         assert len(orders) == 1
         assert orders[0].target_price == 108.0
 
+    def test_check_take_profit_same_day_entry_not_eligible(self, mock_data_provider, runner_factory):
+        """同日新开仓不允许触发当日止盈。"""
+        runner = runner_factory("tp_same_day_guard", top_k=10, take_profit_ratio=0.08)
+        runner.portfolio.add_position("127050.SZ", "转债B", 100, 100.0, "2026-02-08")
+
+        mock_data_provider.get_cb_features.return_value = pd.DataFrame(
+            {
+                "code": ["127050.SZ"],
+                "name": ["转债B"],
+                "close": [115.0],
+                "open": [112.0],
+                "high": [118.0],
+                "vol": [2000.0],
+            }
+        )
+        mock_data_provider.get_prev_close.return_value = {"127050.SZ": 100.0}
+
+        cb_features = mock_data_provider.get_cb_features()
+        realtime_quotes = pd.DataFrame(columns=["code", "open", "high", "close"])
+        prices = {"127050.SZ": 115.0}
+
+        orders = runner._check_take_profit(cb_features, realtime_quotes, prices, "2026-02-08")
+
+        assert len(orders) == 0
+
     def test_select_top_k(self, runner_factory):
         """测试 Top-K 选股。"""
         runner = runner_factory("topk", top_k=2, take_profit_ratio=0.0)

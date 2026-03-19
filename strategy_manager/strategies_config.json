@@ -14,7 +14,31 @@
   },
 
   "strategies": [
-  
+   {
+      "id": "king_v704",
+      "name": "king_v704",
+      "enabled": true,
+      "formula": [
+          "PURE_VALUE_CS_RANK",
+          "SIGN",
+          "TS_MAX20",
+          "CUT_HIGH",
+          "TS_MOM10",
+          "REMAIN_SIZE_CS_RANK",
+          "CUT_NEG",
+          "VOLATILITY_STK",
+          "SIGN",
+          "ALPHA_PCT_CHG_5",
+          "SQRT",
+          "DIV",
+          "IF_POS",
+          "SUB",
+          "CS_ROBUST_Z"
+      ],
+      "params": {
+      }
+    },     
+
     {
       "id": "king_slow",
       "name": "king_slow",

@@ -520,7 +520,10 @@ class SimulationRunner:
             return []
         
         orders: List[SimOrder] = []
+        current_date = self._bt_loader.dates_list[date_idx]
         for pos in self.portfolio.get_all_positions():
+            if not self._position_eligible_for_tp(pos, current_date):
+                continue
             asset_idx = self._bt_code_to_idx.get(pos.code)
             if asset_idx is None:
                 continue
@@ -655,6 +658,14 @@ class SimulationRunner:
             return float(value)
         except (TypeError, ValueError):
             return default
+
+    @staticmethod
+    def _position_eligible_for_tp(pos, current_date: str) -> bool:
+        """Same-day entries are not eligible for TP."""
+        entry_date = str(getattr(pos, "entry_date", "") or "").strip()
+        if not entry_date:
+            return True
+        return entry_date < current_date
     
     def _check_take_profit(
         self, 
@@ -713,6 +724,8 @@ class SimulationRunner:
         
         # 3. 閬嶅巻鎸佷粨妫€娴嬫鐩?
         for pos in self.portfolio.get_all_positions():
+            if not self._position_eligible_for_tp(pos, date):
+                continue
             if pos.code not in prev_close_dict:
                 continue
             if pos.code not in today_ohlc:

@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V7.01: Full-Days Training Metrics + Config Unification (Current)**
+Current Version: **V7.02: Universe Filtration & Sim Execution Consistency (Current)**
 
 命令速查文档：`Commands.MD`
 Git 版本与发布说明：`GIT-RELEASE.md`
@@ -11,7 +11,15 @@ Git 版本与发布说明：`GIT-RELEASE.md`
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V7.01: Full-Days Training Metrics + Config Unification (Current)**
+### **V7.02: Universe Filtration & Sim Execution Consistency (Current)**
+*在 V7.01 基础上，补齐 min_list_days 交易宇宙约束，并强化向量与事件驱动下 Take Profit 的一致性与安全性。*
+- **Universe Listing Filter**: model_core/config.py 引进 min_list_days 软起步约束（推荐默认 3 天），通过统一数据管道 data_loader/sql_strict_loader/realtime_provider 在最底层的 	radable_mask 阶段过滤新上市极大波动的转债，确保训练/验证/实盘宇宙底池对齐。
+- **Data Completeness Enforcement**: 数据加载器针对 min_list_days 启用的情况引入缺失字段硬校验，不再静默向后兼容从而避免因 Parquet 缺失列导致实盘与投研时序宇宙不一致。
+- **TP State Causality (Vector)**: model_core/backtest.py 与 model_core/select_top_factors.py 的向量化 TP 判定源切换为 prev_weights > 0，严格限定只有前一日留存头寸才能在当日计算止盈收益，切断开仓当天的未来漂移收益。
+- **TP Same-Day Execution Protection (Event-Driven)**: 	ests/verify_strategy.py 与 strategy_manager/sim_runner.py 新增同日入场保护（ntry_date < current_date 测试），确保 Strict Replay 与 Live 仿真环境内，所有跨日 TP 信号不能被刚开仓的新头寸误触发，彻底对齐 T+1 交易口径。
+- **示例命令（验证 min_list_days 与 TP 保护回归测试）**: pytest tests/test_stage_a_masks.py tests/test_sim_runner.py tests/test_take_profit.py -q
+
+### **V7.01: Full-Days Training Metrics + Config Unification**
 *在 V7.0 基础上，训练评分切换到 full-days 连续持仓口径，并完成最小有效标的门槛配置收口。*
 - **Full-Days Training Metrics**: `model_core/backtest.py` 新增连续持仓收益路径；训练评分主指标改为基于全样本连续持仓序列计算 `sharpe_train/sharpe_val/sharpe_all/annualized_ret`，同时保留 `*_valid_days` 诊断指标用于对照稀疏信号。
 - **Sparse Formula Guardrail**: `model_core/engine.py` 新增 `min_valid_day_ratio` 硬过滤与 `METRIC_VALID_RATIO`，训练日志/king 输出增加 `ValidRatio`、`SharpeFull T/V`、`SharpeSparse T/V`，用于直接识别“只在极少数交易日有效”的公式。

@@ -140,6 +140,7 @@ class TestRealtimeDataProvider:
             'stock_vol60d': [0.28, 0.35],
             'convprem_zscore': [0.5, 1.0],
             'left_years': [3.5, 4.2],
+            'list_days': [10, 12],
         })
         
         with patch.object(provider, 'sql_engine'):
@@ -178,6 +179,7 @@ class TestRealtimeDataProvider:
             'stock_vol60d': [0.28],
             'convprem_zscore': [0.5],
             'left_years': [3.5],
+            'list_days': [10],
         })
         
         result = provider.build_feat_tensor(realtime_quotes, cb_features)
@@ -204,9 +206,21 @@ class TestRealtimeDataProvider:
         })
         
         result = provider.get_names_dict(cb_features)
-        
+
         assert result['123001.SZ'] == '包钢转债'
         assert result['127050.SZ'] == '蓝帆转债'
+
+    def test_tradable_mask_excludes_short_list_days(self, provider):
+        raw_tensors = {
+            'CLOSE': torch.tensor([[100.0, 110.0]], dtype=torch.float32),
+            'VOL': torch.tensor([[1000.0, 1000.0]], dtype=torch.float32),
+            'LEFT_YRS': torch.tensor([[2.0, 2.0]], dtype=torch.float32),
+            'LIST_DAYS': torch.tensor([[3.0, 2.0]], dtype=torch.float32),
+        }
+
+        mask = provider._build_tradable_mask_from_raw_tensors(raw_tensors)
+
+        assert torch.equal(mask.cpu(), torch.tensor([[True, False]], dtype=torch.bool))
 
 
 class TestRealtimeDataProviderXtdata:

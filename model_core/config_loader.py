@@ -159,6 +159,10 @@ def _validate_config(config: Dict[str, Any]) -> None:
     if not (0.0 <= min_valid_day_ratio <= 1.0):
         raise ValueError("min_valid_day_ratio 应在 0 ~ 1 范围内")
 
+    min_list_days = int(rc.get("min_list_days", 0))
+    if min_list_days < 0:
+        raise ValueError("min_list_days 必须 >= 0")
+
 
 def _normalize_min_valid_count_alias(config: Dict[str, Any]) -> None:
     rc = config.get("robust_config")

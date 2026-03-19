@@ -13,7 +13,7 @@ from datetime import datetime
 from sqlalchemy import create_engine, text
 
 from data_pipeline.config import Config
-from model_core.config import ModelConfig
+from model_core.config import ModelConfig, RobustConfig
 from model_core.factors import FeatureEngineer
 from model_core.features_registry import get_feature_spec, get_required_raw_feature_names
 
@@ -466,7 +466,29 @@ class RealtimeDataProvider:
         return df
     
     def _required_raw_features(self) -> List[str]:
-        return list(get_required_raw_feature_names(ModelConfig.INPUT_FEATURES))
+        required = set(get_required_raw_feature_names(ModelConfig.INPUT_FEATURES))
+        required.update({"CLOSE", "VOL", "LEFT_YRS"})
+        if int(RobustConfig.MIN_LIST_DAYS) > 0:
+            required.add("LIST_DAYS")
+        return sorted(required)
+
+    @staticmethod
+    def _ensure_required_mask_columns(
+        columns,
+        feature_name: str,
+        raw_column: Optional[str],
+    ) -> None:
+        if feature_name != "LIST_DAYS" or int(RobustConfig.MIN_LIST_DAYS) <= 0:
+            return
+        actual_col = None
+        if raw_column is not None and raw_column in columns:
+            actual_col = raw_column
+        elif feature_name in columns:
+            actual_col = feature_name
+        if actual_col is None:
+            raise RuntimeError(
+                f"min_list_days={int(RobustConfig.MIN_LIST_DAYS)} 已启用，但输入数据缺少 'list_days' 列"
+            )
 
     def _get_raw_column_name(self, feature_name: str) -> Optional[str]:
         spec = get_feature_spec(feature_name)
@@ -488,6 +510,7 @@ class RealtimeDataProvider:
             if raw_column is None:
                 continue
 
+            self._ensure_required_mask_columns(frame.columns, feature_name, raw_column)
             actual_col = self._resolve_actual_raw_column(frame.columns, feature_name, raw_column)
             if actual_col is None:
                 logger.warning(
@@ -543,6 +566,7 @@ class RealtimeDataProvider:
                     if raw_column is None:
                         continue
 
+                    self._ensure_required_mask_columns(day_df.columns, feature_name, raw_column)
                     actual_col = self._resolve_actual_raw_column(day_df.columns, feature_name, raw_column)
                     value = float(row.get(actual_col, 0.0)) if actual_col is not None else 0.0
 
@@ -570,6 +594,14 @@ class RealtimeDataProvider:
         left_yrs = raw_tensors.get("LEFT_YRS")
         if left_yrs is not None:
             mask = mask & torch.isfinite(left_yrs) & (left_yrs > 0.5)
+        min_list_days = int(RobustConfig.MIN_LIST_DAYS)
+        if min_list_days > 0:
+            list_days = raw_tensors.get("LIST_DAYS")
+            if list_days is None:
+                raise RuntimeError(
+                    f"min_list_days={min_list_days} 已启用，但实时/SQL输入缺少 'list_days' 列"
+                )
+            mask = mask & torch.isfinite(list_days) & (list_days >= min_list_days)
         return mask
 
     def build_feat_tensor_with_history(

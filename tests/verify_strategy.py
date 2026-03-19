@@ -596,6 +596,14 @@ class StrategyVerifier:
         side = str(getattr(order, "side", "")).upper()
         return side == "ORDERside.SELL".upper() or side.endswith("SELL")
 
+    @staticmethod
+    def _position_eligible_for_tp(pos, current_date: str) -> bool:
+        """同日新开仓不参与当日止盈。"""
+        entry_date = str(getattr(pos, "entry_date", "") or "").strip()
+        if not entry_date:
+            return True
+        return entry_date < current_date
+
     def _cash_aware_trim_rebalance_orders(
         self,
         orders: List[Order],
@@ -739,9 +747,12 @@ class StrategyVerifier:
         close = self.loader.raw_data_cache['CLOSE']
         open_ = self.loader.raw_data_cache['OPEN']
         high = self.loader.raw_data_cache['HIGH']
+        current_date = self.loader.dates_list[date_idx]
 
         tp_orders: List[Order] = []
         for pos in portfolio.get_all_positions():
+            if not self._position_eligible_for_tp(pos, current_date):
+                continue
             asset_idx = self.code_to_idx.get(pos.code)
             if asset_idx is None:
                 continue
@@ -1116,17 +1127,17 @@ class StrategyVerifier:
         )
         tp_trigger_price = prev_close * (1 + self.take_profit_ratio)
 
-        holding_mask = weights > 0
+        tp_holding_mask = prev_weights > 0
         open_gap_up = (next_open >= tp_trigger_price) & valid_price_mask
-        gap_up_mask = open_gap_up & holding_mask
+        gap_up_mask = open_gap_up & tp_holding_mask
         intraday_tp = (next_high >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
-        intra_tp_mask = intraday_tp & holding_mask
+        intra_tp_mask = intraday_tp & tp_holding_mask
 
         open_ret = (next_open / prev_close) - 1.0
         effective_ret[gap_up_mask] = open_ret[gap_up_mask]
         effective_ret[intra_tp_mask] = self.take_profit_ratio
 
-        daily_k = holding_mask.sum(dim=1).float()
+        daily_k = tp_holding_mask.sum(dim=1).float()
         gap_up_count = gap_up_mask.sum(dim=1).float()
         intra_tp_count = intra_tp_mask.sum(dim=1).float()
         safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))

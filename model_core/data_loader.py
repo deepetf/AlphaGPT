@@ -16,6 +16,26 @@ class CBDataLoader:
         self.cs_mask = None
         self.feature_valid_tensor = None
         self.split_idx = None   # 训练/验证切分索引 (基于 RobustConfig)
+
+    @staticmethod
+    def _build_tradable_mask(raw_tensors, listed_mask: torch.Tensor) -> torch.Tensor:
+        has_price = torch.isfinite(raw_tensors['CLOSE']) & (raw_tensors['CLOSE'] > 0)
+        is_trading = torch.isfinite(raw_tensors['VOL']) & (raw_tensors['VOL'] > 0)
+        not_expiring = torch.isfinite(raw_tensors['LEFT_YRS']) & (raw_tensors['LEFT_YRS'] > 0.5)
+
+        mask = listed_mask & has_price & is_trading & not_expiring
+
+        min_list_days = int(RobustConfig.MIN_LIST_DAYS)
+        if min_list_days > 0:
+            list_days = raw_tensors.get('LIST_DAYS')
+            if list_days is None:
+                raise RuntimeError(
+                    f"min_list_days={min_list_days} 已启用，但数据中缺少 'list_days' 列"
+                )
+            enough_list_days = torch.isfinite(list_days) & (list_days >= min_list_days)
+            mask = mask & enough_list_days
+
+        return mask
         
     def load_data(self, start_date: str = '2022-08-01'):
         print(f"Loading Parquet from: {ModelConfig.CB_PARQUET_PATH}")
@@ -110,6 +130,10 @@ class CBDataLoader:
         
         for internal_name, parquet_col, fill_method in ModelConfig.BASIC_FACTORS:
             if parquet_col not in df.columns:
+                if internal_name == 'LIST_DAYS' and int(RobustConfig.MIN_LIST_DAYS) > 0:
+                    raise RuntimeError(
+                        f"min_list_days={int(RobustConfig.MIN_LIST_DAYS)} 已启用，但 Parquet 缺少列 '{parquet_col}'"
+                    )
                 print(f"Warning: Column '{parquet_col}' not found in parquet, skipping '{internal_name}'.")
                 continue
                 
@@ -140,10 +164,7 @@ class CBDataLoader:
         data_mask = listed_mask & torch.isfinite(raw_tensors['CLOSE'])
 
         # tradable_mask: 业务可交易口径
-        has_price = torch.isfinite(raw_tensors['CLOSE']) & (raw_tensors['CLOSE'] > 0)
-        is_trading = torch.isfinite(raw_tensors['VOL']) & (raw_tensors['VOL'] > 0)
-        not_expiring = torch.isfinite(raw_tensors['LEFT_YRS']) & (raw_tensors['LEFT_YRS'] > 0.5)
-        tradable_mask = listed_mask & has_price & is_trading & not_expiring
+        tradable_mask = self._build_tradable_mask(raw_tensors, listed_mask)
         valid_mask = tradable_mask
         
         # 4. 计算预热偏移量（在 compute_features 前计算，传入 warmup_rows）

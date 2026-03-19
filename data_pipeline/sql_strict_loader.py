@@ -75,6 +75,26 @@ class SQLStrictLoader:
         self.assets_list: List[str] = []
         self.names_dict: Dict[str, str] = {}
 
+    @staticmethod
+    def _build_tradable_mask(raw_tensors: Dict[str, torch.Tensor], listed_mask: torch.Tensor) -> torch.Tensor:
+        has_price = torch.isfinite(raw_tensors["CLOSE"]) & (raw_tensors["CLOSE"] > 0)
+        is_trading = torch.isfinite(raw_tensors["VOL"]) & (raw_tensors["VOL"] > 0)
+        not_expiring = torch.isfinite(raw_tensors["LEFT_YRS"]) & (raw_tensors["LEFT_YRS"] > 0.5)
+
+        mask = listed_mask & has_price & is_trading & not_expiring
+
+        min_list_days = int(RobustConfig.MIN_LIST_DAYS)
+        if min_list_days > 0:
+            list_days = raw_tensors.get("LIST_DAYS")
+            if list_days is None:
+                raise RuntimeError(
+                    f"min_list_days={min_list_days} 已启用，但 SQL 数据缺少 'list_days' 列"
+                )
+            enough_list_days = torch.isfinite(list_days) & (list_days >= min_list_days)
+            mask = mask & enough_list_days
+
+        return mask
+
     def _resolve_warmup_rows(self) -> int:
         """Resolve warmup rows used by FeatureEngineer._robust_normalize."""
         if not self.dates_list:
@@ -119,6 +139,8 @@ class SQLStrictLoader:
         factor_cols: Dict[str, Optional[str]] = {}
         for internal_name, db_col, _ in ModelConfig.BASIC_FACTORS:
             allow_missing = internal_name in optional_raw
+            if internal_name == "LIST_DAYS" and int(RobustConfig.MIN_LIST_DAYS) <= 0:
+                allow_missing = True
             factor_cols[internal_name] = resolve(db_col, allow_missing=allow_missing)
 
         return _ColumnSpec(
@@ -250,10 +272,7 @@ class SQLStrictLoader:
         )
         self.data_mask = self.listed_mask & torch.isfinite(raw_tensors["CLOSE"])
 
-        has_price = torch.isfinite(raw_tensors["CLOSE"]) & (raw_tensors["CLOSE"] > 0)
-        is_trading = torch.isfinite(raw_tensors["VOL"]) & (raw_tensors["VOL"] > 0)
-        not_expiring = torch.isfinite(raw_tensors["LEFT_YRS"]) & (raw_tensors["LEFT_YRS"] > 0.5)
-        self.tradable_mask = self.listed_mask & has_price & is_trading & not_expiring
+        self.tradable_mask = self._build_tradable_mask(raw_tensors, self.listed_mask)
         self.valid_mask = self.tradable_mask
         self.cs_mask = self.tradable_mask
 

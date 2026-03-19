@@ -267,17 +267,17 @@ def _compute_behavior_signature(factors: torch.Tensor, ctx: Dict[str, Any]) -> D
             & (high_prices < 10000)
         )
         tp_trigger_price = prev_close * (1 + bt.take_profit)
-        holding_mask = weights > 0
+        tp_holding_mask = prev_weights > 0
         open_gap_up = (open_prices >= tp_trigger_price) & valid_price_mask
-        gap_up_mask = open_gap_up & holding_mask
+        gap_up_mask = open_gap_up & tp_holding_mask
         intraday_tp = (high_prices >= tp_trigger_price) & (~open_gap_up) & valid_price_mask
-        intra_tp_mask = intraday_tp & holding_mask
+        intra_tp_mask = intraday_tp & tp_holding_mask
 
         open_ret = (open_prices / prev_close) - 1.0
         effective_ret[gap_up_mask] = open_ret[gap_up_mask]
         effective_ret[intra_tp_mask] = bt.take_profit
 
-        daily_k = holding_mask.sum(dim=1).float()
+        daily_k = tp_holding_mask.sum(dim=1).float()
         gap_up_count = gap_up_mask.sum(dim=1).float()
         intra_tp_count = intra_tp_mask.sum(dim=1).float()
         safe_k = torch.where(daily_k > 0, daily_k, torch.ones_like(daily_k))
