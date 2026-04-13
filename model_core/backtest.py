@@ -190,7 +190,10 @@ class CBBacktest:
         return reward, cum_ret.item(), sharpe.item()
     
     def evaluate_with_details(self, factors: torch.Tensor, target_ret: torch.Tensor, 
-                               valid_mask: torch.Tensor) -> dict:
+                               valid_mask: torch.Tensor,
+                               open_prices: torch.Tensor = None,
+                               high_prices: torch.Tensor = None,
+                               prev_close: torch.Tensor = None) -> dict:
         """
         评估因子并返回详细交易记录
         
@@ -217,7 +220,13 @@ class CBBacktest:
             rank_output=RobustConfig.SIGNAL_RANK_OUTPUT,
         )
         
-        net_ret, turnover = self._compute_net_returns(weights=weights, target_ret=target_ret)
+        net_ret, turnover = self._compute_net_returns(
+            weights=weights,
+            target_ret=target_ret,
+            open_prices=open_prices,
+            high_prices=high_prices,
+            prev_close=prev_close,
+        )
         
         # 仅对有效交易日计算指标
         valid_net_ret = net_ret[valid_trading_day]

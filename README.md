@@ -2,7 +2,7 @@
 
 **An industrial-grade symbolic regression framework for Alpha factor mining, powered by Reinforcement Learning.**
 
-Current Version: **V7.02: Universe Filtration & Sim Execution Consistency (Current)**
+Current Version: **V7.03: TP Details Alignment + Min-List-Days E2E Guardrails (Current)**
 
 命令速查文档：`Commands.MD`
 Git 版本与发布说明：`GIT-RELEASE.md`
@@ -11,7 +11,14 @@ Git 版本与发布说明：`GIT-RELEASE.md`
 ## 🧾 Version History
 > 维护约定：从 V5.4 起，每次新增版本条目时，需同步补充“主要功能更新对应的示例命令行（可直接复制运行）”。
 
-### **V7.02: Universe Filtration & Sim Execution Consistency (Current)**
+### **V7.03: TP Details Alignment + Min-List-Days E2E Guardrails (Current)**
+*在 V7.02 基础上，补齐 king trade 明细的 TP 价格口径，并把 `min_list_days` 从掩码层回归到最终选股/回测结果层。*
+- **King Trade TP Details Alignment**: `model_core/backtest.py` 的 `evaluate_with_details()` 新增 `open_prices/high_prices/prev_close` 输入；`model_core/engine.py` 在 `_save_king_trades()` 中按 `t -> t+1` 对齐构造 TP 价格序列，使 `king_trades/*.json` 的 `daily_ret` 与主回测 TP 逻辑保持一致。
+- **TP Details Regression Coverage**: 新增 `tests/test_take_profit_details_alignment.py`，覆盖明细回测下的跳空止盈、盘中止盈、TP 参数不完整回退，以及 `engine` 中 TP 价格 roll 对齐与缺失 `OPEN/HIGH` 回退。
+- **Min-List-Days End-to-End Guardrails**: `tests/test_sim_runner.py` 新增 live 决策链路测试，验证高分但上市天数不足的标的不会进入最终 `target_codes`；新增 `tests/test_verify_strategy_min_list_days.py`，验证 `verify_strategy` 向量回测结果不会把该类标的纳入 `daily_holdings`。
+- **示例命令（V7.03 TP 明细与 min_list_days 端到端回归）**: `pytest tests/test_take_profit_details_alignment.py tests/test_verify_strategy_min_list_days.py tests/test_sim_runner.py -q`
+
+### **V7.02: Universe Filtration & Sim Execution Consistency**
 *在 V7.01 基础上，补齐 min_list_days 交易宇宙约束，并强化向量与事件驱动下 Take Profit 的一致性与安全性。*
 - **Universe Listing Filter**: model_core/config.py 引进 min_list_days 软起步约束（推荐默认 3 天），通过统一数据管道 data_loader/sql_strict_loader/realtime_provider 在最底层的 	radable_mask 阶段过滤新上市极大波动的转债，确保训练/验证/实盘宇宙底池对齐。
 - **Data Completeness Enforcement**: 数据加载器针对 min_list_days 启用的情况引入缺失字段硬校验，不再静默向后兼容从而避免因 Parquet 缺失列导致实盘与投研时序宇宙不一致。

@@ -290,6 +290,77 @@ class TestSimulationRunner:
         expected = torch.tensor([True, False, False], dtype=torch.bool)
         assert torch.equal(mask, expected)
 
+    def test_run_daily_live_excludes_short_list_days_asset_from_final_selection(
+        self, mock_data_provider, runner_factory, monkeypatch
+    ):
+        """端到端验证：strict-aligned live 选股最终不会选中短上市天数标的。"""
+        runner = runner_factory("live_min_list_days", top_k=1, take_profit_ratio=0.0)
+        trade_date = "2026-02-08"
+
+        mock_data_provider.get_cb_features.return_value = pd.DataFrame(
+            {
+                "code": ["123001.SZ", "127050.SZ", "128001.SZ"],
+                "name": ["转债A", "转债B", "转债C"],
+                "trade_date": [trade_date, trade_date, trade_date],
+                "close": [100.0, 110.0, 120.0],
+                "open": [99.0, 109.0, 119.0],
+                "high": [102.0, 112.0, 122.0],
+                "vol": [1000.0, 2000.0, 3000.0],
+                "left_years": [3.0, 3.0, 3.0],
+                "list_days": [10, 2, 12],
+            }
+        )
+        mock_data_provider.get_realtime_quotes_dummy.return_value = pd.DataFrame(columns=["code", "close"])
+        mock_data_provider.get_trading_days_before.return_value = ["2026-02-07", trade_date]
+
+        class FakeLoader:
+            def __init__(self, *args, **kwargs):
+                self.dates_list = [trade_date]
+                self.assets_list = ["123001.SZ", "127050.SZ", "128001.SZ"]
+                self.names_dict = {
+                    "123001.SZ": "转债A",
+                    "127050.SZ": "转债B",
+                    "128001.SZ": "转债C",
+                }
+                self.feat_tensor = torch.zeros((1, 3, 1), dtype=torch.float32)
+                self.valid_mask = torch.tensor([[True, True, True]], dtype=torch.bool)
+                self.tradable_mask = torch.tensor([[True, False, True]], dtype=torch.bool)
+                self.cs_mask = self.tradable_mask.clone()
+
+            def load_data(self):
+                return None
+
+        import data_pipeline.sql_strict_loader as strict_loader_module
+
+        monkeypatch.setattr(strict_loader_module, "SQLStrictLoader", FakeLoader)
+        monkeypatch.setattr(
+            "model_core.config.RobustConfig._loader",
+            lambda: {
+                "robust_config": {
+                    "signal_min_valid_count": 1,
+                    "min_valid_count": 1,
+                    "sim_masked_cs_enabled": True,
+                    "sim_cs_require_present": True,
+                    "signal_clean_enabled": True,
+                    "signal_winsor_q": 0.01,
+                    "signal_clip": 5.0,
+                    "signal_rank_output": True,
+                }
+            },
+            raising=False,
+        )
+
+        runner.vm.execute = MagicMock(return_value=torch.tensor([[0.1, 9.9, 0.2]], dtype=torch.float32))
+        runner._generate_rebalance_orders = MagicMock(return_value=[])
+        runner._save_candidates = MagicMock()
+
+        result = runner.run_daily(trade_date, mode="live")
+
+        assert result["status"] == "success"
+        runner._generate_rebalance_orders.assert_called_once()
+        target_codes = runner._generate_rebalance_orders.call_args.args[0]
+        assert target_codes == ["128001.SZ"]
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

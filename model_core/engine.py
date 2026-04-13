@@ -1402,10 +1402,29 @@ class AlphaEngine:
         
         # 浣跨敤璇︾粏鍥炴祴鑾峰彇浜ゆ槗璁板綍
         bt = CBBacktest(top_k=RobustConfig.TOP_K)
+        # 构造 TP 价格数据（与训练 worker 使用相同的 roll 对齐逻辑）
+        king_open = None
+        king_high = None
+        king_prev_close = None
+        if RobustConfig.TAKE_PROFIT > 0:
+            if 'OPEN' in self.loader.raw_data_cache and 'HIGH' in self.loader.raw_data_cache:
+                import torch as _torch
+                raw_open = self.loader.raw_data_cache['OPEN']
+                raw_high = self.loader.raw_data_cache['HIGH']
+                close = self.loader.raw_data_cache['CLOSE']
+                king_open = _torch.roll(raw_open, -1, dims=0)
+                king_high = _torch.roll(raw_high, -1, dims=0)
+                king_open[-1] = 1e9
+                king_high[-1] = 1e9
+                king_prev_close = close.clone()
+
         details = bt.evaluate_with_details(
             factors=factors,
             target_ret=self.loader.target_ret,
-            valid_mask=self.loader.valid_mask
+            valid_mask=self.loader.valid_mask,
+            open_prices=king_open,
+            high_prices=king_high,
+            prev_close=king_prev_close,
         )
         
         # 鏋勫缓浜ゆ槗璁板綍
